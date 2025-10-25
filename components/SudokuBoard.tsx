@@ -16,6 +16,7 @@ export default function SudokuBoard() {
             col={colIndex}
             value={board[rowIndex][colIndex]}
             isSelected={selectedCell?.row === rowIndex && selectedCell?.col === colIndex}
+            selectedCell={selectedCell}
             onSelect={() => selectCell(rowIndex, colIndex)}
           />
         ))}

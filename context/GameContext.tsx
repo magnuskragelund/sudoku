@@ -1,3 +1,4 @@
+import * as Haptics from 'expo-haptics';
 import React, { createContext, useContext, useEffect, useReducer } from 'react';
 import { Difficulty, DIFFICULTY_LIVES, GameActions, GameState } from '../types/game';
 
@@ -38,7 +39,8 @@ type GameAction =
   | { type: 'NEW_GAME' }
   | { type: 'RESET_GAME' }
   | { type: 'TICK' }
-  | { type: 'LOSE_LIFE' };
+  | { type: 'LOSE_LIFE' }
+  | { type: 'CLEAR_WRONG_CELL' };
 
 const initialState: GameState = {
   difficulty: 'medium',
@@ -50,6 +52,7 @@ const initialState: GameState = {
   initialBoard: Array(9).fill(null).map(() => Array(9).fill(0)),
   selectedCell: null,
   notes: new Map(),
+  wrongCell: null,
 };
 
 function gameReducer(state: GameState, action: GameAction): GameState {
@@ -89,26 +92,40 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       
       const { row, col } = state.selectedCell;
       const newBoard = state.board.map(r => [...r]);
-      newBoard[row][col] = action.number;
       
       // Check if the move is correct
       const isCorrect = action.number === state.solution[row][col];
-      const newLives = isCorrect ? state.lives : state.lives - 1;
-      const newStatus = newLives <= 0 ? 'lost' : state.status;
       
-      // Check if puzzle is complete
-      const isComplete = newBoard.every((row, r) => 
-        row.every((cell, c) => cell === state.solution[r][c])
-      );
-      const finalStatus = isComplete ? 'won' : newStatus;
+      if (isCorrect) {
+        newBoard[row][col] = action.number;
+        
+        // Trigger subtle haptic feedback for correct placement
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        
+        // Check if puzzle is complete
+        const isComplete = newBoard.every((row, r) => 
+          row.every((cell, c) => cell === state.solution[r][c])
+        );
+        const finalStatus = isComplete ? 'won' : state.status;
 
-      return {
-        ...state,
-        board: newBoard,
-        lives: newLives,
-        status: finalStatus,
-        selectedCell: null,
-      };
+        return {
+          ...state,
+          board: newBoard,
+          status: finalStatus,
+          selectedCell: null,
+        };
+      } else {
+        // Wrong number - trigger haptic feedback and don't place the number
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        
+        return {
+          ...state,
+          lives: state.lives - 1,
+          status: state.lives - 1 <= 0 ? 'lost' : state.status,
+          selectedCell: null,
+          wrongCell: { row, col },
+        };
+      }
 
     case 'CLEAR_CELL':
       if (!state.selectedCell) return state;
@@ -191,6 +208,12 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         status: updatedLives <= 0 ? 'lost' : state.status,
       };
 
+    case 'CLEAR_WRONG_CELL':
+      return {
+        ...state,
+        wrongCell: null,
+      };
+
     default:
       return state;
   }
@@ -222,6 +245,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     removeNote: (number: number) => dispatch({ type: 'REMOVE_NOTE', number }),
     newGame: () => dispatch({ type: 'NEW_GAME' }),
     resetGame: () => dispatch({ type: 'RESET_GAME' }),
+    clearWrongCell: () => dispatch({ type: 'CLEAR_WRONG_CELL' }),
   };
 
   return (

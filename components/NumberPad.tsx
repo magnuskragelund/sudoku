@@ -3,19 +3,29 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useGame } from '../context/GameContext';
 
 export default function NumberPad() {
-  const { placeNumber, clearCell, selectedCell } = useGame();
+  const { placeNumber, clearCell, selectedCell, initialBoard } = useGame();
 
   const handleNumberPress = (number: number) => {
     if (selectedCell) {
-      placeNumber(number);
+      const { row, col } = selectedCell;
+      // Only allow placing numbers in non-initial cells
+      if (initialBoard[row][col] === 0) {
+        placeNumber(number);
+      }
     }
   };
 
   const handleClear = () => {
     if (selectedCell) {
-      clearCell();
+      const { row, col } = selectedCell;
+      // Only allow clearing non-initial cells
+      if (initialBoard[row][col] === 0) {
+        clearCell();
+      }
     }
   };
+
+  const isSelectedCellEditable = selectedCell && initialBoard[selectedCell.row][selectedCell.col] === 0;
 
   return (
     <View style={styles.container}>
@@ -26,11 +36,11 @@ export default function NumberPad() {
             key={i + 1}
             style={styles.numberButton}
             onPress={() => handleNumberPress(i + 1)}
-            disabled={!selectedCell}
+            disabled={!isSelectedCellEditable}
           >
             <Text style={[
               styles.numberText,
-              { opacity: selectedCell ? 1 : 0.5 }
+              { opacity: isSelectedCellEditable ? 1 : 0.3 }
             ]}>
               {i + 1}
             </Text>
@@ -43,11 +53,11 @@ export default function NumberPad() {
         <TouchableOpacity
           style={styles.clearButton}
           onPress={handleClear}
-          disabled={!selectedCell}
+          disabled={!isSelectedCellEditable}
         >
           <Text style={[
             styles.clearText,
-            { opacity: selectedCell ? 1 : 0.5 }
+            { opacity: isSelectedCellEditable ? 1 : 0.3 }
           ]}>
             Clear
           </Text>

@@ -11,6 +11,7 @@ export interface GameState {
   initialBoard: number[][];
   selectedCell: { row: number; col: number } | null;
   notes: Map<string, Set<number>>;
+  wrongCell: { row: number; col: number } | null;
 }
 
 export interface GameActions {
@@ -24,6 +25,7 @@ export interface GameActions {
   removeNote: (number: number) => void;
   newGame: () => void;
   resetGame: () => void;
+  clearWrongCell: () => void;
 }
 
 export const DIFFICULTY_LIVES: Record<Difficulty, number> = {
