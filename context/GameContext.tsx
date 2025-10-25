@@ -1,31 +1,8 @@
 import * as Haptics from 'expo-haptics';
 import React, { createContext, useContext, useEffect, useReducer } from 'react';
 import { Difficulty, DIFFICULTY_LIVES, GameActions, GameState } from '../types/game';
-
-// Sample sudoku puzzle from the Figma design
-const SAMPLE_PUZZLE = [
-  [4, 0, 0, 0, 2, 0, 0, 0, 0],
-  [0, 6, 0, 0, 6, 0, 3, 0, 0],
-  [0, 0, 2, 0, 0, 0, 0, 0, 2],
-  [0, 1, 0, 9, 0, 3, 8, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 2, 0, 6, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [6, 4, 0, 0, 0, 0, 0, 0, 0],
-  [3, 2, 0, 0, 0, 0, 0, 0, 0],
-];
-
-const SAMPLE_SOLUTION = [
-  [4, 3, 1, 5, 2, 7, 6, 8, 9],
-  [2, 6, 8, 1, 4, 9, 3, 5, 7],
-  [5, 9, 7, 3, 6, 8, 1, 4, 2],
-  [7, 1, 4, 9, 5, 3, 8, 2, 6],
-  [8, 5, 3, 4, 7, 1, 2, 9, 4],
-  [9, 8, 2, 6, 3, 4, 5, 7, 1],
-  [1, 7, 6, 8, 9, 2, 4, 3, 5],
-  [6, 4, 5, 7, 1, 3, 9, 6, 8],
-  [3, 2, 9, 4, 8, 5, 7, 1, 6],
-];
+import { generatePuzzle } from '../utils/sudokuGenerator';
+import { isValidMove } from '../utils/sudokuValidator';
 
 type GameAction =
   | { type: 'START_GAME'; difficulty: Difficulty }
@@ -59,14 +36,17 @@ const initialState: GameState = {
 function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case 'START_GAME':
+      // Generate a new puzzle with guaranteed unique solution
+      const { puzzle, solution } = generatePuzzle(action.difficulty);
+      
       return {
         ...initialState,
         difficulty: action.difficulty,
         status: 'ready',
         lives: DIFFICULTY_LIVES[action.difficulty],
-        board: SAMPLE_PUZZLE.map(row => [...row]),
-        solution: SAMPLE_SOLUTION.map(row => [...row]),
-        initialBoard: SAMPLE_PUZZLE.map(row => [...row]),
+        board: puzzle.map(row => [...row]),
+        solution: solution.map(row => [...row]),
+        initialBoard: puzzle.map(row => [...row]),
         timeElapsed: 0,
       };
 
@@ -100,7 +80,18 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       const { row, col } = state.selectedCell;
       const newBoard = state.board.map(r => [...r]);
       
-      // Check if the move is correct
+      // First check if move is valid by Sudoku rules
+      if (!isValidMove(state.board, row, col, action.number)) {
+        // Invalid move - show feedback but don't lose life
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        
+        return {
+          ...state,
+          wrongCell: { row, col },
+        };
+      }
+      
+      // Check if the move is correct (matches the solution)
       const isCorrect = action.number === state.solution[row][col];
       
       if (isCorrect) {
