@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { Star } from 'lucide-react-native';
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGame } from '../context/GameContext';
@@ -9,9 +9,10 @@ import { Difficulty } from '../types/game';
 export default function WelcomeScreen() {
   const router = useRouter();
   const { startGame } = useGame();
+  const [selectedLives, setSelectedLives] = useState(5);
 
   const handleStartGame = (difficulty: Difficulty) => {
-    startGame(difficulty);
+    startGame(difficulty, selectedLives);
     router.push('/game');
   };
 
@@ -22,11 +23,35 @@ export default function WelcomeScreen() {
     { label: 'Master', value: 'master', stars: 4 },
   ];
 
+  const livesOptions = [0, 1, 2, 3, 4, 5];
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <Text style={styles.title}>Sudoku</Text>
         <Text style={styles.subtitle}>With Friends</Text>
+        
+        <Text style={styles.livesLabel}>Number of Lives</Text>
+        <View style={styles.livesContainer}>
+          {livesOptions.map((lives) => (
+            <TouchableOpacity
+              key={lives}
+              style={[
+                styles.livesButton,
+                selectedLives === lives && styles.livesButtonSelected
+              ]}
+              onPress={() => setSelectedLives(lives)}
+            >
+              <Text style={[
+                styles.livesButtonText,
+                selectedLives === lives && styles.livesButtonTextSelected
+              ]}>
+                {lives}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        
         <Text style={styles.difficultyLabel}>Choose your difficulty</Text>
         
         <View style={styles.difficultyContainer}>
@@ -77,6 +102,43 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter',
     textAlign: 'center',
     fontWeight: '500',
+  },
+  livesLabel: {
+    fontSize: 18,
+    color: '#4A5565',
+    marginBottom: 16,
+    fontFamily: 'Inter',
+    textAlign: 'center',
+  },
+  livesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    marginBottom: 32,
+    gap: 8,
+  },
+  livesButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#E5E7EB',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  livesButtonSelected: {
+    backgroundColor: '#2B7FFF',
+    borderColor: '#1E40AF',
+  },
+  livesButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#6B7280',
+    fontFamily: 'Inter',
+  },
+  livesButtonTextSelected: {
+    color: 'white',
   },
   difficultyLabel: {
     fontSize: 18,

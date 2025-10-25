@@ -5,7 +5,7 @@ import { generatePuzzle } from '../utils/sudokuGenerator';
 import { isValidMove } from '../utils/sudokuValidator';
 
 type GameAction =
-  | { type: 'START_GAME'; difficulty: Difficulty }
+  | { type: 'START_GAME'; difficulty: Difficulty; lives?: number }
   | { type: 'START_PLAYING' }
   | { type: 'PAUSE_GAME' }
   | { type: 'RESUME_GAME' }
@@ -43,7 +43,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         ...initialState,
         difficulty: action.difficulty,
         status: 'ready',
-        lives: DIFFICULTY_LIVES[action.difficulty],
+        lives: action.lives ?? 5, // Use provided lives or default to 5
         board: puzzle.map(row => [...row]),
         solution: solution.map(row => [...row]),
         initialBoard: puzzle.map(row => [...row]),
@@ -78,7 +78,6 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       if (!state.selectedCell) return state;
       
       const { row, col } = state.selectedCell;
-      const newBoard = state.board.map(r => [...r]);
       
       // First check if move is valid by Sudoku rules
       if (!isValidMove(state.board, row, col, action.number)) {
@@ -95,6 +94,8 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       const isCorrect = action.number === state.solution[row][col];
       
       if (isCorrect) {
+        // Only create new board if the move is correct
+        const newBoard = state.board.map(r => [...r]);
         newBoard[row][col] = action.number;
         
         // Trigger subtle haptic feedback for correct placement
@@ -110,7 +111,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
           ...state,
           board: newBoard,
           status: finalStatus,
-          selectedCell: null,
+          selectedCell: { row, col }, // Keep cell selected
         };
       } else {
         // Wrong number - trigger haptic feedback and don't place the number
@@ -232,7 +233,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   }, [state.status]);
 
   const actions: GameActions = {
-    startGame: (difficulty: Difficulty) => dispatch({ type: 'START_GAME', difficulty }),
+    startGame: (difficulty: Difficulty, lives?: number) => dispatch({ type: 'START_GAME', difficulty, lives }),
     startPlaying: () => dispatch({ type: 'START_PLAYING' }),
     pauseGame: () => dispatch({ type: 'PAUSE_GAME' }),
     resumeGame: () => dispatch({ type: 'RESUME_GAME' }),

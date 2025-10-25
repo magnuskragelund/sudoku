@@ -12,7 +12,7 @@ interface SudokuCellProps {
 }
 
 export default function SudokuCell({ row, col, value, isSelected, selectedCell, onSelect }: SudokuCellProps) {
-  const { initialBoard, notes, wrongCell, clearWrongCell } = useGame();
+  const { initialBoard, notes, wrongCell, clearWrongCell, board } = useGame();
   
   const isInitial = initialBoard[row][col] !== 0;
   const noteKey = `${row}-${col}`;
@@ -63,6 +63,18 @@ export default function SudokuCell({ row, col, value, isSelected, selectedCell, 
            Math.floor(col / 3) === Math.floor(selectedCol / 3);
   };
 
+  // Determine if this cell has the same value as the selected cell
+  const hasSameValue = (selectedRow: number, selectedCol: number, selectedValue: number) => {
+    if (selectedRow === -1 || selectedCol === -1 || selectedValue === 0) return false;
+    
+    return value === selectedValue;
+  };
+
+  // Memoize selected value to avoid recalculating on every render
+  const selectedValue = React.useMemo(() => {
+    return selectedCell ? board[selectedCell.row][selectedCell.col] : 0;
+  }, [selectedCell, board]);
+
   // Memoize style calculations to avoid recalculation on every render
   const cellStyle = React.useMemo(() => {
     const baseStyle = [styles.cell];
@@ -74,6 +86,8 @@ export default function SudokuCell({ row, col, value, isSelected, selectedCell, 
     // Background color based on state
     if (isSelected) {
       baseStyle.push(styles.selectedCell);
+    } else if (hasSameValue(selectedCell?.row ?? -1, selectedCell?.col ?? -1, selectedValue)) {
+      baseStyle.push(styles.sameValueHighlight);
     } else if (isInSameRowOrColumn(selectedCell?.row ?? -1, selectedCell?.col ?? -1)) {
       baseStyle.push(styles.rowColumnHighlight);
     } else if (isInSameBox(selectedCell?.row ?? -1, selectedCell?.col ?? -1)) {
@@ -83,7 +97,7 @@ export default function SudokuCell({ row, col, value, isSelected, selectedCell, 
     }
     
     return baseStyle;
-  }, [isSelected, selectedCell, isInitial, row, col]);
+  }, [isSelected, selectedCell, isInitial, row, col, selectedValue]);
 
   const textStyle = React.useMemo(() => {
     const baseStyle = [styles.cellText];
@@ -171,6 +185,9 @@ const styles = StyleSheet.create({
   },
   boxHighlight: {
     backgroundColor: '#E5E7EB',
+  },
+  sameValueHighlight: {
+    backgroundColor: '#BEDBFF', // Same blue as selected cell
   },
   cellText: {
     fontSize: 30,

@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useGame } from '../context/GameContext';
 import SudokuCell from './SudokuCell';
@@ -28,9 +28,14 @@ export default function SudokuBoard() {
     );
   }, [board, selectedCell, handleCellSelect]);
 
+  // Memoize the entire board to prevent unnecessary re-renders
+  const boardRows = useMemo(() => {
+    return Array.from({ length: 9 }, (_, rowIndex) => renderRow(rowIndex));
+  }, [renderRow]);
+
   return (
     <View style={styles.container}>
-      {Array.from({ length: 9 }, (_, rowIndex) => renderRow(rowIndex))}
+      {boardRows}
     </View>
   );
 }

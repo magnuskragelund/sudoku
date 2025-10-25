@@ -15,7 +15,7 @@ export interface GameState {
 }
 
 export interface GameActions {
-  startGame: (difficulty: Difficulty) => void;
+  startGame: (difficulty: Difficulty, lives?: number) => void;
   startPlaying: () => void;
   pauseGame: () => void;
   resumeGame: () => void;
@@ -31,7 +31,7 @@ export interface GameActions {
 
 export const DIFFICULTY_LIVES: Record<Difficulty, number> = {
   easy: 5,
-  medium: 4,
-  hard: 3,
-  master: 2,
+  medium: 5,
+  hard: 5,
+  master: 5,
 };
