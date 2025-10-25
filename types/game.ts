@@ -1,5 +1,5 @@
 export type Difficulty = 'easy' | 'medium' | 'hard' | 'master';
-export type GameStatus = 'playing' | 'paused' | 'won' | 'lost';
+export type GameStatus = 'ready' | 'playing' | 'paused' | 'won' | 'lost';
 
 export interface GameState {
   difficulty: Difficulty;
@@ -16,6 +16,7 @@ export interface GameState {
 
 export interface GameActions {
   startGame: (difficulty: Difficulty) => void;
+  startPlaying: () => void;
   pauseGame: () => void;
   resumeGame: () => void;
   selectCell: (row: number, col: number) => void;

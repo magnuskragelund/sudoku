@@ -1,6 +1,8 @@
 import { useRouter } from 'expo-router';
+import { Clock, Heart, Lightbulb, StickyNote, Undo2 } from 'lucide-react-native';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import NumberPad from '../components/NumberPad';
 import SudokuBoard from '../components/SudokuBoard';
 import { useGame } from '../context/GameContext';
@@ -15,7 +17,8 @@ export default function GameScreen() {
     selectedCell,
     pauseGame,
     resumeGame,
-    newGame 
+    newGame,
+    startPlaying 
   } = useGame();
 
   const formatTime = (seconds: number) => {
@@ -38,7 +41,7 @@ export default function GameScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleNewGame} style={styles.newGameButton}>
@@ -53,18 +56,19 @@ export default function GameScreen() {
       {/* Stats Bar */}
       <View style={styles.statsBar}>
         <View style={styles.mistakesContainer}>
+          <Heart size={16} color="#FB2C36" />
           <Text style={styles.mistakesText}>{lives}</Text>
         </View>
         
         <View style={styles.actionsContainer}>
           <TouchableOpacity style={styles.actionButton}>
-            <Text style={styles.actionButtonText}>↶</Text>
+            <Undo2 size={16} color="#4A5565" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionButton}>
-            <Text style={styles.actionButtonText}>💡</Text>
+            <Lightbulb size={16} color="#4A5565" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionButton}>
-            <Text style={styles.actionButtonText}>📝</Text>
+            <StickyNote size={16} color="#4A5565" />
           </TouchableOpacity>
         </View>
       </View>
@@ -76,6 +80,7 @@ export default function GameScreen() {
 
       {/* Timer */}
       <View style={styles.timerContainer}>
+        <Clock size={16} color="#4A5565" />
         <Text style={styles.timerText}>{formatTime(timeElapsed)}</Text>
       </View>
 
@@ -85,6 +90,23 @@ export default function GameScreen() {
       </View>
 
       {/* Game Status Overlay */}
+      {status === 'ready' && (
+        <View style={styles.overlay}>
+          <View style={styles.statusModal}>
+            <Text style={styles.statusTitle}>Ready to Play?</Text>
+            <Text style={styles.statusSubtitle}>
+              Difficulty: {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
+            </Text>
+            <Text style={styles.statusSubtitle}>
+              Lives: {lives}
+            </Text>
+            <TouchableOpacity style={styles.statusButton} onPress={startPlaying}>
+              <Text style={styles.statusButtonText}>Start Game</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
       {status === 'won' && (
         <View style={styles.overlay}>
           <View style={styles.statusModal}>
@@ -119,7 +141,7 @@ export default function GameScreen() {
           </View>
         </View>
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -167,6 +189,7 @@ const styles = StyleSheet.create({
   mistakesContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 4,
   },
   mistakesText: {
     fontSize: 16,
@@ -186,9 +209,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  actionButtonText: {
-    fontSize: 16,
-  },
   boardContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -196,7 +216,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   timerContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
     paddingVertical: 16,
     borderTopWidth: 1,
     borderTopColor: '#D1D5DC',

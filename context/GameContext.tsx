@@ -29,6 +29,7 @@ const SAMPLE_SOLUTION = [
 
 type GameAction =
   | { type: 'START_GAME'; difficulty: Difficulty }
+  | { type: 'START_PLAYING' }
   | { type: 'PAUSE_GAME' }
   | { type: 'RESUME_GAME' }
   | { type: 'SELECT_CELL'; row: number; col: number }
@@ -61,12 +62,18 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       return {
         ...initialState,
         difficulty: action.difficulty,
-        status: 'playing',
+        status: 'ready',
         lives: DIFFICULTY_LIVES[action.difficulty],
         board: SAMPLE_PUZZLE.map(row => [...row]),
         solution: SAMPLE_SOLUTION.map(row => [...row]),
         initialBoard: SAMPLE_PUZZLE.map(row => [...row]),
         timeElapsed: 0,
+      };
+
+    case 'START_PLAYING':
+      return {
+        ...state,
+        status: 'playing',
       };
 
     case 'PAUSE_GAME':
@@ -122,7 +129,6 @@ function gameReducer(state: GameState, action: GameAction): GameState {
           ...state,
           lives: state.lives - 1,
           status: state.lives - 1 <= 0 ? 'lost' : state.status,
-          selectedCell: null,
           wrongCell: { row, col },
         };
       }
@@ -236,6 +242,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   const actions: GameActions = {
     startGame: (difficulty: Difficulty) => dispatch({ type: 'START_GAME', difficulty }),
+    startPlaying: () => dispatch({ type: 'START_PLAYING' }),
     pauseGame: () => dispatch({ type: 'PAUSE_GAME' }),
     resumeGame: () => dispatch({ type: 'RESUME_GAME' }),
     selectCell: (row: number, col: number) => dispatch({ type: 'SELECT_CELL', row, col }),

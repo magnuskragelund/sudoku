@@ -3,7 +3,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useGame } from '../context/GameContext';
 
 export default function NumberPad() {
-  const { placeNumber, clearCell, selectedCell, initialBoard } = useGame();
+  const { placeNumber, selectedCell, initialBoard } = useGame();
 
   const handleNumberPress = (number: number) => {
     if (selectedCell) {
@@ -11,16 +11,6 @@ export default function NumberPad() {
       // Only allow placing numbers in non-initial cells
       if (initialBoard[row][col] === 0) {
         placeNumber(number);
-      }
-    }
-  };
-
-  const handleClear = () => {
-    if (selectedCell) {
-      const { row, col } = selectedCell;
-      // Only allow clearing non-initial cells
-      if (initialBoard[row][col] === 0) {
-        clearCell();
       }
     }
   };
@@ -47,22 +37,6 @@ export default function NumberPad() {
           </TouchableOpacity>
         ))}
       </View>
-      
-      {/* Clear button */}
-      <View style={styles.clearRow}>
-        <TouchableOpacity
-          style={styles.clearButton}
-          onPress={handleClear}
-          disabled={!isSelectedCellEditable}
-        >
-          <Text style={[
-            styles.clearText,
-            { opacity: isSelectedCellEditable ? 1 : 0.3 }
-          ]}>
-            Clear
-          </Text>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 }
@@ -87,21 +61,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: '#2B7FFF',
     fontWeight: '400',
-    fontFamily: 'Inter',
-  },
-  clearRow: {
-    alignItems: 'center',
-  },
-  clearButton: {
-    width: 86,
-    height: 40,
-    borderRadius: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  clearText: {
-    fontSize: 16,
-    color: '#4A5565',
     fontFamily: 'Inter',
   },
 });

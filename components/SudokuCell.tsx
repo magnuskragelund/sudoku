@@ -19,7 +19,6 @@ export default function SudokuCell({ row, col, value, isSelected, selectedCell, 
   const cellNotes = notes.get(noteKey) || new Set();
   
   // Animation for wrong number entry
-  const shakeAnimation = useRef(new Animated.Value(0)).current;
   const errorAnimation = useRef(new Animated.Value(0)).current;
   
   const isWrongCell = wrongCell?.row === row && wrongCell?.col === col;
@@ -27,30 +26,6 @@ export default function SudokuCell({ row, col, value, isSelected, selectedCell, 
   // Trigger animation when this cell becomes the wrong cell
   useEffect(() => {
     if (isWrongCell) {
-      // Shake animation
-      Animated.sequence([
-        Animated.timing(shakeAnimation, {
-          toValue: 10,
-          duration: 50,
-          useNativeDriver: true,
-        }),
-        Animated.timing(shakeAnimation, {
-          toValue: -10,
-          duration: 50,
-          useNativeDriver: true,
-        }),
-        Animated.timing(shakeAnimation, {
-          toValue: 10,
-          duration: 50,
-          useNativeDriver: true,
-        }),
-        Animated.timing(shakeAnimation, {
-          toValue: 0,
-          duration: 50,
-          useNativeDriver: true,
-        }),
-      ]).start();
-      
       // Error color flash
       Animated.sequence([
         Animated.timing(errorAnimation, {
@@ -68,7 +43,7 @@ export default function SudokuCell({ row, col, value, isSelected, selectedCell, 
         setTimeout(() => clearWrongCell(), 100);
       });
     }
-  }, [isWrongCell, shakeAnimation, errorAnimation, clearWrongCell]);
+  }, [isWrongCell, errorAnimation, clearWrongCell]);
 
   // Determine if this cell is in the same row or column as selected cell
   const isInSameRowOrColumn = (selectedRow: number, selectedCol: number) => {
@@ -88,7 +63,8 @@ export default function SudokuCell({ row, col, value, isSelected, selectedCell, 
            Math.floor(col / 3) === Math.floor(selectedCol / 3);
   };
 
-  const getCellStyle = () => {
+  // Memoize style calculations to avoid recalculation on every render
+  const cellStyle = React.useMemo(() => {
     const baseStyle = [styles.cell];
     
     // Add border styles for 3x3 sub-grids
@@ -107,9 +83,9 @@ export default function SudokuCell({ row, col, value, isSelected, selectedCell, 
     }
     
     return baseStyle;
-  };
+  }, [isSelected, selectedCell, isInitial, row, col]);
 
-  const getTextStyle = () => {
+  const textStyle = React.useMemo(() => {
     const baseStyle = [styles.cellText];
     if (isInitial) {
       baseStyle.push(styles.initialText);
@@ -117,11 +93,7 @@ export default function SudokuCell({ row, col, value, isSelected, selectedCell, 
       baseStyle.push(styles.userText);
     }
     return baseStyle;
-  };
-
-  const animatedStyle = {
-    transform: [{ translateX: shakeAnimation }],
-  };
+  }, [isInitial]);
 
   const errorColor = errorAnimation.interpolate({
     inputRange: [0, 1],
@@ -129,14 +101,15 @@ export default function SudokuCell({ row, col, value, isSelected, selectedCell, 
   });
 
   return (
-    <Animated.View style={[getCellStyle(), animatedStyle]}>
+    <Animated.View style={cellStyle}>
       <Animated.View style={[styles.errorOverlay, { backgroundColor: errorColor }]} />
       <TouchableOpacity
         style={styles.cellContent}
-        onPress={onSelect}
+        onPressIn={onSelect}
+        activeOpacity={0.7}
       >
         {value !== 0 ? (
-          <Text style={getTextStyle()}>{value}</Text>
+          <Text style={textStyle}>{value}</Text>
         ) : cellNotes.size > 0 ? (
           <View style={styles.notesContainer}>
             {Array.from({ length: 9 }, (_, i) => (

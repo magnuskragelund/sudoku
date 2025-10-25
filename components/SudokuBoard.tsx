@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useGame } from '../context/GameContext';
 import SudokuCell from './SudokuCell';
@@ -6,7 +6,11 @@ import SudokuCell from './SudokuCell';
 export default function SudokuBoard() {
   const { board, selectedCell, selectCell } = useGame();
 
-  const renderRow = (rowIndex: number) => {
+  const handleCellSelect = useCallback((row: number, col: number) => {
+    selectCell(row, col);
+  }, [selectCell]);
+
+  const renderRow = useCallback((rowIndex: number) => {
     return (
       <View key={rowIndex} style={styles.row}>
         {Array.from({ length: 9 }, (_, colIndex) => (
@@ -17,12 +21,12 @@ export default function SudokuBoard() {
             value={board[rowIndex][colIndex]}
             isSelected={selectedCell?.row === rowIndex && selectedCell?.col === colIndex}
             selectedCell={selectedCell}
-            onSelect={() => selectCell(rowIndex, colIndex)}
+            onSelect={() => handleCellSelect(rowIndex, colIndex)}
           />
         ))}
       </View>
     );
-  };
+  }, [board, selectedCell, handleCellSelect]);
 
   return (
     <View style={styles.container}>
