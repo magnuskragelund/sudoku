@@ -1,5 +1,6 @@
+import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
-import { Clock, Heart, Lightbulb, StickyNote, Undo2 } from 'lucide-react-native';
+import { Clock, Heart, Lightbulb, Pause, Play, StickyNote } from 'lucide-react-native';
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -35,8 +36,12 @@ export default function GameScreen() {
   }, [lives]);
 
   const handleNewGame = () => {
-    newGame();
-    router.push('/');
+    if (status === 'playing') {
+      pauseGame();
+    } else {
+      newGame();
+      router.push('/');
+    }
   };
 
   const handlePauseResume = () => {
@@ -68,8 +73,12 @@ export default function GameScreen() {
         </View>
         
         <View style={styles.actionsContainer}>
-          <TouchableOpacity style={styles.actionButton}>
-            <Undo2 size={16} color="#4A5565" />
+          <TouchableOpacity style={styles.actionButton} onPress={handlePauseResume}>
+            {status === 'playing' ? (
+              <Pause size={16} color="#4A5565" />
+            ) : (
+              <Play size={16} color="#4A5565" />
+            )}
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionButton}>
             <Lightbulb size={16} color="#4A5565" />
@@ -96,56 +105,59 @@ export default function GameScreen() {
         <NumberPad />
       </View>
 
-      {/* Game Status Overlay */}
-      {status === 'ready' && (
+      {/* Game Status Overlay with Blur */}
+      {(status === 'ready' || status === 'won' || status === 'lost' || status === 'paused') && (
         <View style={styles.overlay}>
-          <View style={styles.statusModal}>
-            <Text style={styles.statusTitle}>Ready to Play?</Text>
-            <Text style={styles.statusSubtitle}>
-              Difficulty: {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
-            </Text>
-            <Text style={styles.statusSubtitle}>
-              Lives: {lives}
-            </Text>
-            <TouchableOpacity style={styles.statusButton} onPress={startPlaying}>
-              <Text style={styles.statusButtonText}>Start Game</Text>
-            </TouchableOpacity>
+          <BlurView intensity={40} tint="dark" style={styles.blurBackground}>
+            <View style={styles.statusModal}>
+            {status === 'ready' && (
+              <>
+                <Text style={styles.statusTitle}>Ready to Play?</Text>
+                <Text style={styles.statusSubtitle}>
+                  Difficulty: {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
+                </Text>
+                <Text style={styles.statusSubtitle}>
+                  Lives: {lives}
+                </Text>
+                <TouchableOpacity style={styles.statusButton} onPress={startPlaying}>
+                  <Text style={styles.statusButtonText}>Start Game</Text>
+                </TouchableOpacity>
+              </>
+            )}
+            
+            {status === 'won' && (
+              <>
+                <Text style={styles.statusTitle}>Congratulations!</Text>
+                <Text style={styles.statusSubtitle}>You solved the puzzle!</Text>
+                <TouchableOpacity style={styles.statusButton} onPress={handleNewGame}>
+                  <Text style={styles.statusButtonText}>New Game</Text>
+                </TouchableOpacity>
+              </>
+            )}
+            
+            {status === 'lost' && (
+              <>
+                <Text style={styles.statusTitle}>Game Over</Text>
+                <Text style={styles.statusSubtitle}>You ran out of lives!</Text>
+                <TouchableOpacity style={styles.statusButton} onPress={handleNewGame}>
+                  <Text style={styles.statusButtonText}>Try Again</Text>
+                </TouchableOpacity>
+              </>
+            )}
+            
+            {status === 'paused' && (
+              <>
+                <Text style={styles.statusTitle}>Paused</Text>
+                <TouchableOpacity style={styles.statusButton} onPress={resumeGame}>
+                  <Text style={styles.statusButtonText}>Resume</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.quitButton} onPress={handleNewGame}>
+                  <Text style={styles.quitButtonText}>New Game</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
-        </View>
-      )}
-
-      {status === 'won' && (
-        <View style={styles.overlay}>
-          <View style={styles.statusModal}>
-            <Text style={styles.statusTitle}>Congratulations!</Text>
-            <Text style={styles.statusSubtitle}>You solved the puzzle!</Text>
-            <TouchableOpacity style={styles.statusButton} onPress={handleNewGame}>
-              <Text style={styles.statusButtonText}>New Game</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
-
-      {status === 'lost' && (
-        <View style={styles.overlay}>
-          <View style={styles.statusModal}>
-            <Text style={styles.statusTitle}>Game Over</Text>
-            <Text style={styles.statusSubtitle}>You ran out of lives!</Text>
-            <TouchableOpacity style={styles.statusButton} onPress={handleNewGame}>
-              <Text style={styles.statusButtonText}>Try Again</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
-
-      {status === 'paused' && (
-        <View style={styles.overlay}>
-          <View style={styles.statusModal}>
-            <Text style={styles.statusTitle}>Paused</Text>
-            <TouchableOpacity style={styles.statusButton} onPress={resumeGame}>
-              <Text style={styles.statusButtonText}>Resume</Text>
-            </TouchableOpacity>
-          </View>
+          </BlurView>
         </View>
       )}
     </SafeAreaView>
@@ -172,6 +184,7 @@ const styles = StyleSheet.create({
   newGameText: {
     fontSize: 16,
     color: '#4A5565',
+    fontWeight: '600',
     fontFamily: 'Inter',
   },
   difficultyContainer: {
@@ -181,7 +194,6 @@ const styles = StyleSheet.create({
   difficultyText: {
     fontSize: 16,
     color: '#1E2939',
-    fontWeight: '600',
     fontFamily: 'Inter',
   },
   statsBar: {
@@ -245,7 +257,15 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  blurBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -255,6 +275,9 @@ const styles = StyleSheet.create({
     padding: 24,
     alignItems: 'center',
     marginHorizontal: 24,
+    minWidth: 280,
+    width: '90%',
+    maxWidth: 400,
   },
   statusTitle: {
     fontSize: 24,
@@ -275,8 +298,25 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 4,
+    marginBottom: 12,
+    width: '100%',
+    alignItems: 'center',
   },
   statusButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: 'Inter',
+  },
+  quitButton: {
+    backgroundColor: '#FB2C36',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 4,
+    width: '100%',
+    alignItems: 'center',
+  },
+  quitButtonText: {
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
