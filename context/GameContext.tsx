@@ -19,7 +19,8 @@ type GameAction =
   | { type: 'RESET_GAME' }
   | { type: 'TICK' }
   | { type: 'LOSE_LIFE' }
-  | { type: 'CLEAR_WRONG_CELL' };
+  | { type: 'CLEAR_WRONG_CELL' }
+  | { type: 'USE_HINT' };
 
 const initialState: GameState = {
   difficulty: 'medium',
@@ -33,6 +34,7 @@ const initialState: GameState = {
   selectedCell: null,
   notes: new Map(),
   wrongCell: null,
+  hintUsed: false,
 };
 
 function gameReducer(state: GameState, action: GameAction): GameState {
@@ -223,6 +225,29 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         wrongCell: null,
       };
 
+    case 'USE_HINT':
+      if (state.hintUsed || !state.selectedCell || state.status !== 'playing') {
+        return state;
+      }
+
+      const hintRow = state.selectedCell.row;
+      const hintCol = state.selectedCell.col;
+      const correctNumber = state.solution[hintRow][hintCol];
+      
+      // Only use hint if the cell is empty and not an initial clue
+      if (state.board[hintRow][hintCol] === 0 && state.initialBoard[hintRow][hintCol] === 0) {
+        const newBoard = copyBoard(state.board);
+        newBoard[hintRow][hintCol] = correctNumber;
+        
+        return {
+          ...state,
+          board: newBoard,
+          hintUsed: true,
+        };
+      }
+
+      return state;
+
     default:
       return state;
   }
@@ -256,6 +281,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     newGame: () => dispatch({ type: 'NEW_GAME' }),
     resetGame: () => dispatch({ type: 'RESET_GAME' }),
     clearWrongCell: () => dispatch({ type: 'CLEAR_WRONG_CELL' }),
+    useHint: () => dispatch({ type: 'USE_HINT' }),
   };
 
   return (

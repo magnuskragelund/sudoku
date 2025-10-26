@@ -1,6 +1,6 @@
 import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
-import { Clock, Heart, Lightbulb, Pause, Play, StickyNote } from 'lucide-react-native';
+import { Clock, Heart, Lightbulb, Pause, Play } from 'lucide-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,10 +17,12 @@ export default function GameScreen() {
     lives, 
     timeElapsed, 
     selectedCell,
+    hintUsed,
     pauseGame,
     resumeGame,
     newGame,
-    startPlaying 
+    startPlaying,
+    useHint 
   } = useGame();
 
   const [bestTime, setBestTime] = useState<number | null>(null);
@@ -99,11 +101,15 @@ export default function GameScreen() {
               <Play size={16} color="#4A5565" />
             )}
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
-            <Lightbulb size={16} color="#4A5565" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
-            <StickyNote size={16} color="#4A5565" />
+          <TouchableOpacity 
+            style={styles.actionButton} 
+            onPress={useHint}
+            disabled={hintUsed || !selectedCell || status !== 'playing'}
+          >
+            <Lightbulb 
+              size={16} 
+              color={hintUsed ? '#9CA3AF' : selectedCell && status === 'playing' ? '#2B7FFF' : '#4A5565'} 
+            />
           </TouchableOpacity>
         </View>
       </View>

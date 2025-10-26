@@ -85,28 +85,37 @@ export default function NumberPad() {
 const styles = StyleSheet.create({
   container: {
     paddingTop: 25,
+    width: '100%',
   },
   numberRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  numberButton: {
-    width: 30,
-    height: 40,
-    borderRadius: 4,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 36,
+    width: '100%',
+  },
+  numberButton: {
+    flex: 1,
+    maxWidth: 44,
+    height: 52,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    borderWidth: 0,
+    borderColor: '#E5E7EB',
+    marginHorizontal: 8,
   },
   hiddenButton: {
-    width: 30,
-    height: 40,
+    flex: 1,
+    maxWidth: 44,
+    height: 52,
+    marginHorizontal: 2,
     // Invisible placeholder to maintain layout
   },
   numberText: {
-    fontSize: 24,
+    fontSize: 28,
     color: '#2B7FFF',
-    fontWeight: '400',
+    fontWeight: '600',
     fontFamily: 'Inter',
   },
 });

@@ -13,6 +13,7 @@ export interface GameState {
   selectedCell: { row: number; col: number } | null;
   notes: Map<string, Set<number>>;
   wrongCell: { row: number; col: number } | null;
+  hintUsed: boolean;
 }
 
 export interface GameResult {
@@ -42,6 +43,7 @@ export interface GameActions {
   newGame: () => void;
   resetGame: () => void;
   clearWrongCell: () => void;
+  useHint: () => void;
 }
 
 export const DIFFICULTY_LIVES: Record<Difficulty, number> = {

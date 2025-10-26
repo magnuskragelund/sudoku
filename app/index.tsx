@@ -28,8 +28,10 @@ export default function WelcomeScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.title}>Sudoku</Text>
-        <Text style={styles.subtitle}>With Friends</Text>
+        <View style={styles.titleContainer}>
+          <Text style={styles.titleSmall}>That's</Text>
+          <Text style={styles.titleLarge}>Sudoku</Text>
+        </View>
         
         <TouchableOpacity 
           style={styles.highScoresButton}
@@ -95,21 +97,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     width: '100%',
   },
-  title: {
-    fontSize: 48,
+  titleContainer: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  titleSmall: {
+    fontSize: 32,
+    fontWeight: 'normal',
+    color: '#4A5565',
+    fontFamily: 'Inter',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  titleLarge: {
+    fontSize: 56,
     fontWeight: 'bold',
     color: '#1E2939',
-    marginBottom: 4,
     fontFamily: 'Inter',
     textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 24,
-    color: '#2B7FFF',
-    marginBottom: 16,
-    fontFamily: 'Inter',
-    textAlign: 'center',
-    fontWeight: '500',
   },
   highScoresButton: {
     flexDirection: 'row',
