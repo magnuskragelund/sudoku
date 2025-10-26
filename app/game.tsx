@@ -1,8 +1,8 @@
 import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
-import { Clock, Heart, Lightbulb, Pause, Play } from 'lucide-react-native';
+import { Clock, Heart, Lightbulb, Pause, Play, Share2 } from 'lucide-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import NumberPad from '../components/NumberPad';
 import SudokuBoard from '../components/SudokuBoard';
@@ -14,7 +14,8 @@ export default function GameScreen() {
   const { 
     difficulty, 
     status, 
-    lives, 
+    lives,
+    initialLives, 
     timeElapsed, 
     selectedCell,
     hintUsed,
@@ -22,7 +23,8 @@ export default function GameScreen() {
     resumeGame,
     newGame,
     startPlaying,
-    useHint 
+    useHint,
+    exportGame
   } = useGame();
 
   const [bestTime, setBestTime] = useState<number | null>(null);
@@ -138,6 +140,25 @@ export default function GameScreen() {
                 <Text style={styles.statusSubtitle}>
                   Lives: {lives}
                 </Text>
+                <TouchableOpacity 
+                  style={styles.shareButton} 
+                  onPress={async () => {
+                    const gameData = exportGame();
+                    if (gameData) {
+                      try {
+                        await Share.share({
+                          message: gameData,
+                          title: 'Share Sudoku Puzzle',
+                        });
+                      } catch (error) {
+                        console.error('Error sharing:', error);
+                      }
+                    }
+                  }}
+                >
+                  <Share2 size={20} color="#6B7280" />
+                  <Text style={styles.shareButtonText}>Share Puzzle</Text>
+                </TouchableOpacity>
                 <TouchableOpacity style={styles.statusButton} onPress={startPlaying}>
                   <Text style={styles.statusButtonText}>Start Game</Text>
                 </TouchableOpacity>
@@ -316,9 +337,28 @@ const styles = StyleSheet.create({
   statusSubtitle: {
     fontSize: 16,
     color: '#4A5565',
-    marginBottom: 24,
+    marginBottom: 8,
     textAlign: 'center',
     fontFamily: 'Inter',
+  },
+  shareButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+    marginBottom: 12,
+    width: '100%',
+  },
+  shareButtonText: {
+    fontSize: 16,
+    color: '#374151',
+    fontWeight: '500',
   },
   statusButton: {
     backgroundColor: '#2B7FFF',

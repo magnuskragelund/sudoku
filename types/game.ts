@@ -30,6 +30,15 @@ export interface HighScoreData {
   bestTimes: Record<string, number>;
 }
 
+export interface SerializableGameState {
+  difficulty: Difficulty;
+  lives: number;
+  board: number[][];
+  solution: number[][];
+  initialBoard: number[][];
+  notes: Record<string, number[]>; // Serialized from Map<string, Set<number>>
+}
+
 export interface GameActions {
   startGame: (difficulty: Difficulty, lives?: number) => void;
   startPlaying: () => void;
@@ -44,6 +53,8 @@ export interface GameActions {
   resetGame: () => void;
   clearWrongCell: () => void;
   useHint: () => void;
+  loadGame: (serializedState: SerializableGameState) => void;
+  exportGame: () => string | null;
 }
 
 export const DIFFICULTY_LIVES: Record<Difficulty, number> = {

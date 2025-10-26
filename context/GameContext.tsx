@@ -1,6 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import React, { createContext, useContext, useEffect, useReducer } from 'react';
-import { Difficulty, DIFFICULTY_LIVES, GameActions, GameResult, GameState } from '../types/game';
+import { Difficulty, DIFFICULTY_LIVES, GameActions, GameResult, GameState, SerializableGameState } from '../types/game';
+import { serializeGameState } from '../utils/gameSerializer';
 import { saveGameResult } from '../utils/highScoreStorage';
 import { generatePuzzle } from '../utils/sudokuGenerator';
 import { copyBoard } from '../utils/sudokuRules';
@@ -20,7 +21,8 @@ type GameAction =
   | { type: 'TICK' }
   | { type: 'LOSE_LIFE' }
   | { type: 'CLEAR_WRONG_CELL' }
-  | { type: 'USE_HINT' };
+  | { type: 'USE_HINT' }
+  | { type: 'LOAD_GAME'; state: SerializableGameState };
 
 const initialState: GameState = {
   difficulty: 'medium',
@@ -54,6 +56,22 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         solution: solution.map(row => [...row]),
         initialBoard: puzzle.map(row => [...row]),
         timeElapsed: 0,
+      };
+
+    case 'LOAD_GAME':
+      return {
+        ...initialState,
+        difficulty: action.state.difficulty,
+        status: 'ready',
+        lives: action.state.lives,
+        initialLives: action.state.lives,
+        board: action.state.board.map(row => [...row]),
+        solution: action.state.solution.map(row => [...row]),
+        initialBoard: action.state.initialBoard.map(row => [...row]),
+        timeElapsed: 0,
+        notes: new Map(
+          Object.entries(action.state.notes).map(([key, arr]) => [key, new Set(arr)])
+        ),
       };
 
     case 'START_PLAYING':
@@ -282,6 +300,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     resetGame: () => dispatch({ type: 'RESET_GAME' }),
     clearWrongCell: () => dispatch({ type: 'CLEAR_WRONG_CELL' }),
     useHint: () => dispatch({ type: 'USE_HINT' }),
+    loadGame: (state: SerializableGameState) => dispatch({ type: 'LOAD_GAME', state }),
+    exportGame: () => {
+      // Only export if game hasn't started playing
+      if (state.status === 'ready') {
+        return serializeGameState(state);
+      }
+      return null;
+    },
   };
 
   return (
