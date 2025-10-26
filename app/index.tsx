@@ -1,8 +1,8 @@
 import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
-import { Download, Share2, Star, Trophy } from 'lucide-react-native';
+import { Download, Star, Trophy } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { Alert, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGame } from '../context/GameContext';
 import { Difficulty } from '../types/game';
@@ -10,37 +10,13 @@ import { deserializeGameState, validateGameState } from '../utils/gameSerializer
 
 export default function WelcomeScreen() {
   const router = useRouter();
-  const { startGame, exportGame, loadGame } = useGame();
+  const { startGame, loadGame } = useGame();
   const [selectedLives, setSelectedLives] = useState(5);
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | null>(null);
 
   const handleStartGame = (difficulty: Difficulty) => {
     startGame(difficulty, selectedLives);
     router.push('/game');
-  };
-
-  const handleSharePuzzle = async () => {
-    // Set difficulty for sharing
-    const difficulty = selectedDifficulty || 'medium';
-    
-    // Generate a new game first if none exists
-    if (!exportGame()) {
-      startGame(difficulty, selectedLives);
-      // Wait a tick for state to update
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-    
-    const gameData = exportGame();
-    if (gameData) {
-      try {
-        await Share.share({
-          message: gameData,
-          title: 'Share Sudoku Puzzle',
-        });
-      } catch (error) {
-        console.error('Error sharing:', error);
-      }
-    }
   };
 
   const handleImportPuzzle = async () => {
@@ -95,14 +71,6 @@ export default function WelcomeScreen() {
         >
           <Trophy size={20} color="#2B7FFF" />
           <Text style={styles.highScoresButtonText}>View High Scores</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={styles.shareButton}
-          onPress={handleSharePuzzle}
-        >
-          <Share2 size={20} color="#6B7280" />
-          <Text style={styles.shareButtonText}>Share Puzzle</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -208,25 +176,6 @@ const styles = StyleSheet.create({
     color: '#2B7FFF',
     fontFamily: 'Inter',
   },
-  shareButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
-    marginBottom: 12,
-    width: '90%',
-  },
-  shareButtonText: {
-    fontSize: 16,
-    color: '#374151',
-    fontWeight: '500',
-  },
   importButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -238,7 +187,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
     backgroundColor: '#FFFFFF',
-    marginBottom: 24,
+    marginBottom: 32,
     width: '90%',
   },
   importButtonText: {
