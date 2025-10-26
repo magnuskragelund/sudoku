@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
   cell: {
     width: '11.11%', // 100% / 9 cells
     aspectRatio: 1, // Maintain square cells
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: '#D1D5DC',
     position: 'relative',
   },
@@ -184,10 +184,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#BEDBFF',
   },
   rowColumnHighlight: {
-    backgroundColor: '#E5E7EB',
+    backgroundColor: '#F3F4F6',
   },
   boxHighlight: {
-    backgroundColor: '#E5E7EB',
+    backgroundColor: '#F3F4F6',
   },
   sameValueHighlight: {
     backgroundColor: '#BEDBFF', // Same blue as selected cell
