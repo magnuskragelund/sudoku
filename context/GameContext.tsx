@@ -207,6 +207,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       return {
         ...initialState,
         difficulty: state.difficulty,
+        timeElapsed: 0,
       };
 
     case 'RESET_GAME':
@@ -278,12 +279,19 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   // Timer effect
   useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    
     if (state.status === 'playing') {
-      const interval = setInterval(() => {
+      interval = setInterval(() => {
         dispatch({ type: 'TICK' });
       }, 1000);
-      return () => clearInterval(interval);
     }
+    
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
   }, [state.status]);
 
   const actions: GameActions = {
