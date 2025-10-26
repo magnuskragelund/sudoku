@@ -2,6 +2,7 @@ import * as Haptics from 'expo-haptics';
 import React, { createContext, useContext, useEffect, useReducer } from 'react';
 import { Difficulty, DIFFICULTY_LIVES, GameActions, GameState } from '../types/game';
 import { generatePuzzle } from '../utils/sudokuGenerator';
+import { copyBoard } from '../utils/sudokuRules';
 
 type GameAction =
   | { type: 'START_GAME'; difficulty: Difficulty; lives?: number }
@@ -83,7 +84,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       
       if (isCorrect) {
         // Only create new board if the move is correct
-        const newBoard = state.board.map(r => [...r]);
+        const newBoard = copyBoard(state.board);
         newBoard[row][col] = action.number;
         
         // Trigger subtle haptic feedback for correct placement
@@ -105,10 +106,12 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         // Wrong number - any wrong guess loses a life
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         
+        const newLives = Math.max(0, state.lives - 1); // Prevent lives from going below zero
+        
         return {
           ...state,
-          lives: state.lives - 1,
-          status: state.lives - 1 <= 0 ? 'lost' : state.status,
+          lives: newLives,
+          status: newLives === 0 ? 'lost' : state.status,
           wrongCell: { row, col },
         };
       }
@@ -117,7 +120,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       if (!state.selectedCell) return state;
       
       const { row: clearRow, col: clearCol } = state.selectedCell;
-      const clearedBoard = state.board.map(r => [...r]);
+      const clearedBoard = copyBoard(state.board);
       clearedBoard[clearRow][clearCol] = 0;
       
       return {
@@ -169,7 +172,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     case 'RESET_GAME':
       return {
         ...state,
-        board: state.initialBoard.map(row => [...row]),
+        board: copyBoard(state.initialBoard),
         lives: DIFFICULTY_LIVES[state.difficulty],
         status: 'playing',
         timeElapsed: 0,
@@ -187,11 +190,11 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       return state;
 
     case 'LOSE_LIFE':
-      const updatedLives = state.lives - 1;
+      const updatedLives = Math.max(0, state.lives - 1); // Prevent lives from going below zero
       return {
         ...state,
         lives: updatedLives,
-        status: updatedLives <= 0 ? 'lost' : state.status,
+        status: updatedLives === 0 ? 'lost' : state.status,
       };
 
     case 'CLEAR_WRONG_CELL':

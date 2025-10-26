@@ -3,6 +3,8 @@
  * Provides validation functions for Sudoku gameplay rules
  */
 
+import { checkSudokuRules, isCellOccupied } from './sudokuRules';
+
 /**
  * Check if placing a number at a specific position violates Sudoku rules
  * @param board - The current Sudoku board
@@ -12,42 +14,11 @@
  * @returns true if the move is valid, false if it violates rules
  */
 export function isValidMove(board: number[][], row: number, col: number, num: number): boolean {
-  // Check if number is in valid range
-  if (num < 1 || num > 9) return false;
-
-  // Check if position is within bounds
-  if (row < 0 || row >= 9 || col < 0 || col >= 9) return false;
-
   // Check if cell is already occupied
-  if (board[row][col] !== 0) return false;
+  if (isCellOccupied(board, row, col)) return false;
 
-  // Check row for duplicates
-  for (let x = 0; x < 9; x++) {
-    if (x !== col && board[row][x] === num) return false;
-  }
-
-  // Check column for duplicates
-  for (let x = 0; x < 9; x++) {
-    if (x !== row && board[x][col] === num) return false;
-  }
-
-  // Check 3x3 box for duplicates
-  const startRow = Math.floor(row / 3) * 3;
-  const startCol = Math.floor(col / 3) * 3;
-  
-  for (let i = 0; i < 3; i++) {
-    for (let j = 0; j < 3; j++) {
-      const checkRow = startRow + i;
-      const checkCol = startCol + j;
-      
-      // Skip the current cell
-      if (checkRow === row && checkCol === col) continue;
-      
-      if (board[checkRow][checkCol] === num) return false;
-    }
-  }
-
-  return true;
+  // Check Sudoku rules (skip current cell since we're checking if we can place a number)
+  return checkSudokuRules(board, row, col, num, { skipCurrentCell: true });
 }
 
 /**

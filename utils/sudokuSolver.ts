@@ -3,6 +3,8 @@
  * Provides solving and solution counting capabilities for Sudoku puzzles
  */
 
+import { checkSudokuRules } from './sudokuRules';
+
 /**
  * Check if placing a number at a specific position is valid according to Sudoku rules
  * @param board - The current Sudoku board
@@ -12,30 +14,7 @@
  * @returns true if the placement is valid, false otherwise
  */
 export function isValid(board: number[][], row: number, col: number, num: number): boolean {
-  // Check if number is in valid range
-  if (num < 1 || num > 9) return false;
-
-  // Check row for duplicates
-  for (let x = 0; x < 9; x++) {
-    if (board[row][x] === num) return false;
-  }
-
-  // Check column for duplicates
-  for (let x = 0; x < 9; x++) {
-    if (board[x][col] === num) return false;
-  }
-
-  // Check 3x3 box for duplicates
-  const startRow = Math.floor(row / 3) * 3;
-  const startCol = Math.floor(col / 3) * 3;
-  
-  for (let i = 0; i < 3; i++) {
-    for (let j = 0; j < 3; j++) {
-      if (board[startRow + i][startCol + j] === num) return false;
-    }
-  }
-
-  return true;
+  return checkSudokuRules(board, row, col, num, { skipCurrentCell: false });
 }
 
 /**

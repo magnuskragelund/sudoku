@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { Clock, Heart, Lightbulb, StickyNote, Undo2 } from 'lucide-react-native';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import NumberPad from '../components/NumberPad';
@@ -26,6 +26,13 @@ export default function GameScreen() {
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
+
+  // Determine heart color based on lives
+  const heartColor = useMemo(() => {
+    if (lives === 1) return '#FB2C36'; // Red
+    if (lives === 2 || lives === 3) return '#FF8C00'; // Orange
+    return '#4A5565'; // Grey
+  }, [lives]);
 
   const handleNewGame = () => {
     newGame();
@@ -56,8 +63,8 @@ export default function GameScreen() {
       {/* Stats Bar */}
       <View style={styles.statsBar}>
         <View style={styles.mistakesContainer}>
-          <Heart size={16} color="#FB2C36" />
-          <Text style={styles.mistakesText}>{lives}</Text>
+          <Heart size={16} color={heartColor} fill={heartColor} />
+          <Text style={[styles.mistakesText, { color: heartColor }]}>{lives}</Text>
         </View>
         
         <View style={styles.actionsContainer}>
@@ -193,7 +200,6 @@ const styles = StyleSheet.create({
   },
   mistakesText: {
     fontSize: 16,
-    color: '#FB2C36',
     fontWeight: '600',
     fontFamily: 'Inter',
   },
