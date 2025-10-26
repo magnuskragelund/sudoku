@@ -43,9 +43,7 @@ export default function SudokuBoard() {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#F9FAFB',
-    borderWidth: 2,
-    borderColor: '#1E2939',
-    padding: 2,
+    padding: 0,
     width: '100%', // Ensure board takes full available width
     aspectRatio: 1, // Maintain square shape
   },

@@ -203,7 +203,7 @@ export default function GameScreen() {
                   <Text style={styles.statusButtonText}>Resume</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.quitButton} onPress={handleNewGame}>
-                  <Text style={styles.quitButtonText}>New Game</Text>
+                  <Text style={styles.quitButtonText}>End Current Game</Text>
                 </TouchableOpacity>
               </>
             )}

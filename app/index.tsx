@@ -2,7 +2,7 @@ import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
 import { Download, Star, Trophy } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGame } from '../context/GameContext';
 import { Difficulty } from '../types/game';
@@ -13,10 +13,19 @@ export default function WelcomeScreen() {
   const { startGame, loadGame } = useGame();
   const [selectedLives, setSelectedLives] = useState(5);
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | null>(null);
+  const [isStartingGame, setIsStartingGame] = useState(false);
 
   const handleStartGame = (difficulty: Difficulty) => {
+    if (isStartingGame) return; // Prevent multiple presses
+    
+    setIsStartingGame(true);
     startGame(difficulty, selectedLives);
-    router.push('/game');
+    
+    // Navigate after a short delay to ensure state is set
+    setTimeout(() => {
+      router.push('/game');
+      setIsStartingGame(false);
+    }, 100);
   };
 
   const handleImportPuzzle = async () => {
@@ -59,7 +68,12 @@ export default function WelcomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.titleContainer}>
           <Text style={styles.titleSmall}>That's</Text>
           <Text style={styles.titleLarge}>Sudoku</Text>
@@ -101,18 +115,17 @@ export default function WelcomeScreen() {
             </TouchableOpacity>
           ))}
         </View>
-        
-        <Text style={styles.difficultyLabel}>Choose your difficulty</Text>
-        
+
         <View style={styles.difficultyContainer}>
           {difficulties.map((difficulty) => (
             <TouchableOpacity
               key={difficulty.value}
-              style={styles.difficultyButton}
+              style={[styles.difficultyButton, isStartingGame && styles.difficultyButtonDisabled]}
               onPress={() => {
                 setSelectedDifficulty(difficulty.value);
                 handleStartGame(difficulty.value);
               }}
+              disabled={isStartingGame}
             >
               <Text style={styles.difficultyText}>{difficulty.label}</Text>
               <View style={styles.starsContainer}>
@@ -123,7 +136,7 @@ export default function WelcomeScreen() {
             </TouchableOpacity>
           ))}
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -132,28 +145,27 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
-  content: {
+  scrollContent: {
     alignItems: 'center',
     paddingHorizontal: 24,
-    width: '100%',
+    paddingVertical: 60,
+    paddingBottom: 80,
   },
   titleContainer: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 24,
   },
   titleSmall: {
-    fontSize: 32,
+    fontSize: 18,
     fontWeight: 'normal',
     color: '#4A5565',
     fontFamily: 'Inter',
     textAlign: 'center',
-    marginBottom: 4,
+    marginBottom: 0,
   },
   titleLarge: {
-    fontSize: 56,
+    fontSize: 42,
     fontWeight: 'bold',
     color: '#1E2939',
     fontFamily: 'Inter',
@@ -167,7 +179,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     borderRadius: 8,
     backgroundColor: '#F0F5FF',
-    marginBottom: 32,
+    marginBottom: 20,
     gap: 8,
   },
   highScoresButtonText: {
@@ -187,7 +199,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
     backgroundColor: '#FFFFFF',
-    marginBottom: 32,
+    marginBottom: 20,
     width: '90%',
   },
   importButtonText: {
@@ -196,9 +208,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   livesLabel: {
-    fontSize: 18,
+    fontSize: 16,
     color: '#4A5565',
-    marginBottom: 16,
+    marginBottom: 12,
     fontFamily: 'Inter',
     textAlign: 'center',
   },
@@ -206,7 +218,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    marginBottom: 32,
+    marginBottom: 20,
     gap: 8,
   },
   livesButton: {
@@ -233,29 +245,34 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   difficultyLabel: {
-    fontSize: 18,
+    fontSize: 16,
     color: '#4A5565',
-    marginBottom: 48,
+    marginBottom: 20,
     fontFamily: 'Inter',
     textAlign: 'center',
   },
   difficultyContainer: {
     width: '90%',
+    maxWidth: 400,
   },
   difficultyButton: {
     backgroundColor: '#2B7FFF',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
     borderRadius: 4,
-    marginBottom: 12,
+    marginBottom: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    minHeight: 60,
+    minHeight: 56,
+  },
+  difficultyButtonDisabled: {
+    backgroundColor: '#9CA3AF',
+    opacity: 0.6,
   },
   difficultyText: {
     color: 'white',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     fontFamily: 'Inter',
     textAlign: 'left',
