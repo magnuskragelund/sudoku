@@ -11,7 +11,7 @@ interface SudokuCellProps {
   onSelect: () => void;
 }
 
-export default function SudokuCell({ row, col, value, isSelected, selectedCell, onSelect }: SudokuCellProps) {
+function SudokuCell({ row, col, value, isSelected, selectedCell, onSelect }: SudokuCellProps) {
   const { initialBoard, notes, wrongCell, clearWrongCell, board, solution } = useGame();
   
   const isInitial = initialBoard[row][col] !== 0;
@@ -30,6 +30,8 @@ export default function SudokuCell({ row, col, value, isSelected, selectedCell, 
   useEffect(() => {
     if (isWrongCell) {
       // Error color flash
+      let timeoutId: NodeJS.Timeout | null = null;
+      
       Animated.sequence([
         Animated.timing(errorAnimation, {
           toValue: 1,
@@ -43,8 +45,14 @@ export default function SudokuCell({ row, col, value, isSelected, selectedCell, 
         }),
       ]).start(() => {
         // Clear the wrong cell after animation
-        setTimeout(() => clearWrongCell(), 100);
+        timeoutId = setTimeout(() => clearWrongCell(), 100);
       });
+
+      return () => {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+      };
     }
   }, [isWrongCell, errorAnimation, clearWrongCell]);
 
@@ -219,3 +227,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+
+export default React.memo(SudokuCell);

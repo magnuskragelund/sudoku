@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useGame } from '../context/GameContext';
 
-export default function NumberPad() {
+function NumberPad() {
   const { placeNumber, selectedCell, initialBoard, board, solution } = useGame();
 
   const handleNumberPress = (number: number) => {
@@ -18,35 +18,43 @@ export default function NumberPad() {
   };
 
   // Check if cell is editable (not initial clue and not correctly filled)
-  const isSelectedCellEditable = selectedCell && 
-    initialBoard[selectedCell.row][selectedCell.col] === 0 &&
-    board[selectedCell.row][selectedCell.col] !== solution[selectedCell.row][selectedCell.col];
+  const isSelectedCellEditable = React.useMemo(() => {
+    if (!selectedCell) return false;
+    return initialBoard[selectedCell.row][selectedCell.col] === 0 &&
+           board[selectedCell.row][selectedCell.col] !== solution[selectedCell.row][selectedCell.col];
+  }, [selectedCell, initialBoard, board, solution]);
 
   // Check if all cells with a specific number have been filled by the user
-  const isNumberComplete = (number: number): boolean => {
-    // Count how many times this number appears in the solution that were NOT initial clues
-    let userRequiredCount = 0;
-    let userFilledCount = 0;
+  const numberCompletionMap = React.useMemo(() => {
+    const map: Record<number, boolean> = {};
     
-    for (let row = 0; row < 9; row++) {
-      for (let col = 0; col < 9; col++) {
-        if (solution[row][col] === number) {
-          // This cell should contain this number in the solution
-          if (initialBoard[row][col] === 0) {
-            // This cell was empty initially, so user needs to fill it
-            userRequiredCount++;
-            if (board[row][col] === number) {
-              // User has filled this cell with the correct number
-              userFilledCount++;
+    for (let num = 1; num <= 9; num++) {
+      // Count how many times this number appears in the solution that were NOT initial clues
+      let userRequiredCount = 0;
+      let userFilledCount = 0;
+      
+      for (let row = 0; row < 9; row++) {
+        for (let col = 0; col < 9; col++) {
+          if (solution[row][col] === num) {
+            // This cell should contain this number in the solution
+            if (initialBoard[row][col] === 0) {
+              // This cell was empty initially, so user needs to fill it
+              userRequiredCount++;
+              if (board[row][col] === num) {
+                // User has filled this cell with the correct number
+                userFilledCount++;
+              }
             }
           }
         }
       }
+      
+      // Number is complete if all required user-filled instances are complete
+      map[num] = userRequiredCount > 0 && userFilledCount === userRequiredCount;
     }
     
-    // Number is complete if all required user-filled instances are complete
-    return userRequiredCount > 0 && userFilledCount === userRequiredCount;
-  };
+    return map;
+  }, [initialBoard, board, solution]);
 
   return (
     <View style={styles.container}>
@@ -54,7 +62,7 @@ export default function NumberPad() {
       <View style={styles.numberRow}>
         {Array.from({ length: 9 }, (_, i) => {
           const number = i + 1;
-          const isComplete = isNumberComplete(number);
+          const isComplete = numberCompletionMap[number];
           
           // Hide the button if the number is complete
           if (isComplete) {
@@ -119,3 +127,5 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter',
   },
 });
+
+export default React.memo(NumberPad);

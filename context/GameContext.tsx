@@ -294,7 +294,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     };
   }, [state.status]);
 
-  const actions: GameActions = {
+  // Memoize actions to prevent unnecessary re-renders
+  const actions: GameActions = React.useMemo(() => ({
     startGame: (difficulty: Difficulty, lives?: number) => dispatch({ type: 'START_GAME', difficulty, lives }),
     startPlaying: () => dispatch({ type: 'START_PLAYING' }),
     pauseGame: () => dispatch({ type: 'PAUSE_GAME' }),
@@ -308,7 +309,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     resetGame: () => dispatch({ type: 'RESET_GAME' }),
     clearWrongCell: () => dispatch({ type: 'CLEAR_WRONG_CELL' }),
     useHint: () => dispatch({ type: 'USE_HINT' }),
-    loadGame: (state: SerializableGameState) => dispatch({ type: 'LOAD_GAME', state }),
+    loadGame: (loadedState: SerializableGameState) => dispatch({ type: 'LOAD_GAME', state: loadedState }),
     exportGame: () => {
       // Only export if game hasn't started playing
       if (state.status === 'ready') {
@@ -316,10 +317,16 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       }
       return null;
     },
-  };
+  }), [state.status]);
+
+  // Memoize context value to prevent unnecessary re-renders of consumers
+  const value = React.useMemo(() => ({
+    ...state,
+    ...actions,
+  }), [state, actions]);
 
   return (
-    <GameContext.Provider value={{ ...state, ...actions }}>
+    <GameContext.Provider value={value}>
       {children}
     </GameContext.Provider>
   );
