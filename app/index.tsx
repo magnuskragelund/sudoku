@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { Star } from 'lucide-react-native';
+import { Star, Trophy } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -23,13 +23,21 @@ export default function WelcomeScreen() {
     { label: 'Master', value: 'master', stars: 4 },
   ];
 
-  const livesOptions = [0, 1, 2, 3, 4, 5];
+  const livesOptions = [1, 2, 3, 4, 5];
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <Text style={styles.title}>Sudoku</Text>
         <Text style={styles.subtitle}>With Friends</Text>
+        
+        <TouchableOpacity 
+          style={styles.highScoresButton}
+          onPress={() => router.push('/highscores')}
+        >
+          <Trophy size={20} color="#2B7FFF" />
+          <Text style={styles.highScoresButtonText}>View High Scores</Text>
+        </TouchableOpacity>
         
         <Text style={styles.livesLabel}>Number of Lives</Text>
         <View style={styles.livesContainer}>
@@ -98,10 +106,27 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 24,
     color: '#2B7FFF',
-    marginBottom: 32,
+    marginBottom: 16,
     fontFamily: 'Inter',
     textAlign: 'center',
     fontWeight: '500',
+  },
+  highScoresButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    backgroundColor: '#F0F5FF',
+    marginBottom: 32,
+    gap: 8,
+  },
+  highScoresButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2B7FFF',
+    fontFamily: 'Inter',
   },
   livesLabel: {
     fontSize: 18,

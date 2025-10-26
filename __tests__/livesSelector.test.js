@@ -1,16 +1,19 @@
 // Test lives selector functionality
 describe('Lives Selector Tests', () => {
-  it('should provide lives options from 0 to 5', () => {
-    const livesOptions = [0, 1, 2, 3, 4, 5];
+  it('should provide lives options from 1 to 5', () => {
+    const livesOptions = [1, 2, 3, 4, 5];
     
-    expect(livesOptions).toHaveLength(6);
-    expect(livesOptions[0]).toBe(0);
-    expect(livesOptions[5]).toBe(5);
+    expect(livesOptions).toHaveLength(5);
+    expect(livesOptions[0]).toBe(1);
+    expect(livesOptions[4]).toBe(5);
     
     // Check all numbers are present
-    for (let i = 0; i <= 5; i++) {
+    for (let i = 1; i <= 5; i++) {
       expect(livesOptions).toContain(i);
     }
+    
+    // Verify 0 is not in the options
+    expect(livesOptions).not.toContain(0);
   });
 
   it('should handle lives selection state', () => {
@@ -35,11 +38,11 @@ describe('Lives Selector Tests', () => {
   });
 
   it('should validate lives selection range', () => {
-    const livesOptions = [0, 1, 2, 3, 4, 5];
+    const livesOptions = [1, 2, 3, 4, 5];
     
-    // Test valid selections
+    // Test valid selections (minimum is 1)
     livesOptions.forEach(lives => {
-      expect(lives).toBeGreaterThanOrEqual(0);
+      expect(lives).toBeGreaterThanOrEqual(1);
       expect(lives).toBeLessThanOrEqual(5);
       expect(Number.isInteger(lives)).toBe(true);
     });
@@ -61,8 +64,8 @@ describe('Lives Selector Tests', () => {
     const game2 = startGame('hard', 1);
     expect(game2.lives).toBe(1);
 
-    const game3 = startGame('master', 0);
-    expect(game3.lives).toBe(0);
+    const game3 = startGame('master', 1);
+    expect(game3.lives).toBe(1);
   });
 
   it('should maintain UI state consistency', () => {

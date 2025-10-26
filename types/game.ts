@@ -5,6 +5,7 @@ export interface GameState {
   difficulty: Difficulty;
   status: GameStatus;
   lives: number;
+  initialLives: number;
   timeElapsed: number;
   board: number[][];
   solution: number[][];
@@ -12,6 +13,20 @@ export interface GameState {
   selectedCell: { row: number; col: number } | null;
   notes: Map<string, Set<number>>;
   wrongCell: { row: number; col: number } | null;
+}
+
+export interface GameResult {
+  id: string;
+  difficulty: Difficulty;
+  lives: number;
+  completionTime: number;
+  timestamp: number;
+  won: boolean;
+}
+
+export interface HighScoreData {
+  results: GameResult[];
+  bestTimes: Record<string, number>;
 }
 
 export interface GameActions {

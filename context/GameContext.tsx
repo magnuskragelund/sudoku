@@ -1,6 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import React, { createContext, useContext, useEffect, useReducer } from 'react';
-import { Difficulty, DIFFICULTY_LIVES, GameActions, GameState } from '../types/game';
+import { Difficulty, DIFFICULTY_LIVES, GameActions, GameResult, GameState } from '../types/game';
+import { saveGameResult } from '../utils/highScoreStorage';
 import { generatePuzzle } from '../utils/sudokuGenerator';
 import { copyBoard } from '../utils/sudokuRules';
 
@@ -24,6 +25,7 @@ const initialState: GameState = {
   difficulty: 'medium',
   status: 'paused',
   lives: 3,
+  initialLives: 3,
   timeElapsed: 0,
   board: Array(9).fill(null).map(() => Array(9).fill(0)),
   solution: Array(9).fill(null).map(() => Array(9).fill(0)),
@@ -38,12 +40,14 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     case 'START_GAME':
       // Generate a new puzzle with guaranteed unique solution
       const { puzzle, solution } = generatePuzzle(action.difficulty);
+      const initialLivesValue = action.lives ?? 5;
       
       return {
         ...initialState,
         difficulty: action.difficulty,
         status: 'ready',
-        lives: action.lives ?? 5, // Use provided lives or default to 5
+        lives: initialLivesValue,
+        initialLives: initialLivesValue,
         board: puzzle.map(row => [...row]),
         solution: solution.map(row => [...row]),
         initialBoard: puzzle.map(row => [...row]),
@@ -96,6 +100,19 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         );
         const finalStatus = isComplete ? 'won' : state.status;
 
+        // Save game result if completed
+        if (isComplete) {
+          const gameResult: GameResult = {
+            id: Date.now().toString(),
+            difficulty: state.difficulty,
+            lives: state.initialLives,
+            completionTime: state.timeElapsed,
+            timestamp: Date.now(),
+            won: true,
+          };
+          saveGameResult(gameResult); // Fire and forget
+        }
+
         return {
           ...state,
           board: newBoard,
@@ -107,6 +124,9 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         
         const newLives = Math.max(0, state.lives - 1); // Prevent lives from going below zero
+        
+        // Don't save lost games to high scores
+        // Only won games are tracked in high scores
         
         return {
           ...state,

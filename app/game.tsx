@@ -1,12 +1,13 @@
 import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
 import { Clock, Heart, Lightbulb, Pause, Play, StickyNote } from 'lucide-react-native';
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import NumberPad from '../components/NumberPad';
 import SudokuBoard from '../components/SudokuBoard';
 import { useGame } from '../context/GameContext';
+import { getBestTime } from '../utils/highScoreStorage';
 
 export default function GameScreen() {
   const router = useRouter();
@@ -21,6 +22,19 @@ export default function GameScreen() {
     newGame,
     startPlaying 
   } = useGame();
+
+  const [bestTime, setBestTime] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (status === 'won' || status === 'lost') {
+      loadBestTime();
+    }
+  }, [status, difficulty, lives]);
+
+  const loadBestTime = async () => {
+    const best = await getBestTime(difficulty, lives);
+    setBestTime(best);
+  };
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -60,6 +74,11 @@ export default function GameScreen() {
           <Text style={styles.newGameText}>New Game</Text>
         </TouchableOpacity>
         
+        <View style={styles.timerContainer}>
+          <Clock size={14} color="#4A5565" />
+          <Text style={styles.timerTextHeader}>{formatTime(timeElapsed)}</Text>
+        </View>
+        
         <View style={styles.difficultyContainer}>
           <Text style={styles.difficultyText}>{difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}</Text>
         </View>
@@ -94,12 +113,6 @@ export default function GameScreen() {
         <SudokuBoard />
       </View>
 
-      {/* Timer */}
-      <View style={styles.timerContainer}>
-        <Clock size={16} color="#4A5565" />
-        <Text style={styles.timerText}>{formatTime(timeElapsed)}</Text>
-      </View>
-
       {/* Number Pad */}
       <View style={styles.numberPadContainer}>
         <NumberPad />
@@ -129,6 +142,17 @@ export default function GameScreen() {
               <>
                 <Text style={styles.statusTitle}>Congratulations!</Text>
                 <Text style={styles.statusSubtitle}>You solved the puzzle!</Text>
+                <Text style={styles.completionTime}>
+                  Time: {formatTime(timeElapsed)}
+                </Text>
+                {bestTime !== null && timeElapsed < bestTime && (
+                  <Text style={styles.newRecord}>🎉 New Record!</Text>
+                )}
+                {bestTime !== null && (
+                  <Text style={styles.bestTime}>
+                    Best: {formatTime(bestTime)}
+                  </Text>
+                )}
                 <TouchableOpacity style={styles.statusButton} onPress={handleNewGame}>
                   <Text style={styles.statusButtonText}>New Game</Text>
                 </TouchableOpacity>
@@ -196,6 +220,16 @@ const styles = StyleSheet.create({
     color: '#1E2939',
     fontFamily: 'Inter',
   },
+  timerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  timerTextHeader: {
+    fontSize: 14,
+    color: '#4A5565',
+    fontFamily: 'Inter',
+  },
   statsBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -233,22 +267,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 24,
   },
-  timerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#D1D5DC',
-  },
-  timerText: {
-    fontSize: 16,
-    color: '#4A5565',
-    fontFamily: 'Inter',
-  },
   numberPadContainer: {
     paddingHorizontal: 24,
+    paddingTop: 8,
     paddingBottom: 24,
   },
   overlay: {
@@ -320,6 +341,26 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Inter',
+  },
+  completionTime: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1E2939',
+    marginBottom: 8,
+    fontFamily: 'Inter',
+  },
+  newRecord: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#22C55E',
+    marginBottom: 8,
+    fontFamily: 'Inter',
+  },
+  bestTime: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 24,
     fontFamily: 'Inter',
   },
 });
