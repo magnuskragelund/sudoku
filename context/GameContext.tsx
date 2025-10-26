@@ -2,7 +2,6 @@ import * as Haptics from 'expo-haptics';
 import React, { createContext, useContext, useEffect, useReducer } from 'react';
 import { Difficulty, DIFFICULTY_LIVES, GameActions, GameState } from '../types/game';
 import { generatePuzzle } from '../utils/sudokuGenerator';
-import { isValidMove } from '../utils/sudokuValidator';
 
 type GameAction =
   | { type: 'START_GAME'; difficulty: Difficulty; lives?: number }
@@ -79,17 +78,6 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       
       const { row, col } = state.selectedCell;
       
-      // First check if move is valid by Sudoku rules
-      if (!isValidMove(state.board, row, col, action.number)) {
-        // Invalid move - show feedback but don't lose life
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-        
-        return {
-          ...state,
-          wrongCell: { row, col },
-        };
-      }
-      
       // Check if the move is correct (matches the solution)
       const isCorrect = action.number === state.solution[row][col];
       
@@ -114,7 +102,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
           selectedCell: { row, col }, // Keep cell selected
         };
       } else {
-        // Wrong number - trigger haptic feedback and don't place the number
+        // Wrong number - any wrong guess loses a life
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         
         return {

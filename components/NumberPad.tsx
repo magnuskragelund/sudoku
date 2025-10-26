@@ -8,14 +8,19 @@ export default function NumberPad() {
   const handleNumberPress = (number: number) => {
     if (selectedCell) {
       const { row, col } = selectedCell;
-      // Only allow placing numbers in non-initial cells
-      if (initialBoard[row][col] === 0) {
+      // Only allow placing numbers in editable cells (not initial and not correctly filled)
+      const isEditable = initialBoard[row][col] === 0 && 
+                        board[row][col] !== solution[row][col];
+      if (isEditable) {
         placeNumber(number);
       }
     }
   };
 
-  const isSelectedCellEditable = selectedCell && initialBoard[selectedCell.row][selectedCell.col] === 0;
+  // Check if cell is editable (not initial clue and not correctly filled)
+  const isSelectedCellEditable = selectedCell && 
+    initialBoard[selectedCell.row][selectedCell.col] === 0 &&
+    board[selectedCell.row][selectedCell.col] !== solution[selectedCell.row][selectedCell.col];
 
   // Check if all cells with a specific number have been filled by the user
   const isNumberComplete = (number: number): boolean => {

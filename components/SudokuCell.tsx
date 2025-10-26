@@ -12,9 +12,12 @@ interface SudokuCellProps {
 }
 
 export default function SudokuCell({ row, col, value, isSelected, selectedCell, onSelect }: SudokuCellProps) {
-  const { initialBoard, notes, wrongCell, clearWrongCell, board } = useGame();
+  const { initialBoard, notes, wrongCell, clearWrongCell, board, solution } = useGame();
   
   const isInitial = initialBoard[row][col] !== 0;
+  // Cell is also "initial-like" if it's been correctly filled by the user
+  const isCorrectlyFilled = board[row][col] !== 0 && board[row][col] === solution[row][col] && !isInitial;
+  const isNonEditable = isInitial || isCorrectlyFilled;
   const noteKey = `${row}-${col}`;
   const cellNotes = notes.get(noteKey) || new Set();
   
@@ -92,22 +95,22 @@ export default function SudokuCell({ row, col, value, isSelected, selectedCell, 
       baseStyle.push(styles.rowColumnHighlight);
     } else if (isInSameBox(selectedCell?.row ?? -1, selectedCell?.col ?? -1)) {
       baseStyle.push(styles.boxHighlight);
-    } else if (isInitial) {
+    } else if (isNonEditable) {
       baseStyle.push(styles.initialCell);
     }
     
     return baseStyle;
-  }, [isSelected, selectedCell, isInitial, row, col, selectedValue]);
+  }, [isSelected, selectedCell, isNonEditable, row, col, selectedValue]);
 
   const textStyle = React.useMemo(() => {
     const baseStyle = [styles.cellText];
-    if (isInitial) {
+    if (isNonEditable) {
       baseStyle.push(styles.initialText);
     } else {
       baseStyle.push(styles.userText);
     }
     return baseStyle;
-  }, [isInitial]);
+  }, [isNonEditable]);
 
   const errorColor = errorAnimation.interpolate({
     inputRange: [0, 1],

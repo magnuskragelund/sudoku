@@ -47,3 +47,6 @@ coverage/
 
 # OS generated files
 Thumbs.db
+
+# Plan files
+*.plan.md
