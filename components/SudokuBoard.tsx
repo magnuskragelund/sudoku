@@ -46,8 +46,11 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#1E2939',
     padding: 2,
+    width: '100%', // Ensure board takes full available width
+    aspectRatio: 1, // Maintain square shape
   },
   row: {
     flexDirection: 'row',
+    flex: 1, // Each row takes equal space
   },
 });

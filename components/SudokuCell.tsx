@@ -149,8 +149,8 @@ export default function SudokuCell({ row, col, value, isSelected, selectedCell, 
 
 const styles = StyleSheet.create({
   cell: {
-    width: 44,
-    height: 44,
+    width: '11.11%', // 100% / 9 cells
+    aspectRatio: 1, // Maintain square cells
     borderWidth: 1,
     borderColor: '#D1D5DC',
     position: 'relative',
