@@ -1,3 +1,23 @@
+# That's Sudoku 🎯
+
+A beautiful, modern Sudoku app with real-time multiplayer support powered by Supabase.
+
+## Features
+
+- 🎮 **Single Player Mode** - Choose your difficulty and number of lives
+- 👥 **Real-time Multiplayer** - Play with friends simultaneously
+- ⏱️ **Timer & High Scores** - Track your best times
+- 📝 **Notes & Hints** - Helper features to guide you
+- 🎨 **Clean UI** - Beautiful, modern interface
+
+## Multiplayer Mode
+
+1. **Host a Game**: Create a game with a unique name and share it with friends
+2. **Join a Game**: Enter the game name to join an existing game
+3. **Synchronized Play**: All players solve the same puzzle together
+4. **Shared Controls**: Any player can pause/resume for everyone
+5. **Winner**: First to complete wins the game
+
 # Welcome to your Expo app 👋
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
@@ -10,7 +30,27 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npm install
    ```
 
-2. Start the app
+2. Configure Supabase (required for multiplayer)
+
+   - Create a free Supabase project at [supabase.com](https://supabase.com)
+   - Go to Project Settings > API
+   - Copy your Project URL and anon/public key
+   - Open `app.json` and add your Supabase credentials:
+     ```json
+     "extra": {
+       "supabaseUrl": "https://your-project.supabase.co",
+       "supabaseAnonKey": "your-anon-key"
+     }
+     ```
+
+3. Set up the database (required for multiplayer)
+
+   - Install Supabase CLI: https://supabase.com/docs/guides/cli
+   - Link your project: `supabase link --project-ref YOUR_PROJECT_REF`
+   - Run the migration: `supabase db push`
+   - Enable Realtime: Go to Dashboard → Database → Replication → Enable for `multiplayer_games`
+
+4. Start the app
 
    ```bash
    npx expo start

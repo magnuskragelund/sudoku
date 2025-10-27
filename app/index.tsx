@@ -1,6 +1,6 @@
 import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
-import { Download, Star, Trophy } from 'lucide-react-native';
+import { Download, Star, Trophy, Users } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -79,24 +79,35 @@ export default function WelcomeScreen() {
           <Text style={styles.titleLarge}>Sudoku</Text>
         </View>
         
-        <TouchableOpacity 
-          style={styles.highScoresButton}
-          onPress={() => router.push('/highscores')}
-        >
-          <Trophy size={20} color="#2B7FFF" />
-          <Text style={styles.highScoresButtonText}>View High Scores</Text>
-        </TouchableOpacity>
+        <View style={styles.secondaryActionsRow}>
+          <TouchableOpacity 
+            style={styles.secondaryButton}
+            onPress={() => router.push('/highscores')}
+          >
+            <Trophy size={18} color="#2B7FFF" />
+            <Text style={styles.secondaryButtonText}>High Scores</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.importButton}
-          onPress={handleImportPuzzle}
-        >
-          <Download size={20} color="#6B7280" />
-          <Text style={styles.importButtonText}>Import from Clipboard</Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={handleImportPuzzle}
+          >
+            <Download size={18} color="#6B7280" />
+            <Text style={styles.secondaryButtonText}>Import</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={() => router.push('/multiplayer')}
+          >
+            <Users size={18} color="#22C55E" />
+            <Text style={styles.secondaryButtonText}>Multiplayer</Text>
+          </TouchableOpacity>
+        </View>
         
-        <Text style={styles.livesLabel}>Number of Lives</Text>
-        <View style={styles.livesContainer}>
+        <View style={styles.livesSection}>
+          <Text style={styles.livesLabel}>Lives</Text>
+          <View style={styles.livesContainer}>
           {livesOptions.map((lives) => (
             <TouchableOpacity
               key={lives}
@@ -114,9 +125,12 @@ export default function WelcomeScreen() {
               </Text>
             </TouchableOpacity>
           ))}
+          </View>
         </View>
 
-        <View style={styles.difficultyContainer}>
+        <View style={styles.heroSection}>
+          <Text style={styles.sectionTitle}>Choose Difficulty</Text>
+          <View style={styles.difficultyContainer}>
           {difficulties.map((difficulty) => (
             <TouchableOpacity
               key={difficulty.value}
@@ -135,6 +149,7 @@ export default function WelcomeScreen() {
               </View>
             </TouchableOpacity>
           ))}
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -154,7 +169,7 @@ const styles = StyleSheet.create({
   },
   titleContainer: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 32,
   },
   titleSmall: {
     fontSize: 18,
@@ -171,46 +186,41 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter',
     textAlign: 'center',
   },
-  highScoresButton: {
+  secondaryActionsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 28,
+    width: '100%',
+    maxWidth: 400,
+  },
+  secondaryButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
     borderRadius: 8,
     backgroundColor: '#F0F5FF',
-    marginBottom: 20,
-    gap: 8,
-  },
-  highScoresButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#2B7FFF',
-    fontFamily: 'Inter',
-  },
-  importButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
-    marginBottom: 20,
-    width: '90%',
   },
-  importButtonText: {
-    fontSize: 16,
-    color: '#374151',
-    fontWeight: '500',
+  secondaryButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#4A5565',
+    fontFamily: 'Inter',
+  },
+  livesSection: {
+    width: '100%',
+    maxWidth: 400,
+    marginBottom: 28,
   },
   livesLabel: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#4A5565',
-    marginBottom: 12,
+    marginBottom: 8,
     fontFamily: 'Inter',
     textAlign: 'center',
   },
@@ -218,8 +228,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    marginBottom: 20,
     gap: 8,
+    marginBottom: 0,
   },
   livesButton: {
     width: 40,
@@ -244,27 +254,31 @@ const styles = StyleSheet.create({
   livesButtonTextSelected: {
     color: 'white',
   },
-  difficultyLabel: {
-    fontSize: 16,
-    color: '#4A5565',
-    marginBottom: 20,
+  heroSection: {
+    width: '100%',
+    maxWidth: 400,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1E2939',
+    marginBottom: 16,
     fontFamily: 'Inter',
     textAlign: 'center',
   },
   difficultyContainer: {
-    width: '90%',
-    maxWidth: 400,
+    width: '100%',
   },
   difficultyButton: {
     backgroundColor: '#2B7FFF',
-    paddingVertical: 14,
+    paddingVertical: 16,
     paddingHorizontal: 20,
-    borderRadius: 4,
-    marginBottom: 10,
+    borderRadius: 8,
+    marginBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    minHeight: 56,
+    minHeight: 60,
   },
   difficultyButtonDisabled: {
     backgroundColor: '#9CA3AF',

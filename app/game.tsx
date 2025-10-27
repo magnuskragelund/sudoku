@@ -1,6 +1,6 @@
 import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
-import { Clock, Heart, Lightbulb, Pause, Play, Share2 } from 'lucide-react-native';
+import { Clock, Heart, Lightbulb, Pause, Play, Share2, Zap } from 'lucide-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,12 +19,16 @@ export default function GameScreen() {
     timeElapsed, 
     selectedCell,
     hintUsed,
+    multiplayer,
+    multiplayerWinner,
     pauseGame,
     resumeGame,
     newGame,
     startPlaying,
     useHint,
-    exportGame
+    devFillSolution,
+    exportGame,
+    dismissWinnerModal
   } = useGame();
 
   const [bestTime, setBestTime] = useState<number | null>(null);
@@ -72,6 +76,15 @@ export default function GameScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Multiplayer Banner */}
+      {multiplayer && (
+        <View style={styles.multiplayerBanner}>
+          <View style={styles.multiplayerBannerContent}>
+            <Text style={styles.multiplayerText}>Multiplayer Game: {multiplayer.channelName}</Text>
+          </View>
+        </View>
+      )}
+
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleNewGame} style={styles.newGameButton}>
@@ -113,6 +126,16 @@ export default function GameScreen() {
               color={hintUsed ? '#9CA3AF' : selectedCell && status === 'playing' ? '#2B7FFF' : '#4A5565'} 
             />
           </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.actionButton} 
+            onPress={devFillSolution}
+            disabled={status !== 'playing'}
+          >
+            <Zap 
+              size={16} 
+              color={status === 'playing' ? '#F59E0B' : '#9CA3AF'} 
+            />
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -126,22 +149,57 @@ export default function GameScreen() {
         <NumberPad />
       </View>
 
+      {/* Multiplayer Winner Modal */}
+      {multiplayerWinner && (
+        <View style={styles.overlay}>
+          <BlurView intensity={40} tint="dark" style={styles.blurBackground}>
+            <View style={styles.statusModal}>
+              <Text style={styles.statusTitle}>🎉 Someone Won!</Text>
+              <Text style={styles.statusSubtitle}>A connected player has completed the puzzle</Text>
+              <View style={styles.winnerInfoSection}>
+                <Text style={styles.winnerName}>{multiplayerWinner.playerName}</Text>
+                <Text style={styles.winnerTime}>Time: {formatTime(multiplayerWinner.completionTime)}</Text>
+              </View>
+              <TouchableOpacity 
+                style={[styles.statusButton, { marginBottom: 12 }]} 
+                onPress={() => {
+                  dismissWinnerModal?.();
+                  resumeGame();
+                }}
+              >
+                <Text style={styles.statusButtonText}>Continue Playing</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.quitButton} onPress={handleNewGame}>
+                <Text style={styles.quitButtonText}>End Game</Text>
+              </TouchableOpacity>
+            </View>
+          </BlurView>
+        </View>
+      )}
+
       {/* Game Status Overlay with Blur */}
-      {(status === 'ready' || status === 'won' || status === 'lost' || status === 'paused') && (
+      {(status === 'ready' || status === 'won' || status === 'lost' || (status === 'paused' && !multiplayerWinner)) && (
         <View style={styles.overlay}>
           <BlurView intensity={40} tint="dark" style={styles.blurBackground}>
             <View style={styles.statusModal}>
             {status === 'ready' && (
               <>
                 <Text style={styles.statusTitle}>Ready to Play?</Text>
-                <Text style={styles.statusSubtitle}>
-                  Difficulty: {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
-                </Text>
-                <Text style={styles.statusSubtitle}>
-                  Lives: {lives}
-                </Text>
+                <View style={styles.gameInfoSection}>
+                  <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>Difficulty</Text>
+                    <Text style={styles.infoValue}>{difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}</Text>
+                  </View>
+                  <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>Lives</Text>
+                    <Text style={styles.infoValue}>{lives}</Text>
+                  </View>
+                </View>
+                <TouchableOpacity style={styles.statusButton} onPress={startPlaying}>
+                  <Text style={styles.statusButtonText}>Start Game</Text>
+                </TouchableOpacity>
                 <TouchableOpacity 
-                  style={styles.shareButton} 
+                  style={styles.secondaryActionButton} 
                   onPress={async () => {
                     const gameData = exportGame();
                     if (gameData) {
@@ -156,11 +214,8 @@ export default function GameScreen() {
                     }
                   }}
                 >
-                  <Share2 size={20} color="#6B7280" />
-                  <Text style={styles.shareButtonText}>Share Puzzle</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.statusButton} onPress={startPlaying}>
-                  <Text style={styles.statusButtonText}>Start Game</Text>
+                  <Share2 size={16} color="#6B7280" />
+                  <Text style={styles.secondaryActionButtonText}>Share</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -219,6 +274,26 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
+  },
+  multiplayerBanner: {
+    backgroundColor: '#2B7FFF',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  multiplayerBannerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  multiplayerIcon: {
+    fontSize: 16,
+  },
+  multiplayerText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'Inter',
   },
   header: {
     flexDirection: 'row',
@@ -331,7 +406,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#1E2939',
-    marginBottom: 8,
+    marginBottom: 20,
     fontFamily: 'Inter',
   },
   statusSubtitle: {
@@ -341,33 +416,59 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: 'Inter',
   },
-  shareButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
-    marginBottom: 12,
+  gameInfoSection: {
     width: '100%',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 24,
+    gap: 12,
   },
-  shareButtonText: {
-    fontSize: 16,
-    color: '#374151',
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  infoLabel: {
+    fontSize: 14,
+    color: '#6B7280',
     fontWeight: '500',
+    fontFamily: 'Inter',
+  },
+  infoValue: {
+    fontSize: 16,
+    color: '#1E2939',
+    fontWeight: '600',
+    fontFamily: 'Inter',
   },
   statusButton: {
     backgroundColor: '#2B7FFF',
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 24,
-    borderRadius: 4,
+    borderRadius: 8,
     marginBottom: 12,
     width: '100%',
     alignItems: 'center',
+    minHeight: 52,
+  },
+  secondaryActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+    width: '100%',
+  },
+  secondaryActionButtonText: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '600',
+    fontFamily: 'Inter',
   },
   statusButtonText: {
     color: 'white',
@@ -407,6 +508,27 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
     marginBottom: 24,
+    fontFamily: 'Inter',
+  },
+  winnerInfoSection: {
+    width: '100%',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 24,
+    alignItems: 'center',
+  },
+  winnerName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2B7FFF',
+    marginBottom: 8,
+    fontFamily: 'Inter',
+  },
+  winnerTime: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1E2939',
     fontFamily: 'Inter',
   },
 });

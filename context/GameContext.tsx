@@ -1,8 +1,9 @@
 import * as Haptics from 'expo-haptics';
 import React, { createContext, useContext, useEffect, useReducer } from 'react';
-import { Difficulty, DIFFICULTY_LIVES, GameActions, GameResult, GameState, SerializableGameState } from '../types/game';
+import { Difficulty, DIFFICULTY_LIVES, GameActions, GameResult, GameState, MultiplayerGame, SerializableGameState } from '../types/game';
 import { serializeGameState } from '../utils/gameSerializer';
 import { saveGameResult } from '../utils/highScoreStorage';
+import { multiplayerService } from '../utils/multiplayerService';
 import { generatePuzzle } from '../utils/sudokuGenerator';
 import { copyBoard } from '../utils/sudokuRules';
 
@@ -22,7 +23,12 @@ type GameAction =
   | { type: 'LOSE_LIFE' }
   | { type: 'CLEAR_WRONG_CELL' }
   | { type: 'USE_HINT' }
-  | { type: 'LOAD_GAME'; state: SerializableGameState };
+  | { type: 'LOAD_GAME'; state: SerializableGameState }
+  | { type: 'SET_MULTIPLAYER'; game: MultiplayerGame | null }
+  | { type: 'LOAD_MULTIPLAYER_GAME'; difficulty: Difficulty; lives: number; board: number[][]; solution: number[][]; initialBoard: number[][] }
+  | { type: 'SHOW_MULTIPLAYER_WINNER'; playerName: string; completionTime: number }
+  | { type: 'DISMISS_WINNER_MODAL' }
+  | { type: 'DEV_FILL_SOLUTION' };
 
 const initialState: GameState = {
   difficulty: 'medium',
@@ -37,10 +43,13 @@ const initialState: GameState = {
   notes: new Map(),
   wrongCell: null,
   hintUsed: false,
+  multiplayer: null,
+  multiplayerWinner: null,
 };
 
 function gameReducer(state: GameState, action: GameAction): GameState {
-  switch (action.type) {
+  return (() => {
+    switch (action.type) {
     case 'START_GAME':
       // Generate a new puzzle with guaranteed unique solution
       const { puzzle, solution } = generatePuzzle(action.difficulty);
@@ -131,6 +140,19 @@ function gameReducer(state: GameState, action: GameAction): GameState {
             won: true,
           };
           saveGameResult(gameResult); // Fire and forget
+          
+          // Broadcast completion in multiplayer mode
+          if (state.multiplayer && multiplayerService.currentChannel) {
+            multiplayerService.currentChannel.send({
+              type: 'broadcast',
+              event: 'player-won',
+              payload: {
+                playerName: multiplayerService.currentPlayerName || 'Player',
+                completionTime: state.timeElapsed,
+              },
+            });
+            console.log('Broadcasting win to other players');
+          }
         }
 
         return {
@@ -267,9 +289,93 @@ function gameReducer(state: GameState, action: GameAction): GameState {
 
       return state;
 
+    case 'SET_MULTIPLAYER':
+      return {
+        ...state,
+        multiplayer: action.game,
+      };
+
+    case 'LOAD_MULTIPLAYER_GAME':
+      return {
+        ...initialState,
+        difficulty: action.difficulty,
+        status: 'playing', // Start playing immediately in multiplayer
+        lives: action.lives,
+        initialLives: action.lives,
+        board: action.board.map(row => [...row]),
+        solution: action.solution.map(row => [...row]),
+        initialBoard: action.initialBoard.map(row => [...row]),
+        timeElapsed: 0,
+        multiplayer: state.multiplayer, // Keep multiplayer state
+      };
+
+    case 'SHOW_MULTIPLAYER_WINNER':
+      return {
+        ...state,
+        status: 'paused', // Pause the game when another player wins
+        multiplayerWinner: {
+          playerName: action.playerName,
+          completionTime: action.completionTime,
+        },
+      };
+
+    case 'DISMISS_WINNER_MODAL':
+      return {
+        ...state,
+        multiplayerWinner: null,
+      };
+
+    case 'DEV_FILL_SOLUTION':
+      // Dev feature: Fill solution but leave 2 random cells empty
+      if (state.status !== 'playing') return state;
+      
+      const filledBoard = copyBoard(state.board);
+      const emptyCells: Array<{ row: number; col: number }> = [];
+      
+      // Find all cells that are currently empty (not initial clues and not already filled)
+      for (let row = 0; row < 9; row++) {
+        for (let col = 0; col < 9; col++) {
+          if (state.initialBoard[row][col] === 0 && state.board[row][col] === 0) {
+            emptyCells.push({ row, col });
+          }
+        }
+      }
+      
+      // If we have more than 2 empty cells, randomly choose 2 to leave empty
+      if (emptyCells.length > 2) {
+        const cellsToLeaveEmptySet = new Set<string>();
+        
+        // Randomly select 2 cells to leave empty
+        while (cellsToLeaveEmptySet.size < 2) {
+          const randomIndex = Math.floor(Math.random() * emptyCells.length);
+          const cell = emptyCells[randomIndex];
+          const cellKey = `${cell.row}-${cell.col}`;
+          cellsToLeaveEmptySet.add(cellKey);
+        }
+        
+        // Fill all cells except the 2 randomly chosen ones
+        for (const cell of emptyCells) {
+          const cellKey = `${cell.row}-${cell.col}`;
+          if (!cellsToLeaveEmptySet.has(cellKey)) {
+            filledBoard[cell.row][cell.col] = state.solution[cell.row][cell.col];
+          }
+        }
+      } else {
+        // If 2 or fewer empty cells, just fill everything
+        for (const cell of emptyCells) {
+          filledBoard[cell.row][cell.col] = state.solution[cell.row][cell.col];
+        }
+      }
+      
+      return {
+        ...state,
+        board: filledBoard,
+      };
+
     default:
       return state;
-  }
+    }
+  })();
 }
 
 const GameContext = createContext<GameState & GameActions | null>(null);
@@ -279,7 +385,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   // Timer effect
   useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
+    let interval: any = null;
     
     if (state.status === 'playing') {
       interval = setInterval(() => {
@@ -294,12 +400,109 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     };
   }, [state.status]);
 
+  // Subscribe to multiplayer game events
+  useEffect(() => {
+    if (!state.multiplayer) return;
+
+    // Subscribe to game board shared events
+    const unsubscribeGameBoard = multiplayerService.subscribeToGameBoard((payload: any) => {
+      console.log('Received shared game board:', payload);
+      
+      // Load the shared game
+      dispatch({ 
+        type: 'LOAD_MULTIPLAYER_GAME', 
+        difficulty: payload.difficulty, 
+        lives: payload.lives, 
+        board: payload.board, 
+        solution: payload.solution, 
+        initialBoard: payload.initialBoard 
+      });
+    });
+
+    return () => {
+      unsubscribeGameBoard?.();
+    };
+  }, [state.multiplayer]);
+
+  // Subscribe to pause/resume events for multiplayer
+  useEffect(() => {
+    if (!state.multiplayer || !multiplayerService.currentChannel) return;
+
+    const handlePauseReceived = () => {
+      console.log('Received pause broadcast - pausing game');
+      dispatch({ type: 'PAUSE_GAME' });
+    };
+
+    const handleResumeReceived = () => {
+      console.log('Received resume broadcast - resuming game');
+      dispatch({ type: 'RESUME_GAME' });
+    };
+
+    const handlePlayerWon = ({ payload }: any) => {
+      console.log('Another player won:', payload);
+      dispatch({ 
+        type: 'SHOW_MULTIPLAYER_WINNER', 
+        playerName: payload.playerName, 
+        completionTime: payload.completionTime 
+      });
+    };
+
+    // Store channel reference for cleanup
+    const channel = multiplayerService.currentChannel;
+    
+    // Check if channel has the necessary methods
+    if (channel && typeof channel.on === 'function') {
+      channel.on('broadcast', { event: 'game-paused' }, handlePauseReceived);
+      channel.on('broadcast', { event: 'game-resumed' }, handleResumeReceived);
+      channel.on('broadcast', { event: 'player-won' }, handlePlayerWon);
+    }
+
+    return () => {
+      // Cleanup - only if channel still exists and has the off method
+      if (channel && typeof channel.off === 'function') {
+        try {
+          channel.off('broadcast', { event: 'game-paused' }, handlePauseReceived);
+          channel.off('broadcast', { event: 'game-resumed' }, handleResumeReceived);
+          channel.off('broadcast', { event: 'player-won' }, handlePlayerWon);
+        } catch (error) {
+          console.log('Error during cleanup of multiplayer listeners:', error);
+        }
+      }
+    };
+  }, [state.multiplayer]);
+
+
+
   // Memoize actions to prevent unnecessary re-renders
   const actions: GameActions = React.useMemo(() => ({
     startGame: (difficulty: Difficulty, lives?: number) => dispatch({ type: 'START_GAME', difficulty, lives }),
     startPlaying: () => dispatch({ type: 'START_PLAYING' }),
-    pauseGame: () => dispatch({ type: 'PAUSE_GAME' }),
-    resumeGame: () => dispatch({ type: 'RESUME_GAME' }),
+    pauseGame: () => {
+      dispatch({ type: 'PAUSE_GAME' });
+      
+      // Broadcast pause to other players in multiplayer
+      if (state.multiplayer && multiplayerService.currentChannel) {
+        multiplayerService.currentChannel.send({
+          type: 'broadcast',
+          event: 'game-paused',
+          payload: {},
+        });
+        console.log('Broadcasting pause to other players');
+      }
+    },
+    resumeGame: () => {
+      dispatch({ type: 'RESUME_GAME' });
+      
+      // Broadcast resume to other players in multiplayer
+      if (state.multiplayer && multiplayerService.currentChannel) {
+        multiplayerService.currentChannel.send({
+          type: 'broadcast',
+          event: 'game-resumed',
+          payload: {},
+        });
+        console.log('Broadcasting resume to other players');
+      }
+    },
     selectCell: (row: number, col: number) => dispatch({ type: 'SELECT_CELL', row, col }),
     placeNumber: (number: number) => dispatch({ type: 'PLACE_NUMBER', number }),
     clearCell: () => dispatch({ type: 'CLEAR_CELL' }),
@@ -309,6 +512,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     resetGame: () => dispatch({ type: 'RESET_GAME' }),
     clearWrongCell: () => dispatch({ type: 'CLEAR_WRONG_CELL' }),
     useHint: () => dispatch({ type: 'USE_HINT' }),
+    devFillSolution: () => dispatch({ type: 'DEV_FILL_SOLUTION' }),
     loadGame: (loadedState: SerializableGameState) => dispatch({ type: 'LOAD_GAME', state: loadedState }),
     exportGame: () => {
       // Only export if game hasn't started playing
@@ -317,7 +521,85 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       }
       return null;
     },
-  }), [state.status]);
+    // Multiplayer actions
+    createMultiplayerGame: async (channelName: string, playerName: string, difficulty: Difficulty, lives: number) => {
+      try {
+        const game = await multiplayerService.createGame(channelName, playerName, difficulty, lives);
+        dispatch({ type: 'SET_MULTIPLAYER', game: {
+          id: game.id,
+          channelName: game.channelName,
+          hostId: game.hostId,
+          difficulty: game.difficulty,
+          lives: game.lives,
+          status: game.status,
+          players: game.players,
+          createdAt: game.createdAt,
+        }});
+      } catch (error) {
+        console.error('Failed to create multiplayer game:', error);
+        throw error;
+      }
+    },
+    joinMultiplayerGame: async (channelName: string, playerName: string) => {
+      try {
+        const game = await multiplayerService.joinGame(channelName, playerName);
+        dispatch({ type: 'SET_MULTIPLAYER', game: {
+          id: game.id,
+          channelName: game.channelName,
+          hostId: game.hostId,
+          difficulty: game.difficulty,
+          lives: game.lives,
+          status: game.status,
+          players: game.players,
+          createdAt: game.createdAt,
+        }});
+      } catch (error) {
+        console.error('Failed to join multiplayer game:', error);
+        throw error;
+      }
+    },
+    leaveMultiplayerGame: async () => {
+      try {
+        await multiplayerService.leaveGame();
+        dispatch({ type: 'SET_MULTIPLAYER', game: null });
+      } catch (error) {
+        console.error('Failed to leave multiplayer game:', error);
+      }
+    },
+    startMultiplayerGame: async () => {
+      try {
+        // Generate puzzle for multiplayer
+        if (!state.multiplayer) throw new Error('No multiplayer game active');
+        
+        const { puzzle, solution } = generatePuzzle(state.multiplayer.difficulty);
+        
+        // Broadcast the game board to all players
+        await multiplayerService.currentChannel?.send({
+          type: 'broadcast',
+          event: 'game-board-shared',
+          payload: {
+            board: puzzle,
+            solution: solution,
+            initialBoard: puzzle,
+            difficulty: state.multiplayer.difficulty,
+            lives: state.multiplayer.lives,
+          },
+        });
+        
+        // Start the game on host side
+        dispatch({ type: 'LOAD_MULTIPLAYER_GAME', difficulty: state.multiplayer.difficulty, lives: state.multiplayer.lives, board: puzzle, solution: solution, initialBoard: puzzle });
+        
+        // Update database
+        await multiplayerService.startGame();
+      } catch (error) {
+        console.error('Failed to start multiplayer game:', error);
+        throw error;
+      }
+    },
+    dismissWinnerModal: () => {
+      dispatch({ type: 'DISMISS_WINNER_MODAL' });
+    },
+  }), [state]);
 
   // Memoize context value to prevent unnecessary re-renders of consumers
   const value = React.useMemo(() => ({

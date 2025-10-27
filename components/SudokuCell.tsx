@@ -30,7 +30,7 @@ function SudokuCell({ row, col, value, isSelected, selectedCell, onSelect }: Sud
   useEffect(() => {
     if (isWrongCell) {
       // Error color flash
-      let timeoutId: NodeJS.Timeout | null = null;
+      let timeoutId: any = null;
       
       Animated.sequence([
         Animated.timing(errorAnimation, {

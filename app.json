@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Sudoku With Friends",
+    "name": "That's Sudoku",
     "slug": "sudoku",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -52,7 +52,9 @@
       "router": {},
       "eas": {
         "projectId": "e431e1d7-60a5-4632-8603-b31303892d1f"
-      }
+      },
+      "supabaseUrl": "https://vzmmsndfjhuolkpginuv.supabase.co",
+      "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6bW1zbmRmamh1b2xrcGdpbnV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1MTY2NzMsImV4cCI6MjA3NzA5MjY3M30.Mqq9Xt0X4pg6bSauihwMRUym3rGdw2Q8t27OxtzcpFE"
     }
   }
 }
