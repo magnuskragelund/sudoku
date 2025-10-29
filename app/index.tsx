@@ -1,12 +1,10 @@
-import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
-import { Download, Star, Trophy, Users } from 'lucide-react-native';
+import { Star, Trophy, Users } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGame } from '../context/GameContext';
 import { Difficulty } from '../types/game';
-import { deserializeGameState, validateGameState } from '../utils/gameSerializer';
 
 export default function WelcomeScreen() {
   const router = useRouter();
@@ -28,34 +26,6 @@ export default function WelcomeScreen() {
     }, 100);
   };
 
-  const handleImportPuzzle = async () => {
-    try {
-      const clipboardContent = await Clipboard.getStringAsync();
-      
-      // Try to extract JSON from clipboard (might have extra text)
-      const jsonMatch = clipboardContent.match(/\{.*\}/s);
-      const jsonString = jsonMatch ? jsonMatch[0] : clipboardContent;
-      
-      const gameState = deserializeGameState(jsonString);
-      
-      if (!gameState) {
-        Alert.alert('Invalid Data', 'The clipboard does not contain a valid puzzle.');
-        return;
-      }
-      
-      // Validate puzzle has unique solution
-      if (!validateGameState(gameState)) {
-        Alert.alert('Invalid Puzzle', 'The puzzle does not have a valid unique solution.');
-        return;
-      }
-      
-      loadGame(gameState);
-      router.push('/game');
-    } catch (error) {
-      console.error('Error importing game:', error);
-      Alert.alert('Import Failed', 'Could not import the puzzle. Please try again.');
-    }
-  };
 
   const difficulties: { label: string; value: Difficulty; stars: number }[] = [
     { label: 'Easy', value: 'easy', stars: 1 },
@@ -86,14 +56,6 @@ export default function WelcomeScreen() {
           >
             <Trophy size={18} color="#2B7FFF" />
             <Text style={styles.secondaryButtonText}>High Scores</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.secondaryButton}
-            onPress={handleImportPuzzle}
-          >
-            <Download size={18} color="#6B7280" />
-            <Text style={styles.secondaryButtonText}>Import</Text>
           </TouchableOpacity>
 
           <TouchableOpacity

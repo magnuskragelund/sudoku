@@ -1,8 +1,8 @@
 import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
-import { Clock, Heart, Lightbulb, Pause, Play, Share2, Zap } from 'lucide-react-native';
+import { Clock, Heart, Lightbulb, Pause, Play, Zap } from 'lucide-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import NumberPad from '../components/NumberPad';
 import SudokuBoard from '../components/SudokuBoard';
@@ -198,25 +198,7 @@ export default function GameScreen() {
                 <TouchableOpacity style={styles.statusButton} onPress={startPlaying}>
                   <Text style={styles.statusButtonText}>Start Game</Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
-                  style={styles.secondaryActionButton} 
-                  onPress={async () => {
-                    const gameData = exportGame();
-                    if (gameData) {
-                      try {
-                        await Share.share({
-                          message: gameData,
-                          title: 'Share Sudoku Puzzle',
-                        });
-                      } catch (error) {
-                        console.error('Error sharing:', error);
-                      }
-                    }
-                  }}
-                >
-                  <Share2 size={16} color="#6B7280" />
-                  <Text style={styles.secondaryActionButtonText}>Share</Text>
-                </TouchableOpacity>
+              
               </>
             )}
             
