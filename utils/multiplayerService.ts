@@ -39,6 +39,28 @@ class MultiplayerService {
   private knownPlayers: Player[] = [];
 
   /**
+   * Reset any existing channel and local state before switching games
+   */
+  private async resetForNewGame(): Promise<void> {
+    try {
+      if (this.currentChannel) {
+        await this.currentChannel.unsubscribe();
+      }
+    } catch (e) {
+      console.log('Error unsubscribing previous channel:', e);
+    } finally {
+      this.currentChannel = null;
+    }
+    // Do not reset playerId so a user keeps their identity across games
+    this.gameId = null;
+    // Keep playerId stable, but reset role/name/game-local state
+    this.hostId = null;
+    this.currentPlayerName = null;
+    this.playerListCallback = null;
+    this.knownPlayers = [];
+  }
+
+  /**
    * Generate a unique player ID
    */
   private generatePlayerId(): string {
@@ -64,6 +86,9 @@ class MultiplayerService {
     difficulty: Difficulty,
     lives: number
   ): Promise<MultiplayerGame> {
+    // Ensure we start clean if a previous game was active
+    await this.resetForNewGame();
+
     const gameId = `game_${Date.now()}_${Math.random().toString(36).substring(7)}`;
     const hostId = this.getPlayerId();
     this.hostId = hostId; // Store host ID
@@ -135,6 +160,9 @@ class MultiplayerService {
    * Join an existing multiplayer game
    */
   async joinGame(channelName: string, playerName: string): Promise<MultiplayerGame> {
+    // Ensure we start clean if a previous game was active
+    await this.resetForNewGame();
+
     // Find the game by channel name
     const { data: gameData, error } = await supabase
       .from('multiplayer_games')
@@ -212,6 +240,8 @@ class MultiplayerService {
     if (!this.currentChannel || !this.gameId) return () => {};
     
     this.playerListCallback = callback;
+    // Fresh list for this subscription to avoid leaking players from previous games
+    this.knownPlayers = [];
 
     // Send current player list via broadcast to request sync
     const requestPlayerList = () => {
@@ -243,12 +273,9 @@ class MultiplayerService {
       }
     };
 
-    // Listen for broadcast events
-    this.currentChannel.on('broadcast', { event: 'player-joined' }, ({ payload }: any) => {
-      handlePlayerJoined(payload);
-    });
-
-    this.currentChannel.on('broadcast', { event: 'request-player-list' }, ({ payload }: any) => {
+    // Listener handlers so we can remove them on unsubscribe
+    const playerJoinedHandler = ({ payload }: any) => handlePlayerJoined(payload);
+    const requestPlayerListHandler = ({ payload }: any) => {
       console.log('Request for player list received from:', payload);
       // Respond with our current state
       this.currentChannel.send({
@@ -260,9 +287,8 @@ class MultiplayerService {
           isHost: this.playerId === this.hostId,
         },
       });
-    });
-
-    this.currentChannel.on('broadcast', { event: 'my-player-info' }, ({ payload }: any) => {
+    };
+    const myPlayerInfoHandler = ({ payload }: any) => {
       console.log('Received player info:', payload);
       const { playerId: otherId, playerName: otherName, isHost: otherIsHost } = payload;
       
@@ -276,7 +302,12 @@ class MultiplayerService {
         console.log('Updated players list from broadcast:', this.knownPlayers);
         callback([...this.knownPlayers]);
       }
-    });
+    };
+
+    // Listen for broadcast events
+    this.currentChannel.on('broadcast', { event: 'player-joined' }, playerJoinedHandler);
+    this.currentChannel.on('broadcast', { event: 'request-player-list' }, requestPlayerListHandler);
+    this.currentChannel.on('broadcast', { event: 'my-player-info' }, myPlayerInfoHandler);
 
     // Send initial request and announce ourself
     setTimeout(() => {
@@ -294,8 +325,19 @@ class MultiplayerService {
 
     // Return unsubscribe function
     return () => {
-      // Cleanup is handled by leaveGame
+      // Remove listeners if possible and clear callback/local state for this subscription
+      const channel = this.currentChannel;
+      if (channel && typeof channel.off === 'function') {
+        try {
+          channel.off('broadcast', { event: 'player-joined' }, playerJoinedHandler);
+          channel.off('broadcast', { event: 'request-player-list' }, requestPlayerListHandler);
+          channel.off('broadcast', { event: 'my-player-info' }, myPlayerInfoHandler);
+        } catch (error) {
+          console.log('Error during cleanup of player listeners:', error);
+        }
+      }
       this.playerListCallback = null;
+      this.knownPlayers = [];
     };
   }
 
