@@ -1,31 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
 import { Difficulty, GameResult, HighScoreData } from '../types/game';
 
 const STORAGE_KEY = '@sudoku_high_scores';
 const MAX_HISTORY_SIZE = 1000;
-
-// Unified storage that works on both native and web
-const storage = Platform.OS === 'web' 
-  ? {
-      getItem: async (key: string) => {
-        if (typeof window !== 'undefined' && window.localStorage) {
-          return window.localStorage.getItem(key);
-        }
-        return null;
-      },
-      setItem: async (key: string, value: string) => {
-        if (typeof window !== 'undefined' && window.localStorage) {
-          window.localStorage.setItem(key, value);
-        }
-      },
-      removeItem: async (key: string) => {
-        if (typeof window !== 'undefined' && window.localStorage) {
-          window.localStorage.removeItem(key);
-        }
-      },
-    }
-  : AsyncStorage;
 
 function getComboKey(difficulty: Difficulty, lives: number): string {
   return `${difficulty}-${lives}`;
@@ -45,7 +22,7 @@ export async function saveGameResult(result: GameResult): Promise<void> {
     }
 
     // Get existing data
-    const dataString = await storage.getItem(STORAGE_KEY);
+    const dataString = await AsyncStorage.getItem(STORAGE_KEY);
     let data: HighScoreData = dataString 
       ? JSON.parse(dataString) 
       : { results: [], bestTimes: {} };
@@ -72,7 +49,7 @@ export async function saveGameResult(result: GameResult): Promise<void> {
     }
 
     // Save updated data
-    await storage.setItem(STORAGE_KEY, JSON.stringify(data));
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch (error) {
     console.error('Error saving game result:', error);
   }
@@ -80,7 +57,7 @@ export async function saveGameResult(result: GameResult): Promise<void> {
 
 export async function getHighScores(): Promise<HighScoreData> {
   try {
-    const dataString = await storage.getItem(STORAGE_KEY);
+    const dataString = await AsyncStorage.getItem(STORAGE_KEY);
     if (!dataString) {
       return { results: [], bestTimes: {} };
     }
@@ -139,7 +116,7 @@ export async function getGameHistory(
 
 export async function clearHighScores(): Promise<void> {
   try {
-    await storage.removeItem(STORAGE_KEY);
+    await AsyncStorage.removeItem(STORAGE_KEY);
     console.log('High scores cleared');
   } catch (error) {
     console.error('Error clearing high scores:', error);
@@ -148,7 +125,7 @@ export async function clearHighScores(): Promise<void> {
 
 export async function debugHighScores(): Promise<void> {
   try {
-    const dataString = await storage.getItem(STORAGE_KEY);
+    const dataString = await AsyncStorage.getItem(STORAGE_KEY);
     if (dataString) {
       const data = JSON.parse(dataString);
       console.log('Current high scores data:', JSON.stringify(data, null, 2));
