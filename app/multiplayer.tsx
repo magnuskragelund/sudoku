@@ -1,7 +1,8 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { ChevronLeft } from 'lucide-react-native';
+import React, { useEffect, useState } from 'react';
+import { Alert, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGame } from '../context/GameContext';
 import { Difficulty } from '../types/game';
@@ -29,6 +30,49 @@ export default function MultiplayerScreen() {
   ];
 
   const livesOptions = [1, 2, 3, 4, 5];
+
+  // Persist user preference for difficulty on the create tab
+  const DIFFICULTY_PREF_KEY = '@sudoku_mp_pref_difficulty';
+
+  const prefStorage = Platform.OS === 'web'
+    ? {
+        getItem: async (key: string) => {
+          if (typeof window !== 'undefined' && window.localStorage) {
+            return window.localStorage.getItem(key);
+          }
+          return null;
+        },
+        setItem: async (key: string, value: string) => {
+          if (typeof window !== 'undefined' && window.localStorage) {
+            window.localStorage.setItem(key, value);
+          }
+        },
+      }
+    : AsyncStorage;
+
+  useEffect(() => {
+    const loadDifficultyPref = async () => {
+      try {
+        const saved = await prefStorage.getItem(DIFFICULTY_PREF_KEY);
+        if (saved === 'easy' || saved === 'medium' || saved === 'hard' || saved === 'master') {
+          setDifficulty(saved as Difficulty);
+        }
+      } catch (e) {
+        console.log('Failed to load difficulty preference:', e);
+      }
+    };
+    loadDifficultyPref();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleSelectDifficulty = async (value: Difficulty) => {
+    setDifficulty(value);
+    try {
+      await prefStorage.setItem(DIFFICULTY_PREF_KEY, value);
+    } catch (e) {
+      console.log('Failed to save difficulty preference:', e);
+    }
+  };
 
   const handleCreateGame = async () => {
     if (!channelName.trim() || !playerName.trim()) {
@@ -127,7 +171,7 @@ export default function MultiplayerScreen() {
                     styles.difficultyButton,
                     difficulty === diff.value && styles.difficultyButtonSelected,
                   ]}
-                  onPress={() => setDifficulty(diff.value)}
+                  onPress={() => handleSelectDifficulty(diff.value)}
                 >
                   <Text
                     style={[

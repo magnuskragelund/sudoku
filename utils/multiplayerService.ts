@@ -376,7 +376,7 @@ class MultiplayerService {
     // Update game status in database
     await supabase
       .from('multiplayer_games')
-      .update({ status: 'playing' })
+      .update({ status: 'playing', channel_name: null })
       .eq('id', this.gameId);
 
     // Broadcast start event (without game board - will be handled in GameContext)
