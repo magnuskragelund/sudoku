@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ChevronLeft } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGame } from '../context/GameContext';
 import { Difficulty } from '../types/game';
@@ -71,10 +72,10 @@ export default function MultiplayerScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Back</Text>
+          <ChevronLeft size={24} color="#1E2939" />
         </TouchableOpacity>
         <Text style={styles.title}>Multiplayer</Text>
-        <View style={{ width: 60 }} />
+        <View style={styles.placeholder} />
       </View>
 
       <View style={styles.tabs}>
@@ -203,23 +204,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#D1D5DC',
+    borderBottomColor: '#E5E7EB',
   },
   backButton: {
-    paddingVertical: 8,
-  },
-  backButtonText: {
-    fontSize: 16,
-    color: '#2B7FFF',
-    fontWeight: '600',
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#1E2939',
+  },
+  placeholder: {
+    width: 40,
   },
   tabs: {
     flexDirection: 'row',
