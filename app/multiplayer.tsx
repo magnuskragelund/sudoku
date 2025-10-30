@@ -33,6 +33,7 @@ export default function MultiplayerScreen() {
 
   // Persist user preference for difficulty on the create tab
   const DIFFICULTY_PREF_KEY = '@sudoku_mp_pref_difficulty';
+  const PLAYER_NAME_KEY = '@sudoku_mp_pref_player_name';
 
   const prefStorage = Platform.OS === 'web'
     ? {
@@ -61,7 +62,19 @@ export default function MultiplayerScreen() {
         console.log('Failed to load difficulty preference:', e);
       }
     };
+    const loadPlayerNames = async () => {
+      try {
+        const saved = await prefStorage.getItem(PLAYER_NAME_KEY);
+        if (saved) {
+          setPlayerName(saved);
+          setJoinPlayerName(saved);
+        }
+      } catch (e) {
+        console.log('Failed to load player name:', e);
+      }
+    };
     loadDifficultyPref();
+    loadPlayerNames();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -73,6 +86,37 @@ export default function MultiplayerScreen() {
       console.log('Failed to save difficulty preference:', e);
     }
   };
+
+  // Auto-suggest a short hyphenated game name like "monkey-glass"
+  const WORDS: string[] = [
+    'apple','bear','blue','boat','book','cake','cat','chip','cloud','coin',
+    'cool','crow','deer','dove','dust','easy','fire','fish','frog','gift',
+    'gold','goat','hand','hawk','heat','hill','ice','iron','jazz','kite',
+    'leaf','lime','lion','luna','mint','moss','moon','mouse','nest','note',
+    'pearl','pink','pond','rain','rock','seed','ship','snow','star','tree',
+    'tide','wolf','wood','zinc'
+  ];
+
+  function generateGameName(): string {
+    const pick = () => WORDS[Math.floor(Math.random() * WORDS.length)];
+    let a = pick();
+    let b = pick();
+    // Avoid duplicates like "apple-apple"
+    let tries = 0;
+    while (b === a && tries < 5) {
+      b = pick();
+      tries++;
+    }
+    return `${a}-${b}`.toLowerCase();
+  }
+
+  // Prefill suggested name when opening the create tab or on first render
+  useEffect(() => {
+    if (activeTab === 'create' && !channelName.trim()) {
+      setChannelName(generateGameName());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
 
   const handleCreateGame = async () => {
     if (!channelName.trim() || !playerName.trim()) {
@@ -148,7 +192,15 @@ export default function MultiplayerScreen() {
             <TextInput
               style={styles.input}
               value={channelName}
-              onChangeText={setChannelName}
+              autoCapitalize="none"
+              autoCorrect={false}
+              onChangeText={(text) => {
+                const normalized = text
+                  .toLowerCase()
+                  .replace(/\s+/g, '-')
+                  .replace(/[^a-z-]/g, '');
+                setChannelName(normalized);
+              }}
               placeholder="e.g., cool-game-123"
               placeholderTextColor="#9CA3AF"
             />
@@ -157,7 +209,11 @@ export default function MultiplayerScreen() {
             <TextInput
               style={styles.input}
               value={playerName}
-              onChangeText={setPlayerName}
+              onChangeText={async (val) => {
+                setPlayerName(val);
+                setJoinPlayerName(val);
+                try { await prefStorage.setItem(PLAYER_NAME_KEY, val); } catch (e) { console.log('Failed to save player name:', e); }
+              }}
               placeholder="Enter your name"
               placeholderTextColor="#9CA3AF"
             />
@@ -215,7 +271,15 @@ export default function MultiplayerScreen() {
             <TextInput
               style={styles.input}
               value={joinChannelName}
-              onChangeText={setJoinChannelName}
+              autoCapitalize="none"
+              autoCorrect={false}
+              onChangeText={(text) => {
+                const normalized = text
+                  .toLowerCase()
+                  .replace(/\s+/g, '-')
+                  .replace(/[^a-z-]/g, '');
+                setJoinChannelName(normalized);
+              }}
               placeholder="Enter game name"
               placeholderTextColor="#9CA3AF"
             />
@@ -224,7 +288,11 @@ export default function MultiplayerScreen() {
             <TextInput
               style={styles.input}
               value={joinPlayerName}
-              onChangeText={setJoinPlayerName}
+              onChangeText={async (val) => {
+                setJoinPlayerName(val);
+                setPlayerName(val);
+                try { await prefStorage.setItem(PLAYER_NAME_KEY, val); } catch (e) { console.log('Failed to save player name:', e); }
+              }}
               placeholder="Enter your name"
               placeholderTextColor="#9CA3AF"
             />

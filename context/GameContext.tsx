@@ -596,6 +596,51 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         throw error;
       }
     },
+    startNewRound: async () => {
+      try {
+        if (!state.multiplayer) throw new Error('No multiplayer game active');
+        // Host-only guard
+        const isHost = state.multiplayer.hostId === multiplayerService.getPlayerId();
+        if (!isHost) {
+          console.log('Only host can start a new round');
+          return;
+        }
+
+        // Dismiss winner modal if present
+        if (state.multiplayerWinner) {
+          dispatch({ type: 'DISMISS_WINNER_MODAL' });
+        }
+
+        // Generate new puzzle using session difficulty/lives
+        const { puzzle, solution } = generatePuzzle(state.multiplayer.difficulty);
+
+        // Broadcast the game board to all players (reuse event)
+        await multiplayerService.currentChannel?.send({
+          type: 'broadcast',
+          event: 'game-board-shared',
+          payload: {
+            board: puzzle,
+            solution: solution,
+            initialBoard: puzzle,
+            difficulty: state.multiplayer.difficulty,
+            lives: state.multiplayer.lives,
+          },
+        });
+
+        // Load locally for host immediately
+        dispatch({
+          type: 'LOAD_MULTIPLAYER_GAME',
+          difficulty: state.multiplayer.difficulty,
+          lives: state.multiplayer.lives,
+          board: puzzle,
+          solution: solution,
+          initialBoard: puzzle,
+        });
+      } catch (error) {
+        console.error('Failed to start new round:', error);
+        throw error;
+      }
+    },
     dismissWinnerModal: () => {
       dispatch({ type: 'DISMISS_WINNER_MODAL' });
     },

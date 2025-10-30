@@ -97,27 +97,25 @@ const styles = StyleSheet.create({
   },
   numberRow: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 36,
     width: '100%',
   },
   numberButton: {
     flex: 1,
-    maxWidth: 44,
     height: 52,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#F9FAFB',
     borderWidth: 0,
     borderColor: '#E5E7EB',
-    marginHorizontal: 8,
+    marginHorizontal: 4,
   },
   hiddenButton: {
     flex: 1,
-    maxWidth: 44,
     height: 52,
-    marginHorizontal: 2,
+    marginHorizontal: 4,
     // Invisible placeholder to maintain layout
   },
   numberText: {

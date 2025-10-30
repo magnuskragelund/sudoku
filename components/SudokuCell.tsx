@@ -89,11 +89,28 @@ function SudokuCell({ row, col, value, isSelected, selectedCell, onSelect }: Sud
   // Memoize style calculations to avoid recalculation on every render
   const cellStyle = React.useMemo(() => {
     const baseStyle = [styles.cell];
-    
-    // Add border styles for 3x3 sub-grids
-    if (row % 3 === 2) baseStyle.push(styles.bottomThickBorder);
-    if (col % 3 === 2) baseStyle.push(styles.rightThickBorder);
-    
+
+    // Draw borders only on top/left to avoid overlap, and add outer bottom/right
+    const thinColor = '#D1D5DC';
+    const thickColor = '#6B7280';
+
+    // 3x3 thick separators on top/left
+    if (row % 3 === 0) {
+      baseStyle.push({ borderTopWidth: 2, borderTopColor: thickColor });
+    } else {
+      baseStyle.push({ borderTopWidth: 0.5, borderTopColor: thinColor });
+    }
+
+    if (col % 3 === 0) {
+      baseStyle.push({ borderLeftWidth: 2, borderLeftColor: thickColor });
+    } else {
+      baseStyle.push({ borderLeftWidth: 0.5, borderLeftColor: thinColor });
+    }
+
+    // Outer edges: bottom/right thick borders on last row/col
+    if (row === 8) baseStyle.push({ borderBottomWidth: 2, borderBottomColor: thickColor });
+    if (col === 8) baseStyle.push({ borderRightWidth: 2, borderRightColor: thickColor });
+
     // Background color based on state
     if (isSelected) {
       baseStyle.push(styles.selectedCell);
@@ -159,8 +176,7 @@ const styles = StyleSheet.create({
   cell: {
     width: '11.11%', // 100% / 9 cells
     aspectRatio: 1, // Maintain square cells
-    borderWidth: 0.5,
-    borderColor: '#D1D5DC',
+    borderWidth: 0,
     position: 'relative',
   },
   cellContent: {
@@ -177,25 +193,18 @@ const styles = StyleSheet.create({
     bottom: 0,
     opacity: 0.3,
   },
-  bottomThickBorder: {
-    borderBottomWidth: 2,
-    borderBottomColor: '#6B7280',
-  },
-  rightThickBorder: {
-    borderRightWidth: 2,
-    borderRightColor: '#6B7280',
-  },
+  // Removed bottom/right thick helpers; borders are computed inline to avoid overlaps
   initialCell: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#E5E7EB',
   },
   selectedCell: {
     backgroundColor: '#BEDBFF',
   },
   rowColumnHighlight: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#E5E7EB',
   },
   boxHighlight: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#E5E7EB',
   },
   sameValueHighlight: {
     backgroundColor: '#BEDBFF', // Same blue as selected cell

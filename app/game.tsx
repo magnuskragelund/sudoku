@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import NumberPad from '../components/NumberPad';
 import SudokuBoard from '../components/SudokuBoard';
 import { useGame } from '../context/GameContext';
+import { multiplayerService } from '../utils/multiplayerService';
 import { getBestTime } from '../utils/highScoreStorage';
 
 export default function GameScreen() {
@@ -28,7 +29,9 @@ export default function GameScreen() {
     useHint,
     devFillSolution,
     exportGame,
-    dismissWinnerModal
+    dismissWinnerModal,
+    leaveMultiplayerGame,
+    startNewRound
   } = useGame();
 
   const [bestTime, setBestTime] = useState<number | null>(null);
@@ -57,10 +60,14 @@ export default function GameScreen() {
     return '#4A5565'; // Grey
   }, [lives]);
 
-  const handleNewGame = () => {
+  const handleNewGame = async () => {
     if (status === 'playing') {
       pauseGame();
     } else {
+      // If in a multiplayer session, disconnect before returning home
+      if (multiplayer) {
+        try { await leaveMultiplayerGame?.(); } catch {}
+      }
       newGame();
       router.push('/');
     }
@@ -73,6 +80,8 @@ export default function GameScreen() {
       resumeGame();
     }
   };
+
+  const isHost = !!multiplayer && multiplayer.hostId === multiplayerService.getPlayerId();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -87,9 +96,15 @@ export default function GameScreen() {
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={handleNewGame} style={styles.newGameButton}>
-          <Text style={styles.newGameText}>New Game</Text>
-        </TouchableOpacity>
+        {multiplayer && isHost ? (
+          <TouchableOpacity onPress={startNewRound} style={styles.newGameButton}>
+            <Text style={styles.newGameText}>New Round</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity onPress={handleNewGame} style={styles.newGameButton}>
+            <Text style={styles.newGameText}>New Game</Text>
+          </TouchableOpacity>
+        )}
         
         <View style={styles.timerContainer}>
           <Clock size={14} color="#4A5565" />
@@ -169,6 +184,18 @@ export default function GameScreen() {
               >
                 <Text style={styles.statusButtonText}>Continue Playing</Text>
               </TouchableOpacity>
+              {multiplayer && isHost && (
+                <TouchableOpacity 
+                  style={[styles.statusButton, { marginBottom: 12 }]}
+                  onPress={async () => {
+                    try {
+                      await startNewRound?.();
+                    } catch {}
+                  }}
+                >
+                  <Text style={styles.statusButtonText}>Start New Round</Text>
+                </TouchableOpacity>
+              )}
               <TouchableOpacity style={styles.quitButton} onPress={handleNewGame}>
                 <Text style={styles.quitButtonText}>End Game</Text>
               </TouchableOpacity>
@@ -217,9 +244,27 @@ export default function GameScreen() {
                     Best: {formatTime(bestTime)}
                   </Text>
                 )}
-                <TouchableOpacity style={styles.statusButton} onPress={handleNewGame}>
-                  <Text style={styles.statusButtonText}>New Game</Text>
-                </TouchableOpacity>
+                {multiplayer && isHost && (
+                  <TouchableOpacity 
+                    style={styles.statusButton}
+                    onPress={async () => {
+                      try {
+                        await startNewRound?.();
+                      } catch {}
+                    }}
+                  >
+                    <Text style={styles.statusButtonText}>Start New Round</Text>
+                  </TouchableOpacity>
+                )}
+                {multiplayer && !isHost ? (
+                  <TouchableOpacity style={styles.quitButton} onPress={handleNewGame}>
+                    <Text style={styles.quitButtonText}>End Game</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity style={styles.statusButton} onPress={handleNewGame}>
+                    <Text style={styles.statusButtonText}>New Game</Text>
+                  </TouchableOpacity>
+                )}
               </>
             )}
             

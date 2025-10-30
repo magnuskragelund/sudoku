@@ -88,6 +88,7 @@ export interface GameActions {
   joinMultiplayerGame?: (channelName: string, playerName: string) => Promise<void>;
   leaveMultiplayerGame?: () => Promise<void>;
   startMultiplayerGame?: () => Promise<void>;
+  startNewRound?: () => Promise<void>;
   dismissWinnerModal?: () => void;
 }
 
