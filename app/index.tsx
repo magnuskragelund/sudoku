@@ -51,12 +51,31 @@ export default function WelcomeScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.titleContainer}>
-          <Text style={[styles.titleSmall, { color: colors.textSecondary }]}>That's</Text>
           <Text style={[styles.titleLarge, { color: colors.textPrimary }]}>Sudoku</Text>
+          <Text style={[styles.titleSmall, { color: colors.textSecondary }]}>Face Off</Text>
         </View>
         
-        {/* Theme Toggle */}
-        <View style={styles.themeSection}>
+
+        
+        <View style={styles.secondaryActionsRow}>
+          <TouchableOpacity 
+            style={[styles.secondaryButton, { backgroundColor: colors.buttonBackgroundSecondary, borderColor: colors.border }]}
+            onPress={() => router.push('/highscores')}
+          >
+            <Trophy size={18} color="#2B7FFF" />
+            <Text style={[styles.secondaryButtonText, { color: colors.textSecondary }]}>High Scores</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.secondaryButton, { backgroundColor: colors.buttonBackgroundSecondary, borderColor: colors.border }]}
+            onPress={() => router.push('/multiplayer')}
+          >
+            <Users size={18} color="#22C55E" />
+            <Text style={[styles.secondaryButtonText, { color: colors.textSecondary }]}>Multiplayer</Text>
+          </TouchableOpacity>
+        </View>
+                {/* Theme Toggle */}
+                <View style={styles.themeSection}>
           <Text style={[styles.livesLabel, { color: colors.textSecondary }]}>Theme</Text>
           <View style={styles.themeContainer}>
             <TouchableOpacity
@@ -113,25 +132,6 @@ export default function WelcomeScreen() {
             </TouchableOpacity>
           </View>
         </View>
-        
-        <View style={styles.secondaryActionsRow}>
-          <TouchableOpacity 
-            style={[styles.secondaryButton, { backgroundColor: colors.buttonBackgroundSecondary, borderColor: colors.border }]}
-            onPress={() => router.push('/highscores')}
-          >
-            <Trophy size={18} color="#2B7FFF" />
-            <Text style={[styles.secondaryButtonText, { color: colors.textSecondary }]}>High Scores</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.secondaryButton, { backgroundColor: colors.buttonBackgroundSecondary, borderColor: colors.border }]}
-            onPress={() => router.push('/multiplayer')}
-          >
-            <Users size={18} color="#22C55E" />
-            <Text style={[styles.secondaryButtonText, { color: colors.textSecondary }]}>Multiplayer</Text>
-          </TouchableOpacity>
-        </View>
-        
         <View style={styles.livesSection}>
           <Text style={[styles.livesLabel, { color: colors.textSecondary }]}>Lives</Text>
           <View style={styles.livesContainer}>
