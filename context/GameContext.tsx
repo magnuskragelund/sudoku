@@ -27,8 +27,7 @@ type GameAction =
   | { type: 'SET_MULTIPLAYER'; game: MultiplayerGame | null }
   | { type: 'LOAD_MULTIPLAYER_GAME'; difficulty: Difficulty; lives: number; board: number[][]; solution: number[][]; initialBoard: number[][] }
   | { type: 'SHOW_MULTIPLAYER_WINNER'; playerName: string; completionTime: number }
-  | { type: 'DISMISS_WINNER_MODAL' }
-  | { type: 'DEV_FILL_SOLUTION' };
+  | { type: 'DISMISS_WINNER_MODAL' };
 
 const initialState: GameState = {
   difficulty: 'medium',
@@ -325,53 +324,6 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         multiplayerWinner: null,
       };
 
-    case 'DEV_FILL_SOLUTION':
-      // Dev feature: Fill solution but leave 2 random cells empty
-      if (state.status !== 'playing') return state;
-      
-      const filledBoard = copyBoard(state.board);
-      const emptyCells: Array<{ row: number; col: number }> = [];
-      
-      // Find all cells that are currently empty (not initial clues and not already filled)
-      for (let row = 0; row < 9; row++) {
-        for (let col = 0; col < 9; col++) {
-          if (state.initialBoard[row][col] === 0 && state.board[row][col] === 0) {
-            emptyCells.push({ row, col });
-          }
-        }
-      }
-      
-      // If we have more than 2 empty cells, randomly choose 2 to leave empty
-      if (emptyCells.length > 2) {
-        const cellsToLeaveEmptySet = new Set<string>();
-        
-        // Randomly select 2 cells to leave empty
-        while (cellsToLeaveEmptySet.size < 2) {
-          const randomIndex = Math.floor(Math.random() * emptyCells.length);
-          const cell = emptyCells[randomIndex];
-          const cellKey = `${cell.row}-${cell.col}`;
-          cellsToLeaveEmptySet.add(cellKey);
-        }
-        
-        // Fill all cells except the 2 randomly chosen ones
-        for (const cell of emptyCells) {
-          const cellKey = `${cell.row}-${cell.col}`;
-          if (!cellsToLeaveEmptySet.has(cellKey)) {
-            filledBoard[cell.row][cell.col] = state.solution[cell.row][cell.col];
-          }
-        }
-      } else {
-        // If 2 or fewer empty cells, just fill everything
-        for (const cell of emptyCells) {
-          filledBoard[cell.row][cell.col] = state.solution[cell.row][cell.col];
-        }
-      }
-      
-      return {
-        ...state,
-        board: filledBoard,
-      };
-
     default:
       return state;
     }
@@ -408,7 +360,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     const unsubscribeGameBoard = multiplayerService.subscribeToGameBoard((payload: any) => {
       console.log('Received shared game board:', payload);
       
-      // Load the shared game
+      // Ensure any lingering overlays/modals are cleared before loading the new round
+      dispatch({ type: 'DISMISS_WINNER_MODAL' });
+
+      // Load the shared game (this resets state to initial and sets status to playing)
       dispatch({ 
         type: 'LOAD_MULTIPLAYER_GAME', 
         difficulty: payload.difficulty, 
@@ -512,7 +467,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     resetGame: () => dispatch({ type: 'RESET_GAME' }),
     clearWrongCell: () => dispatch({ type: 'CLEAR_WRONG_CELL' }),
     useHint: () => dispatch({ type: 'USE_HINT' }),
-    devFillSolution: () => dispatch({ type: 'DEV_FILL_SOLUTION' }),
     loadGame: (loadedState: SerializableGameState) => dispatch({ type: 'LOAD_GAME', state: loadedState }),
     exportGame: () => {
       // Only export if game hasn't started playing

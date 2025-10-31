@@ -2,8 +2,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
-import { Alert, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Modal from '../components/Modal';
 import { useGame } from '../context/GameContext';
 import { Difficulty } from '../types/game';
 
@@ -21,6 +22,9 @@ export default function MultiplayerScreen() {
   // Join form state
   const [joinChannelName, setJoinChannelName] = useState('');
   const [joinPlayerName, setJoinPlayerName] = useState('');
+  
+  // Modal state
+  const [errorModal, setErrorModal] = useState<{ title: string; message: string } | null>(null);
 
   const difficulties: { label: string; value: Difficulty }[] = [
     { label: 'Easy', value: 'easy' },
@@ -120,7 +124,7 @@ export default function MultiplayerScreen() {
 
   const handleCreateGame = async () => {
     if (!channelName.trim() || !playerName.trim()) {
-      Alert.alert('Validation Error', 'Please enter both game name and your name');
+      setErrorModal({ title: 'Validation Error', message: 'Please enter both game name and your name' });
       return;
     }
     
@@ -133,13 +137,13 @@ export default function MultiplayerScreen() {
       router.push('/lobby');
     } catch (error) {
       console.error('Error creating game:', error);
-      Alert.alert('Error', 'Failed to create game. Please try again.');
+      setErrorModal({ title: 'Error', message: 'Failed to create game. Please try again.' });
     }
   };
 
   const handleJoinGame = async () => {
     if (!joinChannelName.trim() || !joinPlayerName.trim()) {
-      Alert.alert('Validation Error', 'Please enter both game name and your name');
+      setErrorModal({ title: 'Validation Error', message: 'Please enter both game name and your name' });
       return;
     }
     
@@ -152,7 +156,7 @@ export default function MultiplayerScreen() {
       router.push('/lobby');
     } catch (error) {
       console.error('Error joining game:', error);
-      Alert.alert('Error', 'Failed to join game. Please check the game name and try again.');
+      setErrorModal({ title: 'Error', message: 'Failed to join game. Please check the game name and try again.' });
     }
   };
 
@@ -303,6 +307,18 @@ export default function MultiplayerScreen() {
           </View>
         )}
       </ScrollView>
+      
+      {/* Error Modal */}
+      <Modal
+        visible={errorModal !== null}
+        title={errorModal?.title || ''}
+        subtitle={errorModal?.message || ''}
+        primaryButton={{
+          text: 'OK',
+          onPress: () => setErrorModal(null),
+        }}
+        onClose={() => setErrorModal(null)}
+      />
     </SafeAreaView>
   );
 }

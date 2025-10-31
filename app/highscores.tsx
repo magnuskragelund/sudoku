@@ -1,18 +1,18 @@
 import { useRouter } from 'expo-router';
-import { CheckCircle, ChevronLeft, Database, Trophy, XCircle, XSquare } from 'lucide-react-native';
+import { CheckCircle, ChevronLeft, Trophy, XCircle, XSquare } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Modal from '../components/Modal';
 import { Difficulty, GameResult } from '../types/game';
-import { clearHighScores, formatDate, formatTime, getHighScores, saveGameResult } from '../utils/highScoreStorage';
-
-const __DEV__ = true; // Use dev environment check if available
+import { clearHighScores, formatDate, formatTime, getHighScores } from '../utils/highScoreStorage';
 
 export default function HighScoresScreen() {
   const router = useRouter();
   const [scores, setScores] = useState<GameResult[]>([]);
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | null>(null);
   const [expandedCombo, setExpandedCombo] = useState<string | null>(null);
+  const [showClearModal, setShowClearModal] = useState(false);
 
   useEffect(() => {
     loadScores();
@@ -23,68 +23,12 @@ export default function HighScoresScreen() {
     setScores(data.results);
   };
 
-  const clearScores = () => {
-    Alert.alert(
-      'Clear All Scores',
-      'Are you sure you want to delete all high score data? This action cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Clear',
-          style: 'destructive',
-          onPress: async () => {
-            await clearHighScores();
-            setScores([]);
-          },
-        },
-      ]
-    );
+  const clearScores = async () => {
+    await clearHighScores();
+    setScores([]);
+    setShowClearModal(false);
   };
 
-  const generateDummyData = async () => {
-    const difficulties: Difficulty[] = ['easy', 'medium', 'hard', 'master'];
-    const livesOptions = [1, 2, 3, 4, 5];
-    const now = Date.now();
-    
-      for (const difficulty of difficulties) {
-        for (const lives of livesOptions) {
-          // Generate 5-10 random games for each combo (only won games)
-          const numGames = Math.floor(Math.random() * 6) + 5;
-          
-          for (let i = 0; i < numGames; i++) {
-            // Only generate won games for high scores
-            const baseTime = 60 + Math.random() * 1200; // 1-21 minutes
-            
-            const gameResult: GameResult = {
-              id: `dummy-${difficulty}-${lives}-${i}-${Date.now()}`,
-              difficulty,
-              lives,
-              completionTime: Math.floor(baseTime),
-              timestamp: now - (Math.random() * 30 * 24 * 60 * 60 * 1000), // Random time in last 30 days
-              won: true, // Only generate won games
-            };
-            
-            await saveGameResult(gameResult);
-          }
-        }
-      }
-    
-    await loadScores();
-  };
-
-  const addDummyData = () => {
-    Alert.alert(
-      'Add Dummy Data',
-      'This will populate the high scores with sample data for testing purposes.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Add',
-          onPress: generateDummyData,
-        },
-      ]
-    );
-  };
 
   const difficulties: { label: string; value: Difficulty }[] = [
     { label: 'Easy', value: 'easy' },
@@ -244,22 +188,28 @@ export default function HighScoresScreen() {
       {/* Clear Button */}
       {sortedGroupedScores.length > 0 && (
         <View style={styles.footer}>
-          <TouchableOpacity style={styles.clearButton} onPress={clearScores}>
+          <TouchableOpacity style={styles.clearButton} onPress={() => setShowClearModal(true)}>
             <XSquare size={16} color="#EF4444" />
             <Text style={styles.clearButtonText}>Clear All Scores</Text>
           </TouchableOpacity>
         </View>
       )}
 
-      {/* Dev Mode: Add Dummy Data Button */}
-      {__DEV__ && (
-        <View style={styles.footer}>
-          <TouchableOpacity style={styles.devButton} onPress={addDummyData}>
-            <Database size={16} color="#2B7FFF" />
-            <Text style={styles.devButtonText}>Add Dummy Data (Dev)</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      {/* Clear Confirmation Modal */}
+      <Modal
+        visible={showClearModal}
+        title="Clear All Scores"
+        subtitle="Are you sure you want to delete all high score data? This action cannot be undone."
+        primaryButton={{
+          text: 'Clear',
+          onPress: clearScores,
+        }}
+        secondaryButton={{
+          text: 'Cancel',
+          onPress: () => setShowClearModal(false),
+        }}
+        onClose={() => setShowClearModal(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -448,20 +398,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#EF4444',
-    fontFamily: 'Inter',
-  },
-  devButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 4,
-    gap: 8,
-  },
-  devButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#2B7FFF',
     fontFamily: 'Inter',
   },
 });

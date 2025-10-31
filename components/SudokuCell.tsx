@@ -195,23 +195,23 @@ const styles = StyleSheet.create({
   },
   // Removed bottom/right thick helpers; borders are computed inline to avoid overlaps
   initialCell: {
-    backgroundColor: '#E5E7EB',
+    // No background for filled cells
   },
   selectedCell: {
     backgroundColor: '#BEDBFF',
   },
   rowColumnHighlight: {
-    backgroundColor: '#E5E7EB',
+    backgroundColor: '#F3F4F6',
   },
   boxHighlight: {
-    backgroundColor: '#E5E7EB',
+    backgroundColor: '#F3F4F6',
   },
   sameValueHighlight: {
     backgroundColor: '#BEDBFF', // Same blue as selected cell
   },
   cellText: {
     fontSize: 30,
-    fontWeight: '500',
+    fontWeight: '400',
     fontFamily: 'Inter',
   },
   initialText: {

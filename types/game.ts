@@ -80,7 +80,6 @@ export interface GameActions {
   resetGame: () => void;
   clearWrongCell: () => void;
   useHint: () => void;
-  devFillSolution?: () => void;
   loadGame: (serializedState: SerializableGameState) => void;
   exportGame: () => string | null;
   // Multiplayer actions

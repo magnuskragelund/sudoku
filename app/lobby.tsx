@@ -1,7 +1,8 @@
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Modal from '../components/Modal';
 import { useGame } from '../context/GameContext';
 import { multiplayerService, Player } from '../utils/multiplayerService';
 
@@ -10,6 +11,7 @@ export default function LobbyScreen() {
   const { multiplayer, startMultiplayerGame, leaveMultiplayerGame } = useGame();
   const [players, setPlayers] = useState<Player[]>([]);
   const [playerCount, setPlayerCount] = useState(0);
+  const [showErrorModal, setShowErrorModal] = useState(false);
 
   useEffect(() => {
     // Redirect to home if not in a multiplayer game
@@ -60,7 +62,7 @@ export default function LobbyScreen() {
       }, 500);
     } catch (error) {
       console.error('Error starting game:', error);
-      Alert.alert('Error', 'Failed to start the game');
+      setShowErrorModal(true);
     }
   };
 
@@ -138,6 +140,18 @@ export default function LobbyScreen() {
           <Text style={styles.leaveButtonText}>Leave Game</Text>
         </TouchableOpacity>
       </View>
+      
+      {/* Error Modal */}
+      <Modal
+        visible={showErrorModal}
+        title="Error"
+        subtitle="Failed to start the game"
+        primaryButton={{
+          text: 'OK',
+          onPress: () => setShowErrorModal(false),
+        }}
+        onClose={() => setShowErrorModal(false)}
+      />
     </SafeAreaView>
   );
 }

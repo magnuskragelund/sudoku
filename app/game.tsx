@@ -1,14 +1,14 @@
 import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
-import { Clock, Heart, Lightbulb, Pause, Play, Zap } from 'lucide-react-native';
+import { Clock, Heart, Lightbulb, Pause, Play } from 'lucide-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import NumberPad from '../components/NumberPad';
 import SudokuBoard from '../components/SudokuBoard';
 import { useGame } from '../context/GameContext';
-import { multiplayerService } from '../utils/multiplayerService';
 import { getBestTime } from '../utils/highScoreStorage';
+import { multiplayerService } from '../utils/multiplayerService';
 
 export default function GameScreen() {
   const router = useRouter();
@@ -27,7 +27,6 @@ export default function GameScreen() {
     newGame,
     startPlaying,
     useHint,
-    devFillSolution,
     exportGame,
     dismissWinnerModal,
     leaveMultiplayerGame,
@@ -139,16 +138,6 @@ export default function GameScreen() {
             <Lightbulb 
               size={16} 
               color={hintUsed ? '#9CA3AF' : selectedCell && status === 'playing' ? '#2B7FFF' : '#4A5565'} 
-            />
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.actionButton} 
-            onPress={devFillSolution}
-            disabled={status !== 'playing'}
-          >
-            <Zap 
-              size={16} 
-              color={status === 'playing' ? '#F59E0B' : '#9CA3AF'} 
             />
           </TouchableOpacity>
         </View>
@@ -397,7 +386,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   numberPadContainer: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 0,
     paddingTop: 8,
     paddingBottom: 24,
   },

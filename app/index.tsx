@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { Star, Trophy, Users } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGame } from '../context/GameContext';
 import { Difficulty } from '../types/game';
