@@ -1,9 +1,11 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useGame } from '../context/GameContext';
+import { useTheme } from '../context/ThemeContext';
 
 function NumberPad() {
   const { placeNumber, selectedCell, initialBoard, board, solution } = useGame();
+  const { colors } = useTheme();
 
   const handleNumberPress = (number: number) => {
     if (selectedCell) {
@@ -72,12 +74,13 @@ function NumberPad() {
           return (
             <TouchableOpacity
               key={number}
-              style={styles.numberButton}
+              style={[styles.numberButton, { backgroundColor: colors.buttonBackground, borderColor: colors.border }]}
               onPress={() => handleNumberPress(number)}
               disabled={!isSelectedCellEditable}
             >
               <Text style={[
                 styles.numberText,
+                { color: colors.primary },
                 { opacity: isSelectedCellEditable ? 1 : 0.3 }
               ]}>
                 {number}
@@ -107,9 +110,7 @@ const styles = StyleSheet.create({
     height: 52,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
     borderWidth: 0,
-    borderColor: '#E5E7EB',
     marginHorizontal: 4,
   },
   hiddenButton: {
@@ -120,7 +121,6 @@ const styles = StyleSheet.create({
   },
   numberText: {
     fontSize: 28,
-    color: '#2B7FFF',
     fontWeight: '600',
     fontFamily: 'Inter',
   },

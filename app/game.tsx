@@ -1,17 +1,19 @@
 import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
-import { Clock, Heart, Lightbulb, Pause, Play } from 'lucide-react-native';
+import { Clock, Heart, Lightbulb, Moon, Pause, Play, Sun } from 'lucide-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import NumberPad from '../components/NumberPad';
 import SudokuBoard from '../components/SudokuBoard';
 import { useGame } from '../context/GameContext';
+import { useTheme } from '../context/ThemeContext';
 import { getBestTime } from '../utils/highScoreStorage';
 import { multiplayerService } from '../utils/multiplayerService';
 
 export default function GameScreen() {
   const router = useRouter();
+  const { theme, setTheme, colors, colorScheme } = useTheme();
   const { 
     difficulty, 
     status, 
@@ -82,11 +84,22 @@ export default function GameScreen() {
 
   const isHost = !!multiplayer && multiplayer.hostId === multiplayerService.getPlayerId();
 
+  const toggleTheme = () => {
+    if (theme === 'system') {
+      // From system, switch to opposite of current scheme
+      setTheme(colorScheme === 'dark' ? 'light' : 'dark');
+    } else if (theme === 'light') {
+      setTheme('dark');
+    } else {
+      setTheme('light');
+    }
+  };
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Multiplayer Banner */}
       {multiplayer && (
-        <View style={styles.multiplayerBanner}>
+        <View style={[styles.multiplayerBanner, { backgroundColor: colors.primary }]}>
           <View style={styles.multiplayerBannerContent}>
             <Text style={styles.multiplayerText}>Multiplayer Game: {multiplayer.channelName}</Text>
           </View>
@@ -94,50 +107,56 @@ export default function GameScreen() {
       )}
 
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: colors.borderThin }]}>
         {multiplayer && isHost ? (
           <TouchableOpacity onPress={startNewRound} style={styles.newGameButton}>
-            <Text style={styles.newGameText}>New Round</Text>
+            <Text style={[styles.newGameText, { color: colors.textSecondary }]}>New Round</Text>
           </TouchableOpacity>
         ) : (
           <TouchableOpacity onPress={handleNewGame} style={styles.newGameButton}>
-            <Text style={styles.newGameText}>New Game</Text>
+            <Text style={[styles.newGameText, { color: colors.textSecondary }]}>New Game</Text>
           </TouchableOpacity>
         )}
         
         <View style={styles.timerContainer}>
-          <Clock size={14} color="#4A5565" />
-          <Text style={styles.timerTextHeader}>{formatTime(timeElapsed)}</Text>
+          <Clock size={14} color={colors.textSecondary} />
+          <Text style={[styles.timerTextHeader, { color: colors.textSecondary }]}>{formatTime(timeElapsed)}</Text>
         </View>
         
-        <View style={styles.difficultyContainer}>
-          <Text style={styles.difficultyText}>{difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}</Text>
+        <View style={styles.headerRight}>
+          <TouchableOpacity onPress={toggleTheme} style={[styles.themeToggle, { backgroundColor: colors.buttonBackground }]}>
+            {colorScheme === 'dark' ? (
+              <Moon size={16} color={colors.textSecondary} />
+            ) : (
+              <Sun size={16} color={colors.textSecondary} />
+            )}
+          </TouchableOpacity>
         </View>
       </View>
 
       {/* Stats Bar */}
-      <View style={styles.statsBar}>
+      <View style={[styles.statsBar, { borderBottomColor: colors.borderThin }]}>
         <View style={styles.mistakesContainer}>
           <Heart size={16} color={heartColor} fill={heartColor} />
           <Text style={[styles.mistakesText, { color: heartColor }]}>{lives}</Text>
         </View>
         
         <View style={styles.actionsContainer}>
-          <TouchableOpacity style={styles.actionButton} onPress={handlePauseResume}>
+          <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.buttonBackground }]} onPress={handlePauseResume}>
             {status === 'playing' ? (
-              <Pause size={16} color="#4A5565" />
+              <Pause size={16} color={colors.textSecondary} />
             ) : (
-              <Play size={16} color="#4A5565" />
+              <Play size={16} color={colors.textSecondary} />
             )}
           </TouchableOpacity>
           <TouchableOpacity 
-            style={styles.actionButton} 
+            style={[styles.actionButton, { backgroundColor: colors.buttonBackground }]} 
             onPress={useHint}
             disabled={hintUsed || !selectedCell || status !== 'playing'}
           >
             <Lightbulb 
               size={16} 
-              color={hintUsed ? '#9CA3AF' : selectedCell && status === 'playing' ? '#2B7FFF' : '#4A5565'} 
+              color={hintUsed ? colors.textTertiary : selectedCell && status === 'playing' ? colors.primary : colors.textSecondary} 
             />
           </TouchableOpacity>
         </View>
@@ -156,16 +175,16 @@ export default function GameScreen() {
       {/* Multiplayer Winner Modal */}
       {multiplayerWinner && (
         <View style={styles.overlay}>
-          <BlurView intensity={40} tint="dark" style={styles.blurBackground}>
-            <View style={styles.statusModal}>
-              <Text style={styles.statusTitle}>🎉 Someone Won!</Text>
-              <Text style={styles.statusSubtitle}>A connected player has completed the puzzle</Text>
-              <View style={styles.winnerInfoSection}>
-                <Text style={styles.winnerName}>{multiplayerWinner.playerName}</Text>
-                <Text style={styles.winnerTime}>Time: {formatTime(multiplayerWinner.completionTime)}</Text>
+          <BlurView intensity={40} tint={colors.overlayTint} style={styles.blurBackground}>
+            <View style={[styles.statusModal, { backgroundColor: colors.modalBackground }]}>
+              <Text style={[styles.statusTitle, { color: colors.textPrimary }]}>🎉 Someone Won!</Text>
+              <Text style={[styles.statusSubtitle, { color: colors.textSecondary }]}>A connected player has completed the puzzle</Text>
+              <View style={[styles.winnerInfoSection, { backgroundColor: colors.backgroundSecondary }]}>
+                <Text style={[styles.winnerName, { color: colors.primary }]}>{multiplayerWinner.playerName}</Text>
+                <Text style={[styles.winnerTime, { color: colors.textPrimary }]}>Time: {formatTime(multiplayerWinner.completionTime)}</Text>
               </View>
               <TouchableOpacity 
-                style={[styles.statusButton, { marginBottom: 12 }]} 
+                style={[styles.statusButton, { backgroundColor: colors.primary, marginBottom: 12 }]} 
                 onPress={() => {
                   dismissWinnerModal?.();
                   resumeGame();
@@ -175,7 +194,7 @@ export default function GameScreen() {
               </TouchableOpacity>
               {multiplayer && isHost && (
                 <TouchableOpacity 
-                  style={[styles.statusButton, { marginBottom: 12 }]}
+                  style={[styles.statusButton, { backgroundColor: colors.primary, marginBottom: 12 }]}
                   onPress={async () => {
                     try {
                       await startNewRound?.();
@@ -185,7 +204,7 @@ export default function GameScreen() {
                   <Text style={styles.statusButtonText}>Start New Round</Text>
                 </TouchableOpacity>
               )}
-              <TouchableOpacity style={styles.quitButton} onPress={handleNewGame}>
+              <TouchableOpacity style={[styles.quitButton, { backgroundColor: colors.error }]} onPress={handleNewGame}>
                 <Text style={styles.quitButtonText}>End Game</Text>
               </TouchableOpacity>
             </View>
@@ -194,48 +213,28 @@ export default function GameScreen() {
       )}
 
       {/* Game Status Overlay with Blur */}
-      {(status === 'ready' || status === 'won' || status === 'lost' || (status === 'paused' && !multiplayerWinner)) && (
+      {(status === 'won' || status === 'lost' || (status === 'paused' && !multiplayerWinner)) && (
         <View style={styles.overlay}>
-          <BlurView intensity={40} tint="dark" style={styles.blurBackground}>
-            <View style={styles.statusModal}>
-            {status === 'ready' && (
-              <>
-                <Text style={styles.statusTitle}>Ready to Play?</Text>
-                <View style={styles.gameInfoSection}>
-                  <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Difficulty</Text>
-                    <Text style={styles.infoValue}>{difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}</Text>
-                  </View>
-                  <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Lives</Text>
-                    <Text style={styles.infoValue}>{lives}</Text>
-                  </View>
-                </View>
-                <TouchableOpacity style={styles.statusButton} onPress={startPlaying}>
-                  <Text style={styles.statusButtonText}>Start Game</Text>
-                </TouchableOpacity>
-              
-              </>
-            )}
-            
+          <BlurView intensity={40} tint={colors.overlayTint} style={styles.blurBackground}>
+            <View style={[styles.statusModal, { backgroundColor: colors.modalBackground }]}>
             {status === 'won' && (
               <>
-                <Text style={styles.statusTitle}>Congratulations!</Text>
-                <Text style={styles.statusSubtitle}>You solved the puzzle!</Text>
-                <Text style={styles.completionTime}>
+                <Text style={[styles.statusTitle, { color: colors.textPrimary }]}>Congratulations!</Text>
+                <Text style={[styles.statusSubtitle, { color: colors.textSecondary }]}>You solved the puzzle!</Text>
+                <Text style={[styles.completionTime, { color: colors.textPrimary }]}>
                   Time: {formatTime(timeElapsed)}
                 </Text>
                 {bestTime !== null && timeElapsed < bestTime && (
-                  <Text style={styles.newRecord}>🎉 New Record!</Text>
+                  <Text style={[styles.newRecord, { color: colors.success }]}>🎉 New Record!</Text>
                 )}
                 {bestTime !== null && (
-                  <Text style={styles.bestTime}>
+                  <Text style={[styles.bestTime, { color: colors.textTertiary }]}>
                     Best: {formatTime(bestTime)}
                   </Text>
                 )}
                 {multiplayer && isHost && (
                   <TouchableOpacity 
-                    style={styles.statusButton}
+                    style={[styles.statusButton, { backgroundColor: colors.primary }]}
                     onPress={async () => {
                       try {
                         await startNewRound?.();
@@ -246,11 +245,11 @@ export default function GameScreen() {
                   </TouchableOpacity>
                 )}
                 {multiplayer && !isHost ? (
-                  <TouchableOpacity style={styles.quitButton} onPress={handleNewGame}>
+                  <TouchableOpacity style={[styles.quitButton, { backgroundColor: colors.error }]} onPress={handleNewGame}>
                     <Text style={styles.quitButtonText}>End Game</Text>
                   </TouchableOpacity>
                 ) : (
-                  <TouchableOpacity style={styles.statusButton} onPress={handleNewGame}>
+                  <TouchableOpacity style={[styles.statusButton, { backgroundColor: colors.primary }]} onPress={handleNewGame}>
                     <Text style={styles.statusButtonText}>New Game</Text>
                   </TouchableOpacity>
                 )}
@@ -259,9 +258,9 @@ export default function GameScreen() {
             
             {status === 'lost' && (
               <>
-                <Text style={styles.statusTitle}>Game Over</Text>
-                <Text style={styles.statusSubtitle}>You ran out of lives!</Text>
-                <TouchableOpacity style={styles.statusButton} onPress={handleNewGame}>
+                <Text style={[styles.statusTitle, { color: colors.textPrimary }]}>Game Over</Text>
+                <Text style={[styles.statusSubtitle, { color: colors.textSecondary }]}>You ran out of lives!</Text>
+                <TouchableOpacity style={[styles.statusButton, { backgroundColor: colors.primary }]} onPress={handleNewGame}>
                   <Text style={styles.statusButtonText}>Try Again</Text>
                 </TouchableOpacity>
               </>
@@ -269,11 +268,11 @@ export default function GameScreen() {
             
             {status === 'paused' && (
               <>
-                <Text style={styles.statusTitle}>Paused</Text>
-                <TouchableOpacity style={styles.statusButton} onPress={resumeGame}>
+                <Text style={[styles.statusTitle, { color: colors.textPrimary }]}>Paused</Text>
+                <TouchableOpacity style={[styles.statusButton, { backgroundColor: colors.primary }]} onPress={resumeGame}>
                   <Text style={styles.statusButtonText}>Resume</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.quitButton} onPress={handleNewGame}>
+                <TouchableOpacity style={[styles.quitButton, { backgroundColor: colors.error }]} onPress={handleNewGame}>
                   <Text style={styles.quitButtonText}>End Current Game</Text>
                 </TouchableOpacity>
               </>
@@ -289,10 +288,8 @@ export default function GameScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
   },
   multiplayerBanner: {
-    backgroundColor: '#2B7FFF',
     paddingVertical: 8,
     paddingHorizontal: 16,
   },
@@ -318,16 +315,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#D1D5DC',
   },
   newGameButton: {
     paddingVertical: 8,
   },
   newGameText: {
     fontSize: 16,
-    color: '#4A5565',
     fontWeight: '600',
     fontFamily: 'Inter',
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  themeToggle: {
+    width: 36,
+    height: 36,
+    borderRadius: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   difficultyContainer: {
     flexDirection: 'row',
@@ -335,7 +342,6 @@ const styles = StyleSheet.create({
   },
   difficultyText: {
     fontSize: 16,
-    color: '#1E2939',
     fontFamily: 'Inter',
   },
   timerContainer: {
@@ -345,7 +351,6 @@ const styles = StyleSheet.create({
   },
   timerTextHeader: {
     fontSize: 14,
-    color: '#4A5565',
     fontFamily: 'Inter',
   },
   statsBar: {
@@ -355,7 +360,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#D1D5DC',
   },
   mistakesContainer: {
     flexDirection: 'row',
@@ -375,7 +379,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 4,
-    backgroundColor: '#F3F4F6',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -409,7 +412,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statusModal: {
-    backgroundColor: 'white',
     borderRadius: 8,
     padding: 24,
     alignItems: 'center',
@@ -421,20 +423,17 @@ const styles = StyleSheet.create({
   statusTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#1E2939',
     marginBottom: 20,
     fontFamily: 'Inter',
   },
   statusSubtitle: {
     fontSize: 16,
-    color: '#4A5565',
     marginBottom: 8,
     textAlign: 'center',
     fontFamily: 'Inter',
   },
   gameInfoSection: {
     width: '100%',
-    backgroundColor: '#F9FAFB',
     borderRadius: 8,
     padding: 16,
     marginBottom: 24,
@@ -447,18 +446,15 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 14,
-    color: '#6B7280',
     fontWeight: '500',
     fontFamily: 'Inter',
   },
   infoValue: {
     fontSize: 16,
-    color: '#1E2939',
     fontWeight: '600',
     fontFamily: 'Inter',
   },
   statusButton: {
-    backgroundColor: '#2B7FFF',
     paddingVertical: 14,
     paddingHorizontal: 24,
     borderRadius: 8,
@@ -476,13 +472,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
     width: '100%',
   },
   secondaryActionButtonText: {
     fontSize: 14,
-    color: '#6B7280',
     fontWeight: '600',
     fontFamily: 'Inter',
   },
@@ -493,7 +486,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter',
   },
   quitButton: {
-    backgroundColor: '#FB2C36',
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 4,
@@ -509,26 +501,22 @@ const styles = StyleSheet.create({
   completionTime: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1E2939',
     marginBottom: 8,
     fontFamily: 'Inter',
   },
   newRecord: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#22C55E',
     marginBottom: 8,
     fontFamily: 'Inter',
   },
   bestTime: {
     fontSize: 14,
-    color: '#6B7280',
     marginBottom: 24,
     fontFamily: 'Inter',
   },
   winnerInfoSection: {
     width: '100%',
-    backgroundColor: '#F9FAFB',
     borderRadius: 8,
     padding: 16,
     marginBottom: 24,
@@ -537,14 +525,12 @@ const styles = StyleSheet.create({
   winnerName: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#2B7FFF',
     marginBottom: 8,
     fontFamily: 'Inter',
   },
   winnerTime: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1E2939',
     fontFamily: 'Inter',
   },
 });

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useGame } from '../context/GameContext';
+import { useTheme } from '../context/ThemeContext';
 
 interface SudokuCellProps {
   row: number;
@@ -13,6 +14,7 @@ interface SudokuCellProps {
 
 function SudokuCell({ row, col, value, isSelected, selectedCell, onSelect }: SudokuCellProps) {
   const { initialBoard, notes, wrongCell, clearWrongCell, board, solution } = useGame();
+  const { colors } = useTheme();
   
   const isInitial = initialBoard[row][col] !== 0;
   // Cell is also "initial-like" if it's been correctly filled by the user
@@ -88,11 +90,11 @@ function SudokuCell({ row, col, value, isSelected, selectedCell, onSelect }: Sud
 
   // Memoize style calculations to avoid recalculation on every render
   const cellStyle = React.useMemo(() => {
-    const baseStyle = [styles.cell];
+    const baseStyle: any[] = [styles.cell];
 
     // Draw borders only on top/left to avoid overlap, and add outer bottom/right
-    const thinColor = '#D1D5DC';
-    const thickColor = '#6B7280';
+    const thinColor = colors.borderThin;
+    const thickColor = colors.borderThick;
 
     // 3x3 thick separators on top/left
     if (row % 3 === 0) {
@@ -113,33 +115,26 @@ function SudokuCell({ row, col, value, isSelected, selectedCell, onSelect }: Sud
 
     // Background color based on state
     if (isSelected) {
-      baseStyle.push(styles.selectedCell);
+      baseStyle.push({ backgroundColor: colors.cellSelected });
     } else if (hasSameValue(selectedCell?.row ?? -1, selectedCell?.col ?? -1, selectedValue)) {
-      baseStyle.push(styles.sameValueHighlight);
+      baseStyle.push({ backgroundColor: colors.cellSameValue });
     } else if (isInSameRowOrColumn(selectedCell?.row ?? -1, selectedCell?.col ?? -1)) {
-      baseStyle.push(styles.rowColumnHighlight);
+      baseStyle.push({ backgroundColor: colors.cellHighlight });
     } else if (isInSameBox(selectedCell?.row ?? -1, selectedCell?.col ?? -1)) {
-      baseStyle.push(styles.boxHighlight);
-    } else if (isNonEditable) {
-      baseStyle.push(styles.initialCell);
+      baseStyle.push({ backgroundColor: colors.cellHighlight });
     }
     
     return baseStyle;
-  }, [isSelected, selectedCell, isNonEditable, row, col, selectedValue]);
+  }, [isSelected, selectedCell, isNonEditable, row, col, selectedValue, colors]);
 
   const textStyle = React.useMemo(() => {
-    const baseStyle = [styles.cellText];
-    if (isNonEditable) {
-      baseStyle.push(styles.initialText);
-    } else {
-      baseStyle.push(styles.userText);
-    }
+    const baseStyle = [styles.cellText, { color: colors.textPrimary }];
     return baseStyle;
-  }, [isNonEditable]);
+  }, [colors]);
 
   const errorColor = errorAnimation.interpolate({
     inputRange: [0, 1],
-    outputRange: ['transparent', '#FB2C36'],
+    outputRange: ['transparent', colors.error],
   });
 
   return (
@@ -159,6 +154,7 @@ function SudokuCell({ row, col, value, isSelected, selectedCell, onSelect }: Sud
                 key={i}
                 style={[
                   styles.noteText,
+                  { color: colors.textSecondary },
                   { opacity: cellNotes.has(i + 1) ? 1 : 0 }
                 ]}
               >
@@ -194,31 +190,10 @@ const styles = StyleSheet.create({
     opacity: 0.3,
   },
   // Removed bottom/right thick helpers; borders are computed inline to avoid overlaps
-  initialCell: {
-    // No background for filled cells
-  },
-  selectedCell: {
-    backgroundColor: '#BEDBFF',
-  },
-  rowColumnHighlight: {
-    backgroundColor: '#F3F4F6',
-  },
-  boxHighlight: {
-    backgroundColor: '#F3F4F6',
-  },
-  sameValueHighlight: {
-    backgroundColor: '#BEDBFF', // Same blue as selected cell
-  },
   cellText: {
     fontSize: 30,
     fontWeight: '400',
     fontFamily: 'Inter',
-  },
-  initialText: {
-    color: '#1E2939',
-  },
-  userText: {
-    color: '#1E2939',
   },
   notesContainer: {
     flexDirection: 'row',
@@ -230,7 +205,6 @@ const styles = StyleSheet.create({
   },
   noteText: {
     fontSize: 8,
-    color: '#4A5565',
     fontFamily: 'Inter',
     width: '33%',
     textAlign: 'center',

@@ -1,6 +1,7 @@
 import { BlurView } from 'expo-blur';
 import React from 'react';
 import { Modal as RNModal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
 
 interface ModalProps {
   visible: boolean;
@@ -29,6 +30,8 @@ export default function Modal({
   secondaryButton,
   onClose,
 }: ModalProps) {
+  const { colors } = useTheme();
+  
   return (
     <RNModal
       visible={visible}
@@ -37,17 +40,17 @@ export default function Modal({
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <BlurView intensity={40} tint="dark" style={styles.blurBackground}>
-          <View style={styles.modal}>
-            {title && <Text style={styles.title}>{title}</Text>}
-            {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+        <BlurView intensity={40} tint={colors.overlayTint} style={styles.blurBackground}>
+          <View style={[styles.modal, { backgroundColor: colors.modalBackground }]}>
+            {title && <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>}
+            {subtitle && <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{subtitle}</Text>}
             
             {children && <View style={styles.content}>{children}</View>}
             
             <View style={styles.buttons}>
               {primaryButton && (
                 <TouchableOpacity
-                  style={[styles.primaryButton, primaryButton.disabled && styles.buttonDisabled]}
+                  style={[styles.primaryButton, { backgroundColor: colors.primary }, primaryButton.disabled && styles.buttonDisabled]}
                   onPress={primaryButton.onPress}
                   disabled={primaryButton.disabled}
                 >
@@ -56,11 +59,11 @@ export default function Modal({
               )}
               {secondaryButton && (
                 <TouchableOpacity
-                  style={[styles.secondaryButton, secondaryButton.disabled && styles.buttonDisabled]}
+                  style={[styles.secondaryButton, { backgroundColor: colors.buttonBackground }, secondaryButton.disabled && styles.buttonDisabled]}
                   onPress={secondaryButton.onPress}
                   disabled={secondaryButton.disabled}
                 >
-                  <Text style={styles.secondaryButtonText}>{secondaryButton.text}</Text>
+                  <Text style={[styles.secondaryButtonText, { color: colors.textPrimary }]}>{secondaryButton.text}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -91,7 +94,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modal: {
-    backgroundColor: 'white',
     borderRadius: 8,
     padding: 24,
     alignItems: 'center',
@@ -103,14 +105,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#1E2939',
     marginBottom: 8,
     fontFamily: 'Inter',
     textAlign: 'center',
   },
   subtitle: {
     fontSize: 16,
-    color: '#4A5565',
     marginBottom: 24,
     textAlign: 'center',
     fontFamily: 'Inter',
@@ -124,7 +124,6 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   primaryButton: {
-    backgroundColor: '#2B7FFF',
     paddingVertical: 14,
     paddingHorizontal: 24,
     borderRadius: 8,
@@ -139,7 +138,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter',
   },
   secondaryButton: {
-    backgroundColor: '#F3F4F6',
     paddingVertical: 14,
     paddingHorizontal: 24,
     borderRadius: 8,
@@ -148,7 +146,6 @@ const styles = StyleSheet.create({
     minHeight: 52,
   },
   secondaryButtonText: {
-    color: '#1E2939',
     fontSize: 16,
     fontWeight: '600',
     fontFamily: 'Inter',

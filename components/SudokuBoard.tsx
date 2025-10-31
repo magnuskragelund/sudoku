@@ -1,10 +1,12 @@
 import React, { useCallback, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useGame } from '../context/GameContext';
+import { useTheme } from '../context/ThemeContext';
 import SudokuCell from './SudokuCell';
 
 export default function SudokuBoard() {
   const { board, selectedCell, selectCell } = useGame();
+  const { colors } = useTheme();
 
   const handleCellSelect = useCallback((row: number, col: number) => {
     selectCell(row, col);
@@ -34,7 +36,7 @@ export default function SudokuBoard() {
   }, [renderRow]);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.backgroundElevated }]}>
       {boardRows}
     </View>
   );
@@ -42,7 +44,6 @@ export default function SudokuBoard() {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#F9FAFB',
     padding: 0,
     width: '100%', // Ensure board takes full available width
     aspectRatio: 1, // Maintain square shape

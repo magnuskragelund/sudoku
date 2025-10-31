@@ -6,10 +6,12 @@ import { Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, Vi
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Modal from '../components/Modal';
 import { useGame } from '../context/GameContext';
+import { useTheme } from '../context/ThemeContext';
 import { Difficulty } from '../types/game';
 
 export default function MultiplayerScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
   const { createMultiplayerGame, joinMultiplayerGame } = useGame();
   const [activeTab, setActiveTab] = useState<'create' | 'join'>('create');
   
@@ -161,29 +163,29 @@ export default function MultiplayerScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <ChevronLeft size={24} color="#1E2939" />
+          <ChevronLeft size={24} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.title}>Multiplayer</Text>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>Multiplayer</Text>
         <View style={styles.placeholder} />
       </View>
 
       <View style={styles.tabs}>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'create' && styles.activeTab]}
+          style={[styles.tab, activeTab === 'create' && [styles.activeTab, { backgroundColor: colors.primary }]]}
           onPress={() => setActiveTab('create')}
         >
-          <Text style={[styles.tabText, activeTab === 'create' && styles.activeTabText]}>
+          <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === 'create' && styles.activeTabText]}>
             Create Game
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'join' && styles.activeTab]}
+          style={[styles.tab, activeTab === 'join' && [styles.activeTab, { backgroundColor: colors.primary }]]}
           onPress={() => setActiveTab('join')}
         >
-          <Text style={[styles.tabText, activeTab === 'join' && styles.activeTabText]}>
+          <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === 'join' && styles.activeTabText]}>
             Join Game
           </Text>
         </TouchableOpacity>
@@ -192,9 +194,9 @@ export default function MultiplayerScreen() {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {activeTab === 'create' ? (
           <View style={styles.form}>
-            <Text style={styles.label}>Game Name</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>Game Name</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.textPrimary }]}
               value={channelName}
               autoCapitalize="none"
               autoCorrect={false}
@@ -206,12 +208,12 @@ export default function MultiplayerScreen() {
                 setChannelName(normalized);
               }}
               placeholder="e.g., cool-game-123"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colors.textTertiary}
             />
 
-            <Text style={styles.label}>Your Name</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>Your Name</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.textPrimary }]}
               value={playerName}
               onChangeText={async (val) => {
                 setPlayerName(val);
@@ -219,23 +221,25 @@ export default function MultiplayerScreen() {
                 try { await prefStorage.setItem(PLAYER_NAME_KEY, val); } catch (e) { console.log('Failed to save player name:', e); }
               }}
               placeholder="Enter your name"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colors.textTertiary}
             />
 
-            <Text style={styles.label}>Difficulty</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>Difficulty</Text>
             <View style={styles.difficultyContainer}>
               {difficulties.map((diff) => (
                 <TouchableOpacity
                   key={diff.value}
                   style={[
                     styles.difficultyButton,
-                    difficulty === diff.value && styles.difficultyButtonSelected,
+                    { backgroundColor: colors.buttonBackground },
+                    difficulty === diff.value && [styles.difficultyButtonSelected, { backgroundColor: colors.primary }],
                   ]}
                   onPress={() => handleSelectDifficulty(diff.value)}
                 >
                   <Text
                     style={[
                       styles.difficultyButtonText,
+                      { color: colors.textSecondary },
                       difficulty === diff.value && styles.difficultyButtonTextSelected,
                     ]}
                   >
@@ -245,17 +249,18 @@ export default function MultiplayerScreen() {
               ))}
             </View>
 
-            <Text style={styles.label}>Lives</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>Lives</Text>
             <View style={styles.livesContainer}>
               {livesOptions.map((life) => (
                 <TouchableOpacity
                   key={life}
-                  style={[styles.lifeButton, lives === life && styles.lifeButtonSelected]}
+                  style={[styles.lifeButton, { backgroundColor: colors.buttonBackground }, lives === life && [styles.lifeButtonSelected, { backgroundColor: colors.primary }]]}
                   onPress={() => setLives(life)}
                 >
                   <Text
                     style={[
                       styles.lifeButtonText,
+                      { color: colors.textSecondary },
                       lives === life && styles.lifeButtonTextSelected,
                     ]}
                   >
@@ -265,15 +270,15 @@ export default function MultiplayerScreen() {
               ))}
             </View>
 
-            <TouchableOpacity style={styles.primaryButton} onPress={handleCreateGame}>
+            <TouchableOpacity style={[styles.primaryButton, { backgroundColor: colors.primary }]} onPress={handleCreateGame}>
               <Text style={styles.primaryButtonText}>Create Game</Text>
             </TouchableOpacity>
           </View>
         ) : (
           <View style={styles.form}>
-            <Text style={styles.label}>Game Name</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>Game Name</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.textPrimary }]}
               value={joinChannelName}
               autoCapitalize="none"
               autoCorrect={false}
@@ -285,12 +290,12 @@ export default function MultiplayerScreen() {
                 setJoinChannelName(normalized);
               }}
               placeholder="Enter game name"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colors.textTertiary}
             />
 
-            <Text style={styles.label}>Your Name</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>Your Name</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.textPrimary }]}
               value={joinPlayerName}
               onChangeText={async (val) => {
                 setJoinPlayerName(val);
@@ -298,10 +303,10 @@ export default function MultiplayerScreen() {
                 try { await prefStorage.setItem(PLAYER_NAME_KEY, val); } catch (e) { console.log('Failed to save player name:', e); }
               }}
               placeholder="Enter your name"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colors.textTertiary}
             />
 
-            <TouchableOpacity style={styles.primaryButton} onPress={handleJoinGame}>
+            <TouchableOpacity style={[styles.primaryButton, { backgroundColor: colors.primary }]} onPress={handleJoinGame}>
               <Text style={styles.primaryButtonText}>Join Game</Text>
             </TouchableOpacity>
           </View>
@@ -326,7 +331,6 @@ export default function MultiplayerScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
   },
   header: {
     flexDirection: 'row',
@@ -335,7 +339,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
   },
   backButton: {
     width: 40,
@@ -346,7 +349,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1E2939',
   },
   placeholder: {
     width: 40,
@@ -362,15 +364,12 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     alignItems: 'center',
     borderRadius: 8,
-    backgroundColor: '#E5E7EB',
   },
   activeTab: {
-    backgroundColor: '#2B7FFF',
   },
   tabText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#6B7280',
   },
   activeTabText: {
     color: 'white',
@@ -385,18 +384,14 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1E2939',
     marginBottom: 8,
   },
   input: {
-    backgroundColor: 'white',
     borderWidth: 1,
-    borderColor: '#D1D5DC',
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
-    color: '#1E2939',
   },
   difficultyContainer: {
     flexDirection: 'row',
@@ -408,17 +403,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#D1D5DC',
-    backgroundColor: 'white',
+    borderColor: 'transparent',
   },
   difficultyButtonSelected: {
-    backgroundColor: '#2B7FFF',
-    borderColor: '#2B7FFF',
+    borderColor: 'transparent',
   },
   difficultyButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6B7280',
   },
   difficultyButtonTextSelected: {
     color: 'white',
@@ -433,23 +425,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#D1D5DC',
-    backgroundColor: 'white',
+    borderColor: 'transparent',
   },
   lifeButtonSelected: {
-    backgroundColor: '#2B7FFF',
-    borderColor: '#2B7FFF',
+    borderColor: 'transparent',
   },
   lifeButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#6B7280',
   },
   lifeButtonTextSelected: {
     color: 'white',
   },
   primaryButton: {
-    backgroundColor: '#2B7FFF',
     paddingVertical: 16,
     borderRadius: 8,
     alignItems: 'center',

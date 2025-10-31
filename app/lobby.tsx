@@ -4,10 +4,12 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Modal from '../components/Modal';
 import { useGame } from '../context/GameContext';
+import { useTheme } from '../context/ThemeContext';
 import { multiplayerService, Player } from '../utils/multiplayerService';
 
 export default function LobbyScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
   const { multiplayer, startMultiplayerGame, leaveMultiplayerGame } = useGame();
   const [players, setPlayers] = useState<Player[]>([]);
   const [playerCount, setPlayerCount] = useState(0);
@@ -76,31 +78,31 @@ export default function LobbyScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Lobby</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { borderBottomColor: colors.borderThin }]}>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>Lobby</Text>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Game: {multiplayer.channelName}</Text>
-          <Text style={styles.playerCount}>{playerCount} player{playerCount !== 1 ? 's' : ''} connected</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Game: {multiplayer.channelName}</Text>
+          <Text style={[styles.playerCount, { color: colors.textTertiary }]}>{playerCount} player{playerCount !== 1 ? 's' : ''} connected</Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Players</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Players</Text>
           <View style={styles.playersList}>
             {players.map((player) => {
               const currentPlayerId = multiplayerService.getPlayerId();
               const isCurrentPlayer = player.id === currentPlayerId;
               
               return (
-                <View key={player.id} style={styles.playerItem}>
+                <View key={player.id} style={[styles.playerItem, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
                   <View style={styles.playerInfo}>
-                    <Text style={styles.playerName}>{player.name}</Text>
-                    {isCurrentPlayer && <Text style={styles.guestBadge}>(You)</Text>}
-                    {player.isHost && <Text style={styles.hostBadge}>(Host)</Text>}
-                    {!isCurrentPlayer && !player.isHost && <Text style={styles.guestBadge}>(Player)</Text>}
+                    <Text style={[styles.playerName, { color: colors.textPrimary }]}>{player.name}</Text>
+                    {isCurrentPlayer && <Text style={[styles.guestBadge, { color: colors.textTertiary }]}>(You)</Text>}
+                    {player.isHost && <Text style={[styles.hostBadge, { color: colors.primary }]}>(Host)</Text>}
+                    {!isCurrentPlayer && !player.isHost && <Text style={[styles.guestBadge, { color: colors.textTertiary }]}>(Player)</Text>}
                   </View>
                 </View>
               );
@@ -110,12 +112,13 @@ export default function LobbyScreen() {
 
         {isHost && (
           <View style={styles.hostSection}>
-            <Text style={styles.hostNote}>
+            <Text style={[styles.hostNote, { color: colors.textTertiary }]}>
               You are the host. Start the game when all players have joined.
             </Text>
             <TouchableOpacity
               style={[
                 styles.startButton,
+                { backgroundColor: colors.primary },
                 playerCount < 2 && styles.startButtonDisabled,
               ]}
               onPress={handleStartGame}
@@ -128,15 +131,15 @@ export default function LobbyScreen() {
 
         {!isHost && (
           <View style={styles.guestSection}>
-            <Text style={styles.waitNote}>
+            <Text style={[styles.waitNote, { color: colors.textTertiary, backgroundColor: colors.cardBackground }]}>
               Waiting for the host to start the game...
             </Text>
           </View>
         )}
       </ScrollView>
 
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.leaveButton} onPress={handleLeave}>
+      <View style={[styles.footer, { borderTopColor: colors.borderThin }]}>
+        <TouchableOpacity style={[styles.leaveButton, { backgroundColor: colors.error }]} onPress={handleLeave}>
           <Text style={styles.leaveButtonText}>Leave Game</Text>
         </TouchableOpacity>
       </View>
@@ -159,18 +162,15 @@ export default function LobbyScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
   },
   header: {
     paddingHorizontal: 24,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#D1D5DC',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#1E2939',
   },
   content: {
     flex: 1,
@@ -182,22 +182,18 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#1E2939',
     marginBottom: 8,
   },
   playerCount: {
     fontSize: 14,
-    color: '#6B7280',
   },
   playersList: {
     gap: 12,
   },
   playerItem: {
-    backgroundColor: 'white',
     borderRadius: 8,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
   },
   playerInfo: {
     flexDirection: 'row',
@@ -207,28 +203,23 @@ const styles = StyleSheet.create({
   playerName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1E2939',
   },
   hostBadge: {
     fontSize: 12,
-    color: '#2B7FFF',
     fontWeight: '600',
   },
   guestBadge: {
     fontSize: 12,
-    color: '#6B7280',
   },
   hostSection: {
     marginTop: 8,
   },
   hostNote: {
     fontSize: 14,
-    color: '#6B7280',
     marginBottom: 16,
     textAlign: 'center',
   },
   startButton: {
-    backgroundColor: '#2B7FFF',
     paddingVertical: 16,
     borderRadius: 8,
     alignItems: 'center',
@@ -246,19 +237,15 @@ const styles = StyleSheet.create({
   },
   waitNote: {
     fontSize: 14,
-    color: '#6B7280',
     textAlign: 'center',
     padding: 16,
-    backgroundColor: 'white',
     borderRadius: 8,
   },
   footer: {
     padding: 24,
     borderTopWidth: 1,
-    borderTopColor: '#D1D5DC',
   },
   leaveButton: {
-    backgroundColor: '#FB2C36',
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',

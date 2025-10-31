@@ -57,7 +57,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       return {
         ...initialState,
         difficulty: action.difficulty,
-        status: 'ready',
+        status: 'playing',
         lives: initialLivesValue,
         initialLives: initialLivesValue,
         board: puzzle.map(row => [...row]),

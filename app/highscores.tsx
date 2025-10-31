@@ -4,11 +4,13 @@ import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Modal from '../components/Modal';
+import { useTheme } from '../context/ThemeContext';
 import { Difficulty, GameResult } from '../types/game';
 import { clearHighScores, formatDate, formatTime, getHighScores } from '../utils/highScoreStorage';
 
 export default function HighScoresScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
   const [scores, setScores] = useState<GameResult[]>([]);
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | null>(null);
   const [expandedCombo, setExpandedCombo] = useState<string | null>(null);
@@ -78,24 +80,25 @@ export default function HighScoresScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <ChevronLeft size={24} color="#1E2939" />
+          <ChevronLeft size={24} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.title}>High Scores</Text>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>High Scores</Text>
         <View style={styles.placeholder} />
       </View>
 
       {/* Difficulty Tabs */}
-      <View style={styles.tabs}>
+      <View style={[styles.tabs, { borderBottomColor: colors.border }]}>
         {difficulties.map((difficulty) => (
           <TouchableOpacity
             key={difficulty.value}
             style={[
               styles.tab,
-              selectedDifficulty === difficulty.value && styles.tabSelected,
+              { backgroundColor: colors.buttonBackground },
+              selectedDifficulty === difficulty.value && [styles.tabSelected, { backgroundColor: colors.primary }],
             ]}
             onPress={() => {
               // Toggle: if already selected, deselect (show all), otherwise select
@@ -109,6 +112,7 @@ export default function HighScoresScreen() {
             <Text
               style={[
                 styles.tabText,
+                { color: colors.textSecondary },
                 selectedDifficulty === difficulty.value && styles.tabTextSelected,
               ]}
             >
@@ -122,9 +126,9 @@ export default function HighScoresScreen() {
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {sortedGroupedScores.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Trophy size={48} color="#D1D5DB" />
-            <Text style={styles.emptyText}>No high scores yet</Text>
-            <Text style={styles.emptySubtext}>Start playing to see your progress!</Text>
+            <Trophy size={48} color={colors.border} />
+            <Text style={[styles.emptyText, { color: colors.textTertiary }]}>No high scores yet</Text>
+            <Text style={[styles.emptySubtext, { color: colors.textTertiary }]}>Start playing to see your progress!</Text>
           </View>
         ) : (
           sortedGroupedScores.map(({ key, difficulty, lives, results }) => {
@@ -132,45 +136,45 @@ export default function HighScoresScreen() {
             const isExpanded = expandedCombo === key;
 
             return (
-              <View key={key} style={styles.scoreGroup}>
+              <View key={key} style={[styles.scoreGroup, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
                 <TouchableOpacity
                   style={styles.scoreGroupHeader}
                   onPress={() => setExpandedCombo(isExpanded ? null : key)}
                 >
                   <View style={styles.scoreGroupTitle}>
-                    <Text style={styles.scoreGroupDifficulty}>
+                    <Text style={[styles.scoreGroupDifficulty, { color: colors.textPrimary }]}>
                       {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
                     </Text>
-                    <Text style={styles.scoreGroupLives}>{lives} lives</Text>
+                    <Text style={[styles.scoreGroupLives, { color: colors.textTertiary }]}>{lives} lives</Text>
                   </View>
                   <View style={styles.scoreGroupStats}>
                     {bestTime !== null && (
                       <View style={styles.bestTimeContainer}>
-                        <Trophy size={14} color="#2B7FFF" fill="#2B7FFF" />
-                        <Text style={styles.bestTime}>{formatTime(bestTime)}</Text>
+                        <Trophy size={14} color={colors.primary} fill={colors.primary} />
+                        <Text style={[styles.bestTime, { color: colors.primary }]}>{formatTime(bestTime)}</Text>
                       </View>
                     )}
-                    <Text style={styles.gamesCount}>{results.length} games</Text>
+                    <Text style={[styles.gamesCount, { color: colors.textTertiary }]}>{results.length} games</Text>
                   </View>
                 </TouchableOpacity>
 
                 {isExpanded && (
-                  <View style={styles.historyContainer}>
+                  <View style={[styles.historyContainer, { borderTopColor: colors.border }]}>
                     {results.map((result, index) => (
-                      <View key={result.id} style={styles.historyItem}>
+                      <View key={result.id} style={[styles.historyItem, { borderBottomColor: colors.backgroundSecondary }]}>
                         <View style={styles.historyLeft}>
                           {result.won ? (
-                            <CheckCircle size={16} color="#22C55E" fill="#22C55E" />
+                            <CheckCircle size={16} color={colors.success} fill={colors.success} />
                           ) : (
-                            <XCircle size={16} color="#EF4444" fill="#EF4444" />
+                            <XCircle size={16} color={colors.error} fill={colors.error} />
                           )}
-                          <Text style={styles.historyDate}>{formatDate(result.timestamp)}</Text>
+                          <Text style={[styles.historyDate, { color: colors.textTertiary }]}>{formatDate(result.timestamp)}</Text>
                         </View>
                         <Text
                           style={[
                             styles.historyTime,
-                            result.won && styles.historyTimeWon,
-                            !result.won && styles.historyTimeLost,
+                            result.won && { color: colors.success },
+                            !result.won && { color: colors.error },
                           ]}
                         >
                           {formatTime(result.completionTime)}
@@ -187,10 +191,10 @@ export default function HighScoresScreen() {
 
       {/* Clear Button */}
       {sortedGroupedScores.length > 0 && (
-        <View style={styles.footer}>
+        <View style={[styles.footer, { borderTopColor: colors.border, backgroundColor: colors.backgroundElevated }]}>
           <TouchableOpacity style={styles.clearButton} onPress={() => setShowClearModal(true)}>
-            <XSquare size={16} color="#EF4444" />
-            <Text style={styles.clearButtonText}>Clear All Scores</Text>
+            <XSquare size={16} color={colors.error} />
+            <Text style={[styles.clearButtonText, { color: colors.error }]}>Clear All Scores</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -217,7 +221,6 @@ export default function HighScoresScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
   },
   header: {
     flexDirection: 'row',
@@ -226,7 +229,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
   },
   backButton: {
     width: 40,
@@ -237,7 +239,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1E2939',
     fontFamily: 'Inter',
   },
   placeholder: {
@@ -248,7 +249,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
   },
   tab: {
     flex: 1,
@@ -256,15 +256,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 4,
     marginRight: 4,
-    backgroundColor: '#E5E7EB',
     alignItems: 'center',
   },
   tabSelected: {
-    backgroundColor: '#2B7FFF',
   },
   tabText: {
     fontSize: 14,
-    color: '#4A5565',
     fontWeight: '600',
     fontFamily: 'Inter',
   },
@@ -286,23 +283,19 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#6B7280',
     marginTop: 16,
     fontFamily: 'Inter',
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#9CA3AF',
     marginTop: 4,
     fontFamily: 'Inter',
   },
   scoreGroup: {
-    backgroundColor: 'white',
     borderRadius: 8,
     marginBottom: 12,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
   },
   scoreGroupHeader: {
     flexDirection: 'row',
@@ -316,12 +309,10 @@ const styles = StyleSheet.create({
   scoreGroupDifficulty: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1E2939',
     fontFamily: 'Inter',
   },
   scoreGroupLives: {
     fontSize: 12,
-    color: '#6B7280',
     marginTop: 2,
     fontFamily: 'Inter',
   },
@@ -338,17 +329,14 @@ const styles = StyleSheet.create({
   bestTime: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#2B7FFF',
     fontFamily: 'Inter',
   },
   gamesCount: {
     fontSize: 12,
-    color: '#6B7280',
     fontFamily: 'Inter',
   },
   historyContainer: {
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
   },
   historyItem: {
     flexDirection: 'row',
@@ -357,7 +345,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
   },
   historyLeft: {
     flexDirection: 'row',
@@ -366,7 +353,6 @@ const styles = StyleSheet.create({
   },
   historyDate: {
     fontSize: 12,
-    color: '#6B7280',
     fontFamily: 'Inter',
   },
   historyTime: {
@@ -374,17 +360,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontFamily: 'Inter',
   },
-  historyTimeWon: {
-    color: '#22C55E',
-  },
-  historyTimeLost: {
-    color: '#EF4444',
-  },
   footer: {
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    backgroundColor: 'white',
   },
   clearButton: {
     flexDirection: 'row',
@@ -397,7 +375,6 @@ const styles = StyleSheet.create({
   clearButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#EF4444',
     fontFamily: 'Inter',
   },
 });
