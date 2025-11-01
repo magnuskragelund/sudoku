@@ -99,7 +99,7 @@ export default function GameScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Multiplayer Banner */}
       {multiplayer && (
-        <View style={[styles.multiplayerBanner, { backgroundColor: colors.primary }]}>
+        <View style={[styles.multiplayerBanner, { backgroundColor: colorScheme === 'dark' ? '#2A3A4A' : colors.primary }]}>
           <View style={styles.multiplayerBannerContent}>
             <Text style={styles.multiplayerText}>Multiplayer Game: {multiplayer.channelName}</Text>
           </View>

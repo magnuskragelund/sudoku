@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "That's Sudoku",
-    "slug": "sudoku",
+    "name": "Sudoku Face Off",
+    "slug": "sudokufaceoff",
     "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -9,7 +9,7 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "bundleIdentifier": "com.thatssudoku.sudoku",
+      "bundleIdentifier": "com.sudokufaceoff.sudoku",
       "supportsTablet": false,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
