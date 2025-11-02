@@ -101,7 +101,9 @@ export default function GameScreen() {
       {multiplayer && (
         <View style={[styles.multiplayerBanner, { backgroundColor: colorScheme === 'dark' ? '#2A3A4A' : colors.primary }]}>
           <View style={styles.multiplayerBannerContent}>
-            <Text style={styles.multiplayerText}>Multiplayer Game: {multiplayer.channelName}</Text>
+            <Text style={styles.multiplayerText}>
+              {isHost ? "You're hosting:" : "You've joined:"} {multiplayer.channelName}
+            </Text>
           </View>
         </View>
       )}
@@ -112,10 +114,12 @@ export default function GameScreen() {
           <TouchableOpacity onPress={startNewRound} style={styles.newGameButton}>
             <Text style={[styles.newGameText, { color: colors.textSecondary }]}>New Round</Text>
           </TouchableOpacity>
-        ) : (
+        ) : !multiplayer ? (
           <TouchableOpacity onPress={handleNewGame} style={styles.newGameButton}>
             <Text style={[styles.newGameText, { color: colors.textSecondary }]}>New Game</Text>
           </TouchableOpacity>
+        ) : (
+          <View style={styles.newGameButton} />
         )}
         
         <View style={styles.timerContainer}>
@@ -205,7 +209,7 @@ export default function GameScreen() {
                 </TouchableOpacity>
               )}
               <TouchableOpacity style={[styles.quitButton, { backgroundColor: colors.error }]} onPress={handleNewGame}>
-                <Text style={styles.quitButtonText}>End Game</Text>
+                <Text style={styles.quitButtonText}>Leave Current Game</Text>
               </TouchableOpacity>
             </View>
           </BlurView>
@@ -246,7 +250,11 @@ export default function GameScreen() {
                 )}
                 {multiplayer && !isHost ? (
                   <TouchableOpacity style={[styles.quitButton, { backgroundColor: colors.error }]} onPress={handleNewGame}>
-                    <Text style={styles.quitButtonText}>End Game</Text>
+                    <Text style={styles.quitButtonText}>Leave Current Game</Text>
+                  </TouchableOpacity>
+                ) : multiplayer && isHost ? (
+                  <TouchableOpacity style={[styles.quitButton, { backgroundColor: colors.error }]} onPress={handleNewGame}>
+                    <Text style={styles.quitButtonText}>Leave Current Game</Text>
                   </TouchableOpacity>
                 ) : (
                   <TouchableOpacity style={[styles.statusButton, { backgroundColor: colors.primary }]} onPress={handleNewGame}>
@@ -260,8 +268,31 @@ export default function GameScreen() {
               <>
                 <Text style={[styles.statusTitle, { color: colors.textPrimary }]}>Game Over</Text>
                 <Text style={[styles.statusSubtitle, { color: colors.textSecondary }]}>You ran out of lives!</Text>
-                <TouchableOpacity style={[styles.statusButton, { backgroundColor: colors.primary }]} onPress={handleNewGame}>
-                  <Text style={styles.statusButtonText}>Try Again</Text>
+                {multiplayer && isHost && (
+                  <TouchableOpacity 
+                    style={[styles.statusButton, { backgroundColor: colors.primary, marginBottom: 12 }]}
+                    onPress={async () => {
+                      try {
+                        await startNewRound?.();
+                      } catch {}
+                    }}
+                  >
+                    <Text style={styles.statusButtonText}>Start New Round</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity 
+                  style={[multiplayer ? styles.quitButton : styles.statusButton, { backgroundColor: multiplayer ? colors.error : colors.primary }]} 
+                  onPress={async () => {
+                    if (multiplayer) {
+                      await leaveMultiplayerGame?.();
+                    }
+                    newGame();
+                    router.push('/');
+                  }}
+                >
+                  <Text style={multiplayer ? styles.quitButtonText : styles.statusButtonText}>
+                    {multiplayer ? 'Leave Current Game' : 'Try Again'}
+                  </Text>
                 </TouchableOpacity>
               </>
             )}
@@ -270,10 +301,14 @@ export default function GameScreen() {
               <>
                 <Text style={[styles.statusTitle, { color: colors.textPrimary }]}>Paused</Text>
                 <TouchableOpacity style={[styles.statusButton, { backgroundColor: colors.primary }]} onPress={resumeGame}>
-                  <Text style={styles.statusButtonText}>Resume</Text>
+                  <Text style={styles.statusButtonText}>
+                    {multiplayer ? 'Resume for All' : 'Resume'}
+                  </Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={[styles.quitButton, { backgroundColor: colors.error }]} onPress={handleNewGame}>
-                  <Text style={styles.quitButtonText}>End Current Game</Text>
+                  <Text style={styles.quitButtonText}>
+                    {multiplayer ? 'Leave Current Game' : 'End Current Game'}
+                  </Text>
                 </TouchableOpacity>
               </>
             )}
