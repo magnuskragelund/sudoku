@@ -1,5 +1,13 @@
 // import '@testing-library/react-native/extend-expect';
 
+// Mock expo winter module system
+global.__ExpoImportMetaRegistry = {};
+
+// Mock structuredClone if not available (for expo compatibility)
+if (typeof global.structuredClone === 'undefined') {
+  global.structuredClone = (obj) => JSON.parse(JSON.stringify(obj));
+}
+
 // Mock expo-router
 jest.mock('expo-router', () => ({
   useRouter: () => ({
