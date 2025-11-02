@@ -421,16 +421,21 @@ class MultiplayerService {
   subscribeToGameBoard(callback: (payload: any) => void): () => void {
     if (!this.currentChannel) return () => {};
 
+    // Capture the channel reference at subscription time, not cleanup time
+    // This ensures we remove listeners from the correct channel
+    const channel = this.currentChannel;
+
     const handler = ({ payload }: any) => {
       callback(payload);
     };
 
-    this.currentChannel.on('broadcast', { event: 'game-board-shared' }, handler);
+    channel.on('broadcast', { event: 'game-board-shared' }, handler);
 
     return () => {
-      if (this.currentChannel && typeof this.currentChannel.off === 'function') {
+      // Remove listener from the captured channel reference
+      if (channel && typeof channel.off === 'function') {
         try {
-          this.currentChannel.off('broadcast', { event: 'game-board-shared' }, handler);
+          channel.off('broadcast', { event: 'game-board-shared' }, handler);
         } catch (error) {
           console.log('Error during cleanup of game board listener:', error);
         }

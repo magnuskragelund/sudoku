@@ -34,9 +34,10 @@ export default function LobbyScreen() {
     // Subscribe to game board shared events to auto-navigate when game starts
     const unsubscribeGameBoard = multiplayerService.subscribeToGameBoard(() => {
       console.log('Game board received in lobby, navigating to game screen');
-      // Wait a moment for the game to load, then navigate
+      // Use replace instead of push to unmount lobby and clean up its subscriptions
+      // This prevents duplicate game board loading when host starts new rounds
       setTimeout(() => {
-        router.push('/game');
+        router.replace('/game');
       }, 500);
     });
 
