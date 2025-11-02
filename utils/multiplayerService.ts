@@ -239,13 +239,17 @@ class MultiplayerService {
   subscribeToPlayers(callback: (players: Player[]) => void): () => void {
     if (!this.currentChannel || !this.gameId) return () => {};
     
+    // Capture the channel reference at subscription time, not cleanup time
+    // This ensures we remove listeners from the correct channel
+    const channel = this.currentChannel;
+    
     this.playerListCallback = callback;
     // Fresh list for this subscription to avoid leaking players from previous games
     this.knownPlayers = [];
 
     // Send current player list via broadcast to request sync
     const requestPlayerList = () => {
-      this.currentChannel.send({
+      channel.send({
         type: 'broadcast',
         event: 'request-player-list',
         payload: {
@@ -278,7 +282,7 @@ class MultiplayerService {
     const requestPlayerListHandler = ({ payload }: any) => {
       console.log('Request for player list received from:', payload);
       // Respond with our current state
-      this.currentChannel.send({
+      channel.send({
         type: 'broadcast',
         event: 'my-player-info',
         payload: {
@@ -304,10 +308,10 @@ class MultiplayerService {
       }
     };
 
-    // Listen for broadcast events
-    this.currentChannel.on('broadcast', { event: 'player-joined' }, playerJoinedHandler);
-    this.currentChannel.on('broadcast', { event: 'request-player-list' }, requestPlayerListHandler);
-    this.currentChannel.on('broadcast', { event: 'my-player-info' }, myPlayerInfoHandler);
+    // Listen for broadcast events on the captured channel
+    channel.on('broadcast', { event: 'player-joined' }, playerJoinedHandler);
+    channel.on('broadcast', { event: 'request-player-list' }, requestPlayerListHandler);
+    channel.on('broadcast', { event: 'my-player-info' }, myPlayerInfoHandler);
 
     // Send initial request and announce ourself
     setTimeout(() => {
@@ -325,8 +329,7 @@ class MultiplayerService {
 
     // Return unsubscribe function
     return () => {
-      // Remove listeners if possible and clear callback/local state for this subscription
-      const channel = this.currentChannel;
+      // Remove listeners from the captured channel reference
       if (channel && typeof channel.off === 'function') {
         try {
           channel.off('broadcast', { event: 'player-joined' }, playerJoinedHandler);
