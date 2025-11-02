@@ -95,12 +95,12 @@ export default function MultiplayerScreen() {
 
   // Auto-suggest a short hyphenated game name like "monkey-glass"
   const WORDS: string[] = [
-    'apple','bear','blue','boat','book','cake','cat','chip','cloud','coin',
-    'cool','crow','deer','dove','dust','easy','fire','fish','frog','gift',
+    'apple','bear','blue','boat','book','cake','cat','rain','cloud','coin',
+    'cool','crow','deer','ball','dust','easy','fire','fish','frog','gift',
     'gold','goat','hand','hawk','heat','hill','ice','iron','jazz','kite',
-    'leaf','lime','lion','luna','mint','moss','moon','mouse','nest','note',
+    'leaf','lime','lion','luna','mint','saint','moon','mouse','nest','ant',
     'pearl','pink','pond','rain','rock','seed','ship','snow','star','tree',
-    'tide','wolf','wood','zinc'
+    'tide','wolf','wood','hat'
   ];
 
   function generateGameName(): string {
@@ -172,21 +172,21 @@ export default function MultiplayerScreen() {
         <View style={styles.placeholder} />
       </View>
 
-      <View style={styles.tabs}>
+      <View style={[styles.tabs, { borderBottomColor: colors.border }]}>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'create' && [styles.activeTab, { backgroundColor: colors.primary }]]}
+          style={[styles.tab, activeTab === 'create' && [styles.activeTab, { borderBottomColor: colors.primary }]]}
           onPress={() => setActiveTab('create')}
         >
-          <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === 'create' && styles.activeTabText]}>
-            Create Game
+          <Text style={[styles.tabText, { color: activeTab === 'create' ? colors.primary : colors.textSecondary }]}>
+            Create
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'join' && [styles.activeTab, { backgroundColor: colors.primary }]]}
+          style={[styles.tab, activeTab === 'join' && [styles.activeTab, { borderBottomColor: colors.primary }]]}
           onPress={() => setActiveTab('join')}
         >
-          <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === 'join' && styles.activeTabText]}>
-            Join Game
+          <Text style={[styles.tabText, { color: activeTab === 'join' ? colors.primary : colors.textSecondary }]}>
+            Join
           </Text>
         </TouchableOpacity>
       </View>
@@ -356,23 +356,30 @@ const styles = StyleSheet.create({
   tabs: {
     flexDirection: 'row',
     paddingHorizontal: 24,
-    paddingVertical: 16,
-    gap: 12,
+    paddingTop: 16,
+    paddingBottom: 0,
+    gap: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
   },
   tab: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 8,
     alignItems: 'center',
-    borderRadius: 8,
+    borderBottomWidth: 3,
+    borderBottomColor: 'transparent',
   },
   activeTab: {
+    borderBottomWidth: 3,
   },
   tabText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
+    letterSpacing: 0.3,
   },
   activeTabText: {
-    color: 'white',
+    color: 'inherit',
   },
   content: {
     flex: 1,
