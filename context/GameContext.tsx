@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect, useReducer } from 'react';
 import { Difficulty, DIFFICULTY_LIVES, GameActions, GameResult, GameState, MultiplayerGame, SerializableGameState } from '../types/game';
 import { serializeGameState } from '../utils/gameSerializer';
 import { saveGameResult } from '../utils/highScoreStorage';
+import { logger } from '../utils/logger';
 import { multiplayerService } from '../utils/multiplayerService';
 import { generatePuzzle } from '../utils/sudokuGenerator';
 import { copyBoard } from '../utils/sudokuRules';
@@ -150,7 +151,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
                 completionTime: state.timeElapsed,
               },
             });
-            console.log('Broadcasting win to other players');
+            logger.log('Broadcasting win to other players');
           }
         }
 
@@ -358,7 +359,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
     // Subscribe to game board shared events
     const unsubscribeGameBoard = multiplayerService.subscribeToGameBoard((payload: any) => {
-      console.log('Received shared game board:', payload);
+      logger.log('Received shared game board:', payload);
       
       // Ensure any lingering overlays/modals are cleared before loading the new round
       dispatch({ type: 'DISMISS_WINNER_MODAL' });
@@ -384,17 +385,17 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     if (!state.multiplayer || !multiplayerService.currentChannel) return;
 
     const handlePauseReceived = () => {
-      console.log('Received pause broadcast - pausing game');
+      logger.log('Received pause broadcast - pausing game');
       dispatch({ type: 'PAUSE_GAME' });
     };
 
     const handleResumeReceived = () => {
-      console.log('Received resume broadcast - resuming game');
+      logger.log('Received resume broadcast - resuming game');
       dispatch({ type: 'RESUME_GAME' });
     };
 
     const handlePlayerWon = ({ payload }: any) => {
-      console.log('Another player won:', payload);
+      logger.log('Another player won:', payload);
       dispatch({ 
         type: 'SHOW_MULTIPLAYER_WINNER', 
         playerName: payload.playerName, 
@@ -420,7 +421,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           channel.off('broadcast', { event: 'game-resumed' }, handleResumeReceived);
           channel.off('broadcast', { event: 'player-won' }, handlePlayerWon);
         } catch (error) {
-          console.log('Error during cleanup of multiplayer listeners:', error);
+          logger.log('Error during cleanup of multiplayer listeners:', error);
         }
       }
     };
@@ -442,7 +443,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           event: 'game-paused',
           payload: {},
         });
-        console.log('Broadcasting pause to other players');
+        logger.log('Broadcasting pause to other players');
       }
     },
     resumeGame: () => {
@@ -455,7 +456,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           event: 'game-resumed',
           payload: {},
         });
-        console.log('Broadcasting resume to other players');
+        logger.log('Broadcasting resume to other players');
       }
     },
     selectCell: (row: number, col: number) => dispatch({ type: 'SELECT_CELL', row, col }),
@@ -490,7 +491,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           createdAt: game.createdAt,
         }});
       } catch (error) {
-        console.error('Failed to create multiplayer game:', error);
+        logger.error('Failed to create multiplayer game:', error);
         throw error;
       }
     },
@@ -508,7 +509,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           createdAt: game.createdAt,
         }});
       } catch (error) {
-        console.error('Failed to join multiplayer game:', error);
+        logger.error('Failed to join multiplayer game:', error);
         throw error;
       }
     },
@@ -517,7 +518,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         await multiplayerService.leaveGame();
         dispatch({ type: 'SET_MULTIPLAYER', game: null });
       } catch (error) {
-        console.error('Failed to leave multiplayer game:', error);
+        logger.error('Failed to leave multiplayer game:', error);
       }
     },
     startMultiplayerGame: async () => {
@@ -546,7 +547,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         // Update database
         await multiplayerService.startGame();
       } catch (error) {
-        console.error('Failed to start multiplayer game:', error);
+        logger.error('Failed to start multiplayer game:', error);
         throw error;
       }
     },
@@ -556,7 +557,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         // Host-only guard
         const isHost = state.multiplayer.hostId === multiplayerService.getPlayerId();
         if (!isHost) {
-          console.log('Only host can start a new round');
+          logger.log('Only host can start a new round');
           return;
         }
 
@@ -591,7 +592,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           initialBoard: puzzle,
         });
       } catch (error) {
-        console.error('Failed to start new round:', error);
+        logger.error('Failed to start new round:', error);
         throw error;
       }
     },

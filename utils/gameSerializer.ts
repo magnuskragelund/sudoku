@@ -1,4 +1,5 @@
 import { GameState, SerializableGameState } from '../types/game';
+import { logger } from './logger';
 import { countSolutions } from './sudokuSolver';
 
 /**
@@ -36,7 +37,7 @@ export function deserializeGameState(data: string): SerializableGameState | null
     
     return parsed;
   } catch (error) {
-    console.error('Error deserializing game state:', error);
+    logger.error('Error deserializing game state:', error);
     return null;
   }
 }
@@ -95,7 +96,7 @@ export function validateGameState(state: SerializableGameState): boolean {
   // Verify puzzle has unique solution
   const solutionCount = countSolutions(state.board, 2);
   if (solutionCount !== 1) {
-    console.error('Puzzle does not have a unique solution');
+    logger.error('Puzzle does not have a unique solution');
     return false;
   }
   
@@ -104,7 +105,7 @@ export function validateGameState(state: SerializableGameState): boolean {
   const hasValidSolution = isSolutionCorrect(boardCopy, state.solution);
   
   if (!hasValidSolution) {
-    console.error('Provided solution does not match puzzle');
+    logger.error('Provided solution does not match puzzle');
     return false;
   }
   

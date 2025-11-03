@@ -1,4 +1,5 @@
 import { Difficulty } from '../types/game';
+import { logger } from './logger';
 import { supabase } from './supabaseClient';
 
 export interface Player {
@@ -29,6 +30,8 @@ export interface MultiplayerMove {
 
 export type MultiplayerCallback = (data: any) => void;
 
+const MAX_PLAYERS = 10;
+
 class MultiplayerService {
   public currentChannel: any = null;
   private gameId: string | null = null;
@@ -44,14 +47,27 @@ class MultiplayerService {
    */
   private async resetForNewGame(): Promise<void> {
     try {
+      // Clean up active subscription first
+      if (this.activeSubscription) {
+        this.activeSubscription.cleanup();
+        this.activeSubscription = null;
+      }
+
+      // Unsubscribe and cleanup channel
       if (this.currentChannel) {
         await this.currentChannel.unsubscribe();
+        
+        // Additional cleanup: Remove the channel from Supabase client
+        if (typeof this.currentChannel.untrack === 'function') {
+          this.currentChannel.untrack();
+        }
       }
     } catch (e) {
-      console.log('Error unsubscribing previous channel:', e);
+      logger.log('Error unsubscribing previous channel:', e);
     } finally {
       this.currentChannel = null;
     }
+    
     // Do not reset playerId so a user keeps their identity across games
     this.gameId = null;
     // Keep playerId stable, but reset role/name/game-local state
@@ -59,10 +75,6 @@ class MultiplayerService {
     this.currentPlayerName = null;
     this.playerListCallback = null;
     this.knownPlayers = [];
-    if (this.activeSubscription) {
-      this.activeSubscription.cleanup();
-      this.activeSubscription = null;
-    }
   }
 
   /**
@@ -141,12 +153,12 @@ class MultiplayerService {
 
     // Subscribe to game updates
     this.currentChannel.on('broadcast', { event: 'game-update' }, (payload: any) => {
-      console.log('Game update received:', payload);
+      logger.log('Game update received:', payload);
     });
 
     await this.currentChannel.subscribe(async (status: string) => {
       if (status === 'SUBSCRIBED') {
-        console.log('Host channel SUBSCRIBED status:', status);
+        logger.log('Host channel SUBSCRIBED status:', status);
         
         // Announce host joining
         await this.currentChannel.send({
@@ -155,7 +167,7 @@ class MultiplayerService {
           payload: { playerId: hostId, playerName },
         });
         
-        console.log('Host announced themselves');
+        logger.log('Host announced themselves');
       }
     });
 
@@ -181,10 +193,26 @@ class MultiplayerService {
       throw new Error('Game not found or has already started');
     }
 
+    // Check if game is full
+    const currentPlayerCount = gameData.player_count || 1;
+    if (currentPlayerCount >= MAX_PLAYERS) {
+      throw new Error('Game is full');
+    }
+
     const playerId = this.getPlayerId();
     const gameId = gameData.id;
     this.hostId = gameData.host_id; // Store host ID
     this.currentPlayerName = playerName;
+
+    // Increment player count in database
+    const { error: updateError } = await supabase
+      .from('multiplayer_games')
+      .update({ player_count: currentPlayerCount + 1 })
+      .eq('id', gameId);
+
+    if (updateError) {
+      logger.error('Failed to update player count:', updateError);
+    }
 
     // Connect to the game channel
     this.currentChannel = supabase.channel(`game:${gameId}`);
@@ -192,16 +220,16 @@ class MultiplayerService {
 
     // Subscribe to game updates
     this.currentChannel.on('broadcast', { event: 'game-update' }, (payload: any) => {
-      console.log('Game update received:', payload);
+      logger.log('Game update received:', payload);
     });
 
     this.currentChannel.on('presence', { event: 'sync' }, () => {
-      console.log('Presence sync');
+      logger.log('Presence sync');
     });
 
     await this.currentChannel.subscribe(async (status: string) => {
       if (status === 'SUBSCRIBED') {
-        console.log('Player channel SUBSCRIBED status:', status);
+        logger.log('Player channel SUBSCRIBED status:', status);
         
         // Broadcast player joined event
         await this.currentChannel.send({
@@ -210,7 +238,7 @@ class MultiplayerService {
           payload: { playerId, playerName },
         });
         
-        console.log('Player announced themselves');
+        logger.log('Player announced themselves');
       }
     });
 
@@ -357,7 +385,7 @@ class MultiplayerService {
           channel.off('broadcast', { event: 'request-player-list' }, requestPlayerListHandler);
           channel.off('broadcast', { event: 'my-player-info' }, myPlayerInfoHandler);
         } catch (error) {
-          console.log('Error during cleanup of player listeners:', error);
+          logger.log('Error during cleanup of player listeners:', error);
         }
       }
       this.playerListCallback = null;
@@ -465,7 +493,7 @@ class MultiplayerService {
         try {
           channel.off('broadcast', { event: 'game-board-shared' }, handler);
         } catch (error) {
-          console.log('Error during cleanup of game board listener:', error);
+          logger.log('Error during cleanup of game board listener:', error);
         }
       }
     };
@@ -475,19 +503,52 @@ class MultiplayerService {
    * Leave the current game
    */
   async leaveGame(): Promise<void> {
-    if (this.currentChannel) {
-      await this.currentChannel.unsubscribe();
-      this.currentChannel = null;
+    const currentGameId = this.gameId;
+    
+    try {
+      // Decrement player count in database before leaving (only if game is still waiting)
+      if (currentGameId) {
+        const { data: gameData } = await supabase
+          .from('multiplayer_games')
+          .select('player_count, status')
+          .eq('id', currentGameId)
+          .single();
+
+        if (gameData && gameData.status === 'waiting' && gameData.player_count > 1) {
+          await supabase
+            .from('multiplayer_games')
+            .update({ player_count: gameData.player_count - 1 })
+            .eq('id', currentGameId);
+        }
+      }
+
+      // Clean up active subscription first
+      if (this.activeSubscription) {
+        this.activeSubscription.cleanup();
+        this.activeSubscription = null;
+      }
+
+      // Unsubscribe and remove channel
+      if (this.currentChannel) {
+        await this.currentChannel.unsubscribe();
+        
+        // Additional cleanup: Remove the channel from Supabase client
+        if (typeof this.currentChannel.untrack === 'function') {
+          this.currentChannel.untrack();
+        }
+        
+        this.currentChannel = null;
+      }
+    } catch (error) {
+      logger.error('Error during leaveGame cleanup:', error);
+    } finally {
+      // Always reset state even if cleanup fails
+      this.gameId = null;
+      this.hostId = null;
+      this.currentPlayerName = null;
+      this.playerListCallback = null;
+      this.knownPlayers = [];
     }
-    if (this.activeSubscription) {
-      this.activeSubscription.cleanup();
-      this.activeSubscription = null;
-    }
-    this.gameId = null;
-    this.hostId = null;
-    this.currentPlayerName = null;
-    this.playerListCallback = null;
-    this.knownPlayers = [];
   }
 
   /**

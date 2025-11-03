@@ -65,7 +65,7 @@ export default function MultiplayerScreen() {
           setDifficulty(saved as Difficulty);
         }
       } catch (e) {
-        console.log('Failed to load difficulty preference:', e);
+        // Failed to load preference - silently continue with default
       }
     };
     const loadPlayerNames = async () => {
@@ -76,7 +76,7 @@ export default function MultiplayerScreen() {
           setJoinPlayerName(saved);
         }
       } catch (e) {
-        console.log('Failed to load player name:', e);
+        // Failed to load player name - silently continue with empty
       }
     };
     loadDifficultyPref();
@@ -89,7 +89,7 @@ export default function MultiplayerScreen() {
     try {
       await prefStorage.setItem(DIFFICULTY_PREF_KEY, value);
     } catch (e) {
-      console.log('Failed to save difficulty preference:', e);
+      // Failed to save preference - silently continue
     }
   };
 
@@ -138,7 +138,6 @@ export default function MultiplayerScreen() {
       
       router.push('/lobby');
     } catch (error) {
-      console.error('Error creating game:', error);
       setErrorModal({ title: 'Error', message: 'Failed to create game. Please try again.' });
     }
   };
@@ -156,9 +155,16 @@ export default function MultiplayerScreen() {
       await new Promise(resolve => setTimeout(resolve, 300));
       
       router.push('/lobby');
-    } catch (error) {
-      console.error('Error joining game:', error);
-      setErrorModal({ title: 'Error', message: 'Failed to join game. Please check the game name and try again.' });
+    } catch (error: any) {
+      const errorMessage = error?.message || '';
+      
+      if (errorMessage.includes('Game is full')) {
+        setErrorModal({ title: 'Game Full', message: 'This game has reached the maximum number of players (10). Please try another game.' });
+      } else if (errorMessage.includes('not found') || errorMessage.includes('already started')) {
+        setErrorModal({ title: 'Game Not Available', message: 'Game not found or has already started. Please check the game name.' });
+      } else {
+        setErrorModal({ title: 'Error', message: 'Failed to join game. Please try again.' });
+      }
     }
   };
 
@@ -218,7 +224,7 @@ export default function MultiplayerScreen() {
               onChangeText={async (val) => {
                 setPlayerName(val);
                 setJoinPlayerName(val);
-                try { await prefStorage.setItem(PLAYER_NAME_KEY, val); } catch (e) { console.log('Failed to save player name:', e); }
+                try { await prefStorage.setItem(PLAYER_NAME_KEY, val); } catch (e) { /* Failed to save - silently continue */ }
               }}
               placeholder="Enter your name"
               placeholderTextColor={colors.textTertiary}
@@ -300,7 +306,7 @@ export default function MultiplayerScreen() {
               onChangeText={async (val) => {
                 setJoinPlayerName(val);
                 setPlayerName(val);
-                try { await prefStorage.setItem(PLAYER_NAME_KEY, val); } catch (e) { console.log('Failed to save player name:', e); }
+                try { await prefStorage.setItem(PLAYER_NAME_KEY, val); } catch (e) { /* Failed to save - silently continue */ }
               }}
               placeholder="Enter your name"
               placeholderTextColor={colors.textTertiary}

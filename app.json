@@ -8,11 +8,17 @@
     "scheme": "sudoku",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "description": "A modern Sudoku puzzle game with real-time multiplayer. Play solo or challenge friends to solve puzzles together. Features multiple difficulty levels, customizable lives, and competitive gameplay.",
+    "primaryColor": "#2B7FFF",
+    "backgroundColor": "#FFFFFF",
     "ios": {
       "bundleIdentifier": "com.sudokufaceoff.sudoku",
       "supportsTablet": false,
+      "buildNumber": "1.0.4",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSUserTrackingUsageDescription": "This app does not track you. We respect your privacy.",
+        "NSPhotoLibraryUsageDescription": "This app does not access your photo library."
       }
     },
     "android": {
@@ -25,7 +31,11 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "supportsTablets": false,
-      "package": "com.sudokufaceoff.sudoku"
+      "package": "com.sudokufaceoff.sudoku",
+      "versionCode": 4,
+      "permissions": [
+        "INTERNET"
+      ]
     },
     "web": {
       "output": "static",

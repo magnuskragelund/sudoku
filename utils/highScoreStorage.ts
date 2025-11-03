@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Difficulty, GameResult, HighScoreData } from '../types/game';
+import { logger } from './logger';
 
 const STORAGE_KEY = '@sudoku_high_scores';
 const MAX_HISTORY_SIZE = 1000;
@@ -12,7 +13,7 @@ export async function saveGameResult(result: GameResult): Promise<void> {
   try {
     // Validate that lives is a valid number
     if (typeof result.lives !== 'number' || isNaN(result.lives)) {
-      console.error('Invalid lives value:', result.lives);
+      logger.error('Invalid lives value:', result.lives);
       return;
     }
 
@@ -51,7 +52,7 @@ export async function saveGameResult(result: GameResult): Promise<void> {
     // Save updated data
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch (error) {
-    console.error('Error saving game result:', error);
+    logger.error('Error saving game result:', error);
   }
 }
 
@@ -72,7 +73,7 @@ export async function getHighScores(): Promise<HighScoreData> {
     
     return data;
   } catch (error) {
-    console.error('Error loading high scores:', error);
+    logger.error('Error loading high scores:', error);
     return { results: [], bestTimes: {} };
   }
 }
@@ -83,7 +84,7 @@ export async function getBestTime(difficulty: Difficulty, lives: number): Promis
     const comboKey = getComboKey(difficulty, lives);
     return data.bestTimes[comboKey] || null;
   } catch (error) {
-    console.error('Error getting best time:', error);
+    logger.error('Error getting best time:', error);
     return null;
   }
 }
@@ -109,7 +110,7 @@ export async function getGameHistory(
     // Sort by date (most recent first)
     return results.sort((a, b) => b.timestamp - a.timestamp);
   } catch (error) {
-    console.error('Error getting game history:', error);
+    logger.error('Error getting game history:', error);
     return [];
   }
 }
@@ -117,9 +118,9 @@ export async function getGameHistory(
 export async function clearHighScores(): Promise<void> {
   try {
     await AsyncStorage.removeItem(STORAGE_KEY);
-    console.log('High scores cleared');
+    logger.log('High scores cleared');
   } catch (error) {
-    console.error('Error clearing high scores:', error);
+    logger.error('Error clearing high scores:', error);
   }
 }
 
@@ -128,12 +129,12 @@ export async function debugHighScores(): Promise<void> {
     const dataString = await AsyncStorage.getItem(STORAGE_KEY);
     if (dataString) {
       const data = JSON.parse(dataString);
-      console.log('Current high scores data:', JSON.stringify(data, null, 2));
+      logger.log('Current high scores data:', JSON.stringify(data, null, 2));
     } else {
-      console.log('No high scores data found');
+      logger.log('No high scores data found');
     }
   } catch (error) {
-    console.error('Error reading high scores:', error);
+    logger.error('Error reading high scores:', error);
   }
 }
 

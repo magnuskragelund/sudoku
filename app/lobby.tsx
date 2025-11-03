@@ -62,7 +62,7 @@ export default function LobbyScreen() {
         router.push('/game');
       }, 500);
     } catch (error) {
-      console.error('Error starting game:', error);
+      // Error starting game - handled by modal
       setShowErrorModal(true);
     }
   };

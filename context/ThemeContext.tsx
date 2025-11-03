@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useColorScheme } from 'react-native';
+import { logger } from '../utils/logger';
 
 type ThemeMode = 'light' | 'dark' | 'system';
 type ColorScheme = 'light' | 'dark';
@@ -130,7 +131,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           setThemeState(savedTheme);
         }
       } catch (error) {
-        console.error('Failed to load theme preference:', error);
+        logger.error('Failed to load theme preference:', error);
       } finally {
         setIsLoading(false);
       }
@@ -144,7 +145,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       await AsyncStorage.setItem(THEME_STORAGE_KEY, newTheme);
       setThemeState(newTheme);
     } catch (error) {
-      console.error('Failed to save theme preference:', error);
+      logger.error('Failed to save theme preference:', error);
     }
   };
 
