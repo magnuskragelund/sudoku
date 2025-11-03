@@ -15,25 +15,16 @@ export default function LobbyScreen() {
   const [playerCount, setPlayerCount] = useState(0);
   const [showErrorModal, setShowErrorModal] = useState(false);
 
+  // Subscribe once on mount, never re-subscribe
   useEffect(() => {
-    // Redirect to home if not in a multiplayer game
-    if (!multiplayer) {
-      router.replace('/');
-      return;
-    }
-
-    console.log('Lobby screen: Setting up player subscription');
-
-    // Subscribe immediately to get updates
+    // Subscribe to player updates - managed by the service, won't reset on re-subscription
     const unsubscribe = multiplayerService.subscribeToPlayers((updatedPlayers) => {
-      console.log('Lobby received player update:', updatedPlayers);
       setPlayers(updatedPlayers);
       setPlayerCount(updatedPlayers.length);
     });
 
     // Subscribe to game board shared events to auto-navigate when game starts
     const unsubscribeGameBoard = multiplayerService.subscribeToGameBoard(() => {
-      console.log('Game board received in lobby, navigating to game screen');
       // Use replace instead of push to unmount lobby and clean up its subscriptions
       // This prevents duplicate game board loading when host starts new rounds
       setTimeout(() => {
@@ -41,8 +32,8 @@ export default function LobbyScreen() {
       }, 500);
     });
 
+    // Cleanup subscriptions ONLY on actual unmount
     return () => {
-      // Cleanup subscription on unmount
       if (typeof unsubscribe === 'function') {
         unsubscribe();
       }
@@ -50,7 +41,14 @@ export default function LobbyScreen() {
         unsubscribeGameBoard();
       }
     };
-  }, [router, multiplayer]);
+  }, []);
+
+  // Separate effect to redirect if multiplayer is null
+  useEffect(() => {
+    if (!multiplayer) {
+      router.replace('/');
+    }
+  }, [multiplayer, router]);
 
   const isHost = multiplayer?.hostId === multiplayerService.getPlayerId();
 

@@ -37,6 +37,7 @@ class MultiplayerService {
   public currentPlayerName: string | null = null;
   private playerListCallback: ((players: Player[]) => void) | null = null;
   private knownPlayers: Player[] = [];
+  private activeSubscription: { channel: any; cleanup: () => void } | null = null;
 
   /**
    * Reset any existing channel and local state before switching games
@@ -58,6 +59,10 @@ class MultiplayerService {
     this.currentPlayerName = null;
     this.playerListCallback = null;
     this.knownPlayers = [];
+    if (this.activeSubscription) {
+      this.activeSubscription.cleanup();
+      this.activeSubscription = null;
+    }
   }
 
   /**
@@ -130,7 +135,8 @@ class MultiplayerService {
     }
 
     // Connect to the game channel for the host
-    this.currentChannel = supabase.channel(`game:${gameId}`);
+    const supabaseChannelName = `game:${gameId}`;
+    this.currentChannel = supabase.channel(supabaseChannelName);
     this.gameId = gameId;
 
     // Subscribe to game updates
@@ -237,8 +243,28 @@ class MultiplayerService {
    * Subscribe to player list updates
    */
   subscribeToPlayers(callback: (players: Player[]) => void): () => void {
-    if (!this.currentChannel || !this.gameId) return () => {};
+    if (!this.currentChannel || !this.gameId) {
+      return () => {};
+    }
     
+    // If we already have an active subscription to this channel, just update the callback
+    if (this.activeSubscription && this.activeSubscription.channel === this.currentChannel) {
+      this.playerListCallback = callback;
+      // Immediately call callback with current known players
+      if (this.knownPlayers.length > 0) {
+        callback([...this.knownPlayers]);
+      }
+      // Return a no-op unsubscribe since the subscription stays active
+      return () => {};
+    }
+    
+    // Clean up any previous subscription if exists
+    if (this.activeSubscription) {
+      this.activeSubscription.cleanup();
+      this.activeSubscription = null;
+    }
+    
+    // First time subscribing to this channel
     // Capture the channel reference at subscription time, not cleanup time
     // This ensures we remove listeners from the correct channel
     const channel = this.currentChannel;
@@ -261,7 +287,6 @@ class MultiplayerService {
     };
 
     const handlePlayerJoined = (payload: any) => {
-      console.log('Player joined broadcast:', payload);
       const { playerId: joinedId, playerName: joinedName } = payload;
       
       // Check if player already exists
@@ -272,7 +297,6 @@ class MultiplayerService {
           isHost: joinedId === this.hostId,
           joinedAt: Date.now(),
         });
-        console.log('Updated players list:', this.knownPlayers);
         callback([...this.knownPlayers]);
       }
     };
@@ -280,7 +304,6 @@ class MultiplayerService {
     // Listener handlers so we can remove them on unsubscribe
     const playerJoinedHandler = ({ payload }: any) => handlePlayerJoined(payload);
     const requestPlayerListHandler = ({ payload }: any) => {
-      console.log('Request for player list received from:', payload);
       // Respond with our current state
       channel.send({
         type: 'broadcast',
@@ -293,7 +316,6 @@ class MultiplayerService {
       });
     };
     const myPlayerInfoHandler = ({ payload }: any) => {
-      console.log('Received player info:', payload);
       const { playerId: otherId, playerName: otherName, isHost: otherIsHost } = payload;
       
       if (!this.knownPlayers.find(p => p.id === otherId) && otherId !== this.playerId) {
@@ -303,7 +325,6 @@ class MultiplayerService {
           isHost: otherIsHost,
           joinedAt: Date.now(),
         });
-        console.log('Updated players list from broadcast:', this.knownPlayers);
         callback([...this.knownPlayers]);
       }
     };
@@ -327,12 +348,12 @@ class MultiplayerService {
       }
     }, 100);
 
-    // Return unsubscribe function
-    return () => {
+    // Create the real cleanup function
+    const realCleanup = () => {
       // Remove listeners from the captured channel reference
       if (channel && typeof channel.off === 'function') {
         try {
-          channel.off('broadcast', { event: 'player-joined' }, playerJoinedHandler);
+          channel.off('broadcast', { event: 'player-joined'}, playerJoinedHandler);
           channel.off('broadcast', { event: 'request-player-list' }, requestPlayerListHandler);
           channel.off('broadcast', { event: 'my-player-info' }, myPlayerInfoHandler);
         } catch (error) {
@@ -341,7 +362,14 @@ class MultiplayerService {
       }
       this.playerListCallback = null;
       this.knownPlayers = [];
+      this.activeSubscription = null;
     };
+    
+    // Store the active subscription so we can clean it up later
+    this.activeSubscription = { channel, cleanup: realCleanup };
+    
+    // Return a no-op - cleanup is managed by the service, not by React
+    return () => {};
   }
 
   /**
@@ -450,6 +478,10 @@ class MultiplayerService {
     if (this.currentChannel) {
       await this.currentChannel.unsubscribe();
       this.currentChannel = null;
+    }
+    if (this.activeSubscription) {
+      this.activeSubscription.cleanup();
+      this.activeSubscription = null;
     }
     this.gameId = null;
     this.hostId = null;

@@ -346,12 +346,13 @@ describe('Multiplayer Subscription Bug Fix', () => {
       expect(finalPlayers.some(p => p.name === `Player ${i}`)).toBe(true);
       
       // Clean up
-      unsubscribe();
+      unsubscribe(); // With new approach, this is a no-op
       
-      // Verify listeners are removed
-      expect(channel.getListenerCount('player-joined')).toBe(0);
-      
+      // Clean up the game (this will do the real cleanup)
       await multiplayerService.leaveGame();
+      
+      // After leaving game, listeners should be removed
+      expect(channel.getListenerCount('player-joined')).toBe(0);
     }
     
     console.log('\n=== All rapid game sessions handled correctly ===');
