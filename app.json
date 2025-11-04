@@ -29,7 +29,6 @@
       "predictiveBackGestureEnabled": false,
       "supportsTablets": false,
       "package": "com.sudokufaceoff.sudoku",
-      "versionCode": 4,
       "permissions": [
         "INTERNET"
       ]
