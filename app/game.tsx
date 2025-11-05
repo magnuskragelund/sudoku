@@ -97,19 +97,20 @@ export default function GameScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Multiplayer Banner */}
-      {multiplayer && (
-        <View style={[styles.multiplayerBanner, { backgroundColor: colorScheme === 'dark' ? '#2A3A4A' : colors.primary }]}>
-          <View style={styles.multiplayerBannerContent}>
-            <Text style={styles.multiplayerText}>
-              {isHost ? "You're hosting:" : "You've joined:"} {multiplayer.channelName}
-            </Text>
+      <View style={styles.contentWrapper}>
+        {/* Multiplayer Banner */}
+        {multiplayer && (
+          <View style={[styles.multiplayerBanner, { backgroundColor: colorScheme === 'dark' ? '#2A3A4A' : colors.primary }]}>
+            <View style={styles.multiplayerBannerContent}>
+              <Text style={styles.multiplayerText}>
+                {isHost ? "You're hosting:" : "You've joined:"} {multiplayer.channelName}
+              </Text>
+            </View>
           </View>
-        </View>
-      )}
+        )}
 
-      {/* Header */}
-      <View style={[styles.header, { borderBottomColor: colors.borderThin }]}>
+        {/* Header */}
+        <View style={[styles.header, { borderBottomColor: colors.borderThin }]}>
         {multiplayer && isHost ? (
           <TouchableOpacity onPress={startNewRound} style={styles.newGameButton}>
             <Text style={[styles.newGameText, { color: colors.textSecondary }]}>New Round</Text>
@@ -316,6 +317,7 @@ export default function GameScreen() {
           </BlurView>
         </View>
       )}
+      </View>
     </SafeAreaView>
   );
 }
@@ -323,6 +325,12 @@ export default function GameScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  contentWrapper: {
+    flex: 1,
+    maxWidth: 600,
+    width: '100%',
+    alignSelf: 'center',
   },
   multiplayerBanner: {
     paddingVertical: 8,

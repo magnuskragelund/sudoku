@@ -77,6 +77,9 @@ function NumberPad() {
               style={[styles.numberButton, { backgroundColor: colors.buttonBackground, borderColor: colors.border }]}
               onPress={() => handleNumberPress(number)}
               disabled={!isSelectedCellEditable}
+              testID={`number-${number}`}
+              accessibilityLabel={`Number ${number}`}
+              accessibilityRole="button"
             >
               <Text style={[
                 styles.numberText,

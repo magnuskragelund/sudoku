@@ -78,7 +78,8 @@ export default function LobbyScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { borderBottomColor: colors.borderThin }]}>
+      <View style={styles.contentWrapper}>
+        <View style={[styles.header, { borderBottomColor: colors.borderThin }]}>
         <Text style={[styles.title, { color: colors.textPrimary }]}>Lobby</Text>
       </View>
 
@@ -154,6 +155,7 @@ export default function LobbyScreen() {
         }}
         onClose={() => setShowErrorModal(false)}
       />
+      </View>
     </SafeAreaView>
   );
 }
@@ -161,6 +163,12 @@ export default function LobbyScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  contentWrapper: {
+    flex: 1,
+    maxWidth: 600,
+    width: '100%',
+    alignSelf: 'center',
   },
   header: {
     paddingHorizontal: 24,

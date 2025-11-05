@@ -1,6 +1,6 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Difficulty, GameResult, HighScoreData } from '../types/game';
 import { logger } from './logger';
+import { storage } from './storage';
 
 const STORAGE_KEY = '@sudoku_high_scores';
 const MAX_HISTORY_SIZE = 1000;
@@ -23,7 +23,7 @@ export async function saveGameResult(result: GameResult): Promise<void> {
     }
 
     // Get existing data
-    const dataString = await AsyncStorage.getItem(STORAGE_KEY);
+    const dataString = await storage.getItem(STORAGE_KEY);
     let data: HighScoreData = dataString 
       ? JSON.parse(dataString) 
       : { results: [], bestTimes: {} };
@@ -50,7 +50,7 @@ export async function saveGameResult(result: GameResult): Promise<void> {
     }
 
     // Save updated data
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    await storage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch (error) {
     logger.error('Error saving game result:', error);
   }
@@ -58,7 +58,7 @@ export async function saveGameResult(result: GameResult): Promise<void> {
 
 export async function getHighScores(): Promise<HighScoreData> {
   try {
-    const dataString = await AsyncStorage.getItem(STORAGE_KEY);
+    const dataString = await storage.getItem(STORAGE_KEY);
     if (!dataString) {
       return { results: [], bestTimes: {} };
     }
@@ -117,7 +117,7 @@ export async function getGameHistory(
 
 export async function clearHighScores(): Promise<void> {
   try {
-    await AsyncStorage.removeItem(STORAGE_KEY);
+    await storage.removeItem(STORAGE_KEY);
     logger.log('High scores cleared');
   } catch (error) {
     logger.error('Error clearing high scores:', error);
@@ -126,7 +126,7 @@ export async function clearHighScores(): Promise<void> {
 
 export async function debugHighScores(): Promise<void> {
   try {
-    const dataString = await AsyncStorage.getItem(STORAGE_KEY);
+    const dataString = await storage.getItem(STORAGE_KEY);
     if (dataString) {
       const data = JSON.parse(dataString);
       logger.log('Current high scores data:', JSON.stringify(data, null, 2));

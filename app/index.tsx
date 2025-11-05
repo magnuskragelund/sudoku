@@ -50,7 +50,8 @@ export default function WelcomeScreen() {
         bounces={false}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.titleContainer}>
+        <View style={styles.contentWrapper}>
+          <View style={styles.titleContainer}>
           <Text style={[styles.titleLarge, { color: colors.textPrimary }]}>Sudoku</Text>
           <Text style={[styles.titleSmall, { color: colors.textSecondary }]}>Face Off</Text>
         </View>
@@ -190,6 +191,7 @@ export default function WelcomeScreen() {
           })}
           </View>
         </View>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -200,6 +202,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
+    flexGrow: 1,
+  },
+  contentWrapper: {
+    maxWidth: 600,
+    width: '100%',
+    alignSelf: 'center',
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 60,

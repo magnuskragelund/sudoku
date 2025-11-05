@@ -143,7 +143,11 @@ function SudokuCell({ row, col, value, isSelected, selectedCell, onSelect }: Sud
       <TouchableOpacity
         style={styles.cellContent}
         onPressIn={onSelect}
+        onPress={onSelect}
         activeOpacity={0.7}
+        testID={`cell-${row}-${col}`}
+        accessibilityLabel={`Cell row ${row + 1} column ${col + 1}${value !== 0 ? ` value ${value}` : ' empty'}`}
+        accessibilityRole="button"
       >
         {value !== 0 ? (
           <Text style={textStyle}>{value}</Text>

@@ -170,7 +170,8 @@ export default function MultiplayerScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+      <View style={styles.contentWrapper}>
+        <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <ChevronLeft size={24} color={colors.textPrimary} />
         </TouchableOpacity>
@@ -330,6 +331,7 @@ export default function MultiplayerScreen() {
         }}
         onClose={() => setErrorModal(null)}
       />
+      </View>
     </SafeAreaView>
   );
 }
@@ -337,6 +339,12 @@ export default function MultiplayerScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  contentWrapper: {
+    flex: 1,
+    maxWidth: 600,
+    width: '100%',
+    alignSelf: 'center',
   },
   header: {
     flexDirection: 'row',

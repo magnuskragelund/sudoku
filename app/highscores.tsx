@@ -81,8 +81,9 @@ export default function HighScoresScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+      <View style={styles.contentWrapper}>
+        {/* Header */}
+        <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <ChevronLeft size={24} color={colors.textPrimary} />
         </TouchableOpacity>
@@ -214,6 +215,7 @@ export default function HighScoresScreen() {
         }}
         onClose={() => setShowClearModal(false)}
       />
+      </View>
     </SafeAreaView>
   );
 }
@@ -221,6 +223,12 @@ export default function HighScoresScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  contentWrapper: {
+    flex: 1,
+    maxWidth: 600,
+    width: '100%',
+    alignSelf: 'center',
   },
   header: {
     flexDirection: 'row',
