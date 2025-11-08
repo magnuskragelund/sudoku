@@ -195,7 +195,7 @@ async function updateMetadata(token, localizationId) {
   }
   
   try {
-    // Update subtitle and privacy policy (part of appInfoLocalization)
+    // Update subtitle (part of appInfoLocalization)
     console.log('Updating app info (subtitle)...');
     await axios.patch(
       `https://api.appstoreconnect.apple.com/v1/appInfoLocalizations/${localizationId}`,
@@ -274,7 +274,8 @@ async function updateAppStoreVersionLocalization(token, locale) {
             attributes: {
               locale: appleLocale,
               description: appStoreCopy.description,
-              keywords: appStoreCopy.keywords
+              keywords: appStoreCopy.keywords,
+              whatsNew: appStoreCopy.whatsNew
             },
             relationships: {
               appStoreVersion: {
@@ -296,8 +297,8 @@ async function updateAppStoreVersionLocalization(token, locale) {
       localization = createResponse.data.data;
     }
     
-    // Update description and keywords
-    console.log('Updating description and keywords...');
+    // Update description, keywords, and what's new
+    console.log('Updating description, keywords, and release notes...');
     await axios.patch(
       `https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations/${localization.id}`,
       {
@@ -306,7 +307,8 @@ async function updateAppStoreVersionLocalization(token, locale) {
           id: localization.id,
           attributes: {
             description: appStoreCopy.description,
-            keywords: appStoreCopy.keywords
+            keywords: appStoreCopy.keywords,
+            whatsNew: appStoreCopy.whatsNew
           }
         }
       },
@@ -318,13 +320,16 @@ async function updateAppStoreVersionLocalization(token, locale) {
       }
     );
     
-    console.log('✓ Description and keywords updated');
+    console.log('✓ Description, keywords, and release notes updated');
     
   } catch (error) {
     console.error('Error updating app store version localization:', error.response?.data || error.message);
     throw error;
   }
 }
+
+// Note: Support URL cannot be set via API - must be set manually in App Store Connect
+// See README.md for instructions
 
 /**
  * Main execution

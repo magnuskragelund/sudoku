@@ -131,6 +131,70 @@ async function updateMetadata(androidPublisher, playLocale) {
     
     console.log('✓ Listing updated');
     
+    // Update app details (website, contact info) - only needs to be done once (not per locale)
+    try {
+      console.log('Updating contact website...');
+      await androidPublisher.edits.details.update({
+        packageName: packageName,
+        editId: editId,
+        requestBody: {
+          contactWebsite: appStoreCopy.supportUrl
+        }
+      });
+      console.log('✓ Contact website updated');
+    } catch (detailsError) {
+      console.warn('⚠️  Could not update contact website (may be already set)');
+    }
+    
+    // Update release notes for the production track
+    try {
+      console.log('Updating release notes...');
+      
+      // Get current production track
+      const tracks = await androidPublisher.edits.tracks.list({
+        packageName: packageName,
+        editId: editId
+      });
+      
+      const productionTrack = tracks.data.tracks?.find(t => t.track === 'production');
+      
+      if (productionTrack && productionTrack.releases && productionTrack.releases.length > 0) {
+        const currentRelease = productionTrack.releases[0];
+        
+        // Add or update release notes for this locale
+        const releaseNotes = currentRelease.releaseNotes || [];
+        const existingNoteIndex = releaseNotes.findIndex(note => note.language === playLocale);
+        
+        if (existingNoteIndex >= 0) {
+          releaseNotes[existingNoteIndex].text = appStoreCopy.whatsNew;
+        } else {
+          releaseNotes.push({
+            language: playLocale,
+            text: appStoreCopy.whatsNew
+          });
+        }
+        
+        // Update the track with new release notes
+        await androidPublisher.edits.tracks.update({
+          packageName: packageName,
+          editId: editId,
+          track: 'production',
+          requestBody: {
+            releases: [{
+              ...currentRelease,
+              releaseNotes: releaseNotes
+            }]
+          }
+        });
+        
+        console.log('✓ Release notes updated');
+      } else {
+        console.warn('⚠️  No production release found, skipping release notes');
+      }
+    } catch (notesError) {
+      console.warn('⚠️  Could not update release notes:', notesError.message);
+    }
+    
     // Commit the edit
     console.log('Committing changes...');
     await androidPublisher.edits.commit({

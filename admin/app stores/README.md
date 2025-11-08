@@ -152,6 +152,32 @@ Create `locales/fr-fr.json`:
 
 The script will automatically find and push it!
 
+## ⚠️ API Limitations
+
+### Support URL
+
+**Apple does not allow setting the Support URL via API.** You must set it manually:
+
+1. Go to [App Store Connect](https://appstoreconnect.apple.com/)
+2. Select your app → **App Information** tab
+3. Scroll to **"Support URL"**
+4. Enter: `https://sudokufaceoff.com`
+5. Click **"Save"**
+
+This only needs to be done **once** and applies to all versions and locales.
+
+The `supportUrl` field in locale JSON files is kept for documentation purposes but is not pushed via API.
+
+### What the API CAN Update
+
+✅ Description (per locale)  
+✅ Keywords (per locale)  
+✅ What's New / Release Notes (per locale)  
+✅ Subtitle (per locale)  
+✅ Screenshots (via separate endpoints)  
+❌ Support URL (manual only)  
+❌ Privacy Policy URL (manual only)
+
 ## Security Notes
 
 - **Never commit** `.p8` files or service account JSON files to git
