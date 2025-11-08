@@ -1,0 +1,13 @@
+{
+  "apple": {
+    "keyId": "YOUR_KEY_ID",
+    "issuerId": "YOUR_ISSUER_ID",
+    "keyPath": "./credentials/AuthKey_XXXXXXXXXX.p8",
+    "appId": "YOUR_APP_ID"
+  },
+  "google": {
+    "keyPath": "./credentials/google-play-service-account.json",
+    "packageName": "com.yourcompany.sudoku"
+  }
+}
+

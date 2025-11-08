@@ -1,0 +1,8 @@
+# API Credentials - NEVER commit these!
+credentials/
+config.json
+
+# Backup files
+*.bak
+*.backup
+
