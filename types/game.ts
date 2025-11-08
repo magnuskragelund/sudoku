@@ -23,6 +23,8 @@ export interface GameState {
   // Multiplayer state
   multiplayer: MultiplayerGame | null;
   multiplayerWinner: WinnerInfo | null; // Winner info when another player finishes
+  // Analytics
+  gameSessionId: string | null; // Unique identifier for analytics tracking
 }
 
 export interface GameResult {

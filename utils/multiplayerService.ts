@@ -1,4 +1,5 @@
 import { Difficulty } from '../types/game';
+import { analyticsService } from './analyticsService';
 import { logger } from './logger';
 import { supabase } from './supabaseClient';
 

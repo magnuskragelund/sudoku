@@ -2,6 +2,7 @@ import * as Haptics from 'expo-haptics';
 import React, { createContext, useContext, useEffect, useReducer } from 'react';
 import { Platform } from 'react-native';
 import { Difficulty, DIFFICULTY_LIVES, GameActions, GameResult, GameState, MultiplayerGame, SerializableGameState } from '../types/game';
+import { analyticsService } from '../utils/analyticsService';
 import { serializeGameState } from '../utils/gameSerializer';
 import { saveGameResult } from '../utils/highScoreStorage';
 import { logger } from '../utils/logger';
@@ -46,6 +47,7 @@ const initialState: GameState = {
   hintUsed: false,
   multiplayer: null,
   multiplayerWinner: null,
+  gameSessionId: null,
 };
 
 function gameReducer(state: GameState, action: GameAction): GameState {
@@ -55,6 +57,15 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       // Generate a new puzzle with guaranteed unique solution
       const { puzzle, solution } = generatePuzzle(action.difficulty);
       const initialLivesValue = action.lives ?? 5;
+      const sessionId = analyticsService.generateSessionId();
+      
+      // Track game start (fire and forget)
+      analyticsService.trackGameStart({
+        sessionId,
+        gameType: 'single_player',
+        difficulty: action.difficulty,
+        lives: initialLivesValue,
+      });
       
       return {
         ...initialState,
@@ -66,6 +77,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         solution: solution.map(row => [...row]),
         initialBoard: puzzle.map(row => [...row]),
         timeElapsed: 0,
+        gameSessionId: sessionId,
       };
 
     case 'LOAD_GAME':
@@ -144,6 +156,23 @@ function gameReducer(state: GameState, action: GameAction): GameState {
           };
           saveGameResult(gameResult); // Fire and forget
           
+          // Track analytics for game completion
+          if (state.gameSessionId) {
+            const mistakesMade = state.initialLives - state.lives;
+            analyticsService.trackGameComplete({
+              sessionId: state.gameSessionId,
+              gameType: state.multiplayer ? 'multiplayer' : 'single_player',
+              difficulty: state.difficulty,
+              lives: state.initialLives,
+              completionTime: state.timeElapsed,
+              outcome: 'won',
+              hintUsed: state.hintUsed,
+              mistakesMade,
+              playerCount: state.multiplayer?.players.length,
+              isHost: state.multiplayer ? state.multiplayer.hostId === multiplayerService.getPlayerId() : undefined,
+            });
+          }
+          
           // Broadcast completion in multiplayer mode
           if (state.multiplayer && multiplayerService.currentChannel) {
             multiplayerService.currentChannel.send({
@@ -171,6 +200,23 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         }
         
         const newLives = Math.max(0, state.lives - 1); // Prevent lives from going below zero
+        
+        // Track analytics for game lost
+        if (newLives === 0 && state.gameSessionId) {
+          const mistakesMade = state.initialLives - newLives;
+          analyticsService.trackGameComplete({
+            sessionId: state.gameSessionId,
+            gameType: state.multiplayer ? 'multiplayer' : 'single_player',
+            difficulty: state.difficulty,
+            lives: state.initialLives,
+            completionTime: state.timeElapsed,
+            outcome: 'lost',
+            hintUsed: state.hintUsed,
+            mistakesMade,
+            playerCount: state.multiplayer?.players.length,
+            isHost: state.multiplayer ? state.multiplayer.hostId === multiplayerService.getPlayerId() : undefined,
+          });
+        }
         
         // Don't save lost games to high scores
         // Only won games are tracked in high scores
@@ -231,6 +277,18 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       };
 
     case 'NEW_GAME':
+      // Track abandonment if there was an active game
+      if (state.gameSessionId && state.status === 'playing') {
+        analyticsService.trackGameAbandon({
+          sessionId: state.gameSessionId,
+          gameType: state.multiplayer ? 'multiplayer' : 'single_player',
+          difficulty: state.difficulty,
+          lives: state.initialLives,
+          playerCount: state.multiplayer?.players.length,
+          isHost: state.multiplayer ? state.multiplayer.hostId === multiplayerService.getPlayerId() : undefined,
+        });
+      }
+      
       return {
         ...initialState,
         difficulty: state.difficulty,
@@ -301,6 +359,18 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       };
 
     case 'LOAD_MULTIPLAYER_GAME':
+      const multiplayerSessionId = analyticsService.generateSessionId();
+      
+      // Track multiplayer game start (fire and forget)
+      analyticsService.trackGameStart({
+        sessionId: multiplayerSessionId,
+        gameType: 'multiplayer',
+        difficulty: action.difficulty,
+        lives: action.lives,
+        playerCount: state.multiplayer?.players.length,
+        isHost: state.multiplayer ? state.multiplayer.hostId === multiplayerService.getPlayerId() : undefined,
+      });
+      
       return {
         ...initialState,
         difficulty: action.difficulty,
@@ -312,6 +382,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         initialBoard: action.initialBoard.map(row => [...row]),
         timeElapsed: 0,
         multiplayer: state.multiplayer, // Keep multiplayer state
+        gameSessionId: multiplayerSessionId,
       };
 
     case 'SHOW_MULTIPLAYER_WINNER':
@@ -520,6 +591,18 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     },
     leaveMultiplayerGame: async () => {
       try {
+        // Track abandonment if leaving an active game
+        if (state.gameSessionId && state.status === 'playing' && state.multiplayer) {
+          analyticsService.trackGameAbandon({
+            sessionId: state.gameSessionId,
+            gameType: 'multiplayer',
+            difficulty: state.difficulty,
+            lives: state.initialLives,
+            playerCount: state.multiplayer.players.length,
+            isHost: state.multiplayer.hostId === multiplayerService.getPlayerId(),
+          });
+        }
+        
         await multiplayerService.leaveGame();
         dispatch({ type: 'SET_MULTIPLAYER', game: null });
       } catch (error) {
