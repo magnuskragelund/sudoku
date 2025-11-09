@@ -24,6 +24,7 @@ export default function GameScreen() {
     hintUsed,
     multiplayer,
     multiplayerWinner,
+    multiplayerLoser,
     pauseGame,
     resumeGame,
     newGame,
@@ -31,6 +32,7 @@ export default function GameScreen() {
     useHint,
     exportGame,
     dismissWinnerModal,
+    dismissLoserModal,
     leaveMultiplayerGame,
     startNewRound
   } = useGame();
@@ -217,8 +219,48 @@ export default function GameScreen() {
         </View>
       )}
 
+      {/* Multiplayer Loser Modal */}
+      {multiplayerLoser && (
+        <View style={styles.overlay}>
+          <BlurView intensity={40} tint={colors.overlayTint} style={styles.blurBackground}>
+            <View style={[styles.statusModal, { backgroundColor: colors.modalBackground }]}>
+              <Text style={[styles.statusTitle, { color: colors.textPrimary }]}>😔 Player Lost</Text>
+              <Text style={[styles.statusSubtitle, { color: colors.textSecondary }]}>A connected player has run out of lives</Text>
+              <View style={[styles.winnerInfoSection, { backgroundColor: colors.backgroundSecondary }]}>
+                <Text style={[styles.winnerName, { color: colors.error }]}>{multiplayerLoser.playerName}</Text>
+                <Text style={[styles.winnerTime, { color: colors.textPrimary }]}>Time: {formatTime(multiplayerLoser.timeElapsed)}</Text>
+              </View>
+              <TouchableOpacity 
+                style={[styles.statusButton, { backgroundColor: colors.primary, marginBottom: 12 }]} 
+                onPress={() => {
+                  dismissLoserModal?.();
+                  resumeGame();
+                }}
+              >
+                <Text style={styles.statusButtonText}>Continue Playing</Text>
+              </TouchableOpacity>
+              {multiplayer && isHost && (
+                <TouchableOpacity 
+                  style={[styles.statusButton, { backgroundColor: colors.primary, marginBottom: 12 }]}
+                  onPress={async () => {
+                    try {
+                      await startNewRound?.();
+                    } catch {}
+                  }}
+                >
+                  <Text style={styles.statusButtonText}>Start New Round</Text>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity style={[styles.quitButton, { backgroundColor: colors.error }]} onPress={handleNewGame}>
+                <Text style={styles.quitButtonText}>Leave Current Game</Text>
+              </TouchableOpacity>
+            </View>
+          </BlurView>
+        </View>
+      )}
+
       {/* Game Status Overlay with Blur */}
-      {(status === 'won' || status === 'lost' || (status === 'paused' && !multiplayerWinner)) && (
+      {(status === 'won' || status === 'lost' || (status === 'paused' && !multiplayerWinner && !multiplayerLoser)) && (
         <View style={styles.overlay}>
           <BlurView intensity={40} tint={colors.overlayTint} style={styles.blurBackground}>
             <View style={[styles.statusModal, { backgroundColor: colors.modalBackground }]}>

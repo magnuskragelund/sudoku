@@ -7,6 +7,11 @@ export interface WinnerInfo {
   completionTime: number;
 }
 
+export interface LoserInfo {
+  playerName: string;
+  timeElapsed: number;
+}
+
 export interface GameState {
   difficulty: Difficulty;
   status: GameStatus;
@@ -23,6 +28,7 @@ export interface GameState {
   // Multiplayer state
   multiplayer: MultiplayerGame | null;
   multiplayerWinner: WinnerInfo | null; // Winner info when another player finishes
+  multiplayerLoser: LoserInfo | null; // Loser info when another player loses
   // Analytics
   gameSessionId: string | null; // Unique identifier for analytics tracking
 }
@@ -91,6 +97,7 @@ export interface GameActions {
   startMultiplayerGame?: () => Promise<void>;
   startNewRound?: () => Promise<void>;
   dismissWinnerModal?: () => void;
+  dismissLoserModal?: () => void;
 }
 
 export const DIFFICULTY_LIVES: Record<Difficulty, number> = {

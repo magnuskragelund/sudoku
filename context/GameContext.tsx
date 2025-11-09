@@ -30,7 +30,9 @@ type GameAction =
   | { type: 'SET_MULTIPLAYER'; game: MultiplayerGame | null }
   | { type: 'LOAD_MULTIPLAYER_GAME'; difficulty: Difficulty; lives: number; board: number[][]; solution: number[][]; initialBoard: number[][] }
   | { type: 'SHOW_MULTIPLAYER_WINNER'; playerName: string; completionTime: number }
-  | { type: 'DISMISS_WINNER_MODAL' };
+  | { type: 'SHOW_MULTIPLAYER_LOSER'; playerName: string; timeElapsed: number }
+  | { type: 'DISMISS_WINNER_MODAL' }
+  | { type: 'DISMISS_LOSER_MODAL' };
 
 const initialState: GameState = {
   difficulty: 'medium',
@@ -47,6 +49,7 @@ const initialState: GameState = {
   hintUsed: false,
   multiplayer: null,
   multiplayerWinner: null,
+  multiplayerLoser: null,
   gameSessionId: null,
 };
 
@@ -216,6 +219,19 @@ function gameReducer(state: GameState, action: GameAction): GameState {
             playerCount: state.multiplayer?.players.length,
             isHost: state.multiplayer ? state.multiplayer.hostId === multiplayerService.getPlayerId() : undefined,
           });
+          
+          // Broadcast loss in multiplayer mode
+          if (state.multiplayer && multiplayerService.currentChannel) {
+            multiplayerService.currentChannel.send({
+              type: 'broadcast',
+              event: 'player-lost',
+              payload: {
+                playerName: multiplayerService.currentPlayerName || 'Player',
+                timeElapsed: state.timeElapsed,
+              },
+            });
+            logger.log('Broadcasting loss to other players');
+          }
         }
         
         // Don't save lost games to high scores
@@ -395,10 +411,26 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         },
       };
 
+    case 'SHOW_MULTIPLAYER_LOSER':
+      return {
+        ...state,
+        status: 'paused', // Pause the game when another player loses
+        multiplayerLoser: {
+          playerName: action.playerName,
+          timeElapsed: action.timeElapsed,
+        },
+      };
+
     case 'DISMISS_WINNER_MODAL':
       return {
         ...state,
         multiplayerWinner: null,
+      };
+
+    case 'DISMISS_LOSER_MODAL':
+      return {
+        ...state,
+        multiplayerLoser: null,
       };
 
     default:
@@ -439,6 +471,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       
       // Ensure any lingering overlays/modals are cleared before loading the new round
       dispatch({ type: 'DISMISS_WINNER_MODAL' });
+      dispatch({ type: 'DISMISS_LOSER_MODAL' });
 
       // Load the shared game (this resets state to initial and sets status to playing)
       dispatch({ 
@@ -479,6 +512,15 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       });
     };
 
+    const handlePlayerLost = ({ payload }: any) => {
+      logger.log('Another player lost:', payload);
+      dispatch({ 
+        type: 'SHOW_MULTIPLAYER_LOSER', 
+        playerName: payload.playerName, 
+        timeElapsed: payload.timeElapsed 
+      });
+    };
+
     // Store channel reference for cleanup
     const channel = multiplayerService.currentChannel;
     
@@ -487,6 +529,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       channel.on('broadcast', { event: 'game-paused' }, handlePauseReceived);
       channel.on('broadcast', { event: 'game-resumed' }, handleResumeReceived);
       channel.on('broadcast', { event: 'player-won' }, handlePlayerWon);
+      channel.on('broadcast', { event: 'player-lost' }, handlePlayerLost);
     }
 
     return () => {
@@ -496,6 +539,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           channel.off('broadcast', { event: 'game-paused' }, handlePauseReceived);
           channel.off('broadcast', { event: 'game-resumed' }, handleResumeReceived);
           channel.off('broadcast', { event: 'player-won' }, handlePlayerWon);
+          channel.off('broadcast', { event: 'player-lost' }, handlePlayerLost);
         } catch (error) {
           logger.log('Error during cleanup of multiplayer listeners:', error);
         }
@@ -686,6 +730,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     },
     dismissWinnerModal: () => {
       dispatch({ type: 'DISMISS_WINNER_MODAL' });
+    },
+    dismissLoserModal: () => {
+      dispatch({ type: 'DISMISS_LOSER_MODAL' });
     },
   }), [state]);
 

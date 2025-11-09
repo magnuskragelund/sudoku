@@ -109,7 +109,30 @@
     │                             │
     │  • Continue Playing         │ → Dismiss, keep playing
     │  • Start New Round (HOST)   │ → Broadcasts new board
-    │  • End Game                 │ → Leaves session
+    │  • Leave Current Game       │ → Leaves session
+    └─────────────────────────────┘
+```
+
+### 2.5. PLAYING → ANOTHER PLAYER LOST
+
+**Trigger**: Another player runs out of lives
+**Broadcast**: `player-lost` event with loser info
+**Result**: All other players see PLAYER LOST modal
+
+```
+     [PLAYING]
+         │
+         │ Player "Bob" runs out of lives
+         ▼
+    ┌─────────────────────────────┐
+    │  😔 PLAYER LOST MODAL       │
+    │                             │
+    │  Player: Bob                │
+    │  Time: 02:15                │
+    │                             │
+    │  • Continue Playing         │ → Dismiss, keep playing
+    │  • Start New Round (HOST)   │ → Broadcasts new board
+    │  • Leave Current Game       │ → Leaves session
     └─────────────────────────────┘
 ```
 
@@ -142,29 +165,30 @@
 
 ### 4. PLAYING → GAME OVER (Lives = 0)
 
-**Trigger**: Player makes mistakes until lives = 0
-**Broadcast**: None (local event)
-**Result**: Only you see GAME OVER modal
+**Trigger**: You make mistakes until lives = 0
+**Broadcast**: `player-lost` event (in multiplayer mode)
+**Result**: You see GAME OVER modal, others see PLAYER LOST modal
 
 ```
      [PLAYING]
          │
-         │ Lives reach 0
+         │ Your lives reach 0
          ▼
-    ┌─────────────────────────┐
-    │   GAME OVER MODAL       │
-    │                         │
-    │  You ran out of lives!  │
-    │                         │
-    │  • Try Again            │ → Just pauses game
-    └─────────────────────────┘
-           │
-           │ Click "Try Again"
-           ▼
-    ┌─────────────────────────┐
-    │   Game PAUSED           │
-    │   (Can leave via header)│
-    └─────────────────────────┘
+    ┌─────────────────────────────┐
+    │   GAME OVER MODAL (YOU)     │
+    │                             │
+    │  You ran out of lives!      │
+    │                             │
+    │  [MULTIPLAYER - HOST]       │
+    │  • Start New Round          │ → Broadcasts new board
+    │  • Leave Current Game       │ → Leaves session
+    │                             │
+    │  [MULTIPLAYER - PLAYER]     │
+    │  • Leave Current Game       │ → Leaves session
+    │                             │
+    │  [SINGLE PLAYER]            │
+    │  • Try Again                │ → Exit to home
+    └─────────────────────────────┘
 ```
 
 ### 5. HOST STARTS NEW ROUND
@@ -249,10 +273,13 @@
 │  5. player-won            → Someone completes puzzle            │
 │     { playerName, completionTime }                              │
 │                                                                  │
-│  6. request-player-list   → Syncing players                     │
+│  6. player-lost           → Someone runs out of lives           │
+│     { playerName, timeElapsed }                                 │
+│                                                                  │
+│  7. request-player-list   → Syncing players                     │
 │     { playerId, playerName, isHost }                            │
 │                                                                  │
-│  7. my-player-info        → Response to sync request            │
+│  8. my-player-info        → Response to sync request            │
 │     { playerId, playerName, isHost }                            │
 │                                                                  │
 └──────────────────────────────────────────────────────────────────┘
