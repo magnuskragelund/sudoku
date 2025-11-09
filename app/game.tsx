@@ -211,6 +211,11 @@ export default function GameScreen() {
                   <Text style={styles.statusButtonText}>Start New Round</Text>
                 </TouchableOpacity>
               )}
+              {multiplayer && !isHost && (
+                <Text style={[styles.hostHintText, { color: colors.textTertiary }]}>
+                  The host can start a new round for everyone
+                </Text>
+              )}
               <TouchableOpacity style={[styles.quitButton, { backgroundColor: colors.error }]} onPress={handleNewGame}>
                 <Text style={styles.quitButtonText}>Leave Current Game</Text>
               </TouchableOpacity>
@@ -250,6 +255,11 @@ export default function GameScreen() {
                 >
                   <Text style={styles.statusButtonText}>Start New Round</Text>
                 </TouchableOpacity>
+              )}
+              {multiplayer && !isHost && (
+                <Text style={[styles.hostHintText, { color: colors.textTertiary }]}>
+                  The host can start a new round for everyone
+                </Text>
               )}
               <TouchableOpacity style={[styles.quitButton, { backgroundColor: colors.error }]} onPress={handleNewGame}>
                 <Text style={styles.quitButtonText}>Leave Current Game</Text>
@@ -291,6 +301,11 @@ export default function GameScreen() {
                     <Text style={styles.statusButtonText}>Start New Round</Text>
                   </TouchableOpacity>
                 )}
+                {multiplayer && !isHost && (
+                  <Text style={[styles.hostHintText, { color: colors.textTertiary }]}>
+                    Wait here for the host to start a new round
+                  </Text>
+                )}
                 {multiplayer && !isHost ? (
                   <TouchableOpacity style={[styles.quitButton, { backgroundColor: colors.error }]} onPress={handleNewGame}>
                     <Text style={styles.quitButtonText}>Leave Current Game</Text>
@@ -322,6 +337,11 @@ export default function GameScreen() {
                   >
                     <Text style={styles.statusButtonText}>Start New Round</Text>
                   </TouchableOpacity>
+                )}
+                {multiplayer && !isHost && (
+                  <Text style={[styles.hostHintText, { color: colors.textTertiary }]}>
+                    Wait here for the host to start a new round
+                  </Text>
                 )}
                 <TouchableOpacity 
                   style={[multiplayer ? styles.quitButton : styles.statusButton, { backgroundColor: multiplayer ? colors.error : colors.primary }]} 
@@ -617,5 +637,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     fontFamily: 'Inter',
+  },
+  hostHintText: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 16,
+    marginTop: 8,
+    fontFamily: 'Inter',
+    fontStyle: 'italic',
   },
 });

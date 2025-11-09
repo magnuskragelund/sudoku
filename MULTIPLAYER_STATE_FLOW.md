@@ -101,16 +101,21 @@
          │
          │ Player "Bob" completes puzzle
          ▼
-    ┌─────────────────────────────┐
-    │  🎉 SOMEONE WON MODAL       │
-    │                             │
-    │  Winner: Bob                │
-    │  Time: 03:45                │
-    │                             │
-    │  • Continue Playing         │ → Dismiss, keep playing
-    │  • Start New Round (HOST)   │ → Broadcasts new board
-    │  • Leave Current Game       │ → Leaves session
-    └─────────────────────────────┘
+    ┌─────────────────────────────────────────────┐
+    │  🎉 SOMEONE WON MODAL                       │
+    │                                             │
+    │  Winner: Bob                                │
+    │  Time: 03:45                                │
+    │                                             │
+    │  • Continue Playing         → Dismiss       │
+    │  • Start New Round (HOST)   → New board    │
+    │                                             │
+    │  [PLAYER VIEW ONLY]                         │
+    │  "The host can start a new round for        │
+    │   everyone"                                 │
+    │                                             │
+    │  • Leave Current Game       → Leave session │
+    └─────────────────────────────────────────────┘
 ```
 
 ### 2.5. PLAYING → ANOTHER PLAYER LOST
@@ -124,16 +129,21 @@
          │
          │ Player "Bob" runs out of lives
          ▼
-    ┌─────────────────────────────┐
-    │  😔 PLAYER LOST MODAL       │
-    │                             │
-    │  Player: Bob                │
-    │  Time: 02:15                │
-    │                             │
-    │  • Continue Playing         │ → Dismiss, keep playing
-    │  • Start New Round (HOST)   │ → Broadcasts new board
-    │  • Leave Current Game       │ → Leaves session
-    └─────────────────────────────┘
+    ┌─────────────────────────────────────────────┐
+    │  😔 PLAYER LOST MODAL                       │
+    │                                             │
+    │  Player: Bob                                │
+    │  Time: 02:15                                │
+    │                                             │
+    │  • Continue Playing         → Dismiss       │
+    │  • Start New Round (HOST)   → New board    │
+    │                                             │
+    │  [PLAYER VIEW ONLY]                         │
+    │  "The host can start a new round for        │
+    │   everyone"                                 │
+    │                                             │
+    │  • Leave Current Game       → Leave session │
+    └─────────────────────────────────────────────┘
 ```
 
 ### 3. PLAYING → YOU WON
@@ -147,20 +157,22 @@
          │
          │ You complete puzzle
          ▼
-    ┌─────────────────────────────┐
-    │  CONGRATULATIONS MODAL      │
-    │                             │
-    │  Time: 03:24                │
-    │  🎉 New Record!             │
-    │  Best: 03:45                │
-    │                             │
-    │  [HOST VIEW]                │
-    │  • Start New Round          │ → Broadcasts new board
-    │  • New Game                 │ → Leaves session
-    │                             │
-    │  [PLAYER VIEW]              │
-    │  • End Game                 │ → Leaves session
-    └─────────────────────────────┘
+    ┌─────────────────────────────────────────────┐
+    │  CONGRATULATIONS MODAL                      │
+    │                                             │
+    │  Time: 03:24                                │
+    │  🎉 New Record!                             │
+    │  Best: 03:45                                │
+    │                                             │
+    │  [HOST VIEW]                                │
+    │  • Start New Round          → New board    │
+    │  • Leave Current Game       → Leave session │
+    │                                             │
+    │  [PLAYER VIEW]                              │
+    │  "Wait here for the host to start a new     │
+    │   round"                                    │
+    │  • Leave Current Game       → Leave session │
+    └─────────────────────────────────────────────┘
 ```
 
 ### 4. PLAYING → GAME OVER (Lives = 0)
@@ -174,21 +186,23 @@
          │
          │ Your lives reach 0
          ▼
-    ┌─────────────────────────────┐
-    │   GAME OVER MODAL (YOU)     │
-    │                             │
-    │  You ran out of lives!      │
-    │                             │
-    │  [MULTIPLAYER - HOST]       │
-    │  • Start New Round          │ → Broadcasts new board
-    │  • Leave Current Game       │ → Leaves session
-    │                             │
-    │  [MULTIPLAYER - PLAYER]     │
-    │  • Leave Current Game       │ → Leaves session
-    │                             │
-    │  [SINGLE PLAYER]            │
-    │  • Try Again                │ → Exit to home
-    └─────────────────────────────┘
+    ┌─────────────────────────────────────────────┐
+    │   GAME OVER MODAL (YOU)                     │
+    │                                             │
+    │  You ran out of lives!                      │
+    │                                             │
+    │  [MULTIPLAYER - HOST]                       │
+    │  • Start New Round          → New board    │
+    │  • Leave Current Game       → Leave session │
+    │                                             │
+    │  [MULTIPLAYER - PLAYER]                     │
+    │  "Wait here for the host to start a new     │
+    │   round"                                    │
+    │  • Leave Current Game       → Leave session │
+    │                                             │
+    │  [SINGLE PLAYER]                            │
+    │  • Try Again                → Exit to home  │
+    └─────────────────────────────────────────────┘
 ```
 
 ### 5. HOST STARTS NEW ROUND
