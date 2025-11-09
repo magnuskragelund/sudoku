@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -13,6 +13,11 @@ export default function MultiplayerScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { createMultiplayerGame, joinMultiplayerGame } = useGame();
+  
+  // Get deep link params
+  const params = useLocalSearchParams();
+  const joinGameParam = params.joinGame as string | undefined;
+  
   const [activeTab, setActiveTab] = useState<'create' | 'join'>('create');
   
   // Create form state
@@ -83,6 +88,46 @@ export default function MultiplayerScreen() {
     loadPlayerNames();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Handle deep link - auto-join if player name exists, otherwise pre-fill
+  useEffect(() => {
+    if (joinGameParam) {
+      setActiveTab('join');
+      setJoinChannelName(joinGameParam);
+      
+      // Auto-join if we have a saved player name
+      const autoJoin = async () => {
+        try {
+          const saved = await prefStorage.getItem(PLAYER_NAME_KEY);
+          if (saved) {
+            // Wait a moment for state to settle
+            setTimeout(async () => {
+              try {
+                await joinMultiplayerGame?.(joinGameParam, saved);
+                await new Promise(resolve => setTimeout(resolve, 300));
+                router.replace('/lobby');
+              } catch (error: any) {
+                const errorMessage = error?.message || '';
+                
+                if (errorMessage.includes('Game is full')) {
+                  setErrorModal({ title: 'Game Full', message: 'This game has reached the maximum number of players (10). Please try another game.' });
+                } else if (errorMessage.includes('not found') || errorMessage.includes('already started')) {
+                  setErrorModal({ title: 'Game Not Available', message: 'Game not found or has already started. Please check the game name.' });
+                } else {
+                  setErrorModal({ title: 'Error', message: 'Failed to join game. Please try again.' });
+                }
+              }
+            }, 500);
+          }
+        } catch (e) {
+          // Failed to load player name - show join form
+        }
+      };
+      
+      autoJoin();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [joinGameParam]);
 
   const handleSelectDifficulty = async (value: Difficulty) => {
     setDifficulty(value);

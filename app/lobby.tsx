@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
+import { Share2 } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Platform, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Modal from '../components/Modal';
 import { useGame } from '../context/GameContext';
@@ -72,6 +73,30 @@ export default function LobbyScreen() {
     router.replace('/');
   };
 
+  const handleShareLink = async () => {
+    if (!multiplayer?.channelName) return;
+    
+    const deepLink = `sudokufaceoff://${multiplayer.channelName}`;
+    
+    try {
+      if (Platform.OS === 'web') {
+        // On web, copy to clipboard
+        if (typeof navigator !== 'undefined' && navigator.clipboard) {
+          await navigator.clipboard.writeText(deepLink);
+          alert('Link copied to clipboard!');
+        }
+      } else {
+        // On mobile, use native share
+        await Share.share({
+          message: `Join my Sudoku game! Use this link to join: ${deepLink}`,
+          title: 'Join Sudoku Game',
+        });
+      }
+    } catch (error) {
+      console.error('Error sharing:', error);
+    }
+  };
+
   if (!multiplayer) {
     return null;
   }
@@ -80,13 +105,34 @@ export default function LobbyScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.contentWrapper}>
         <View style={[styles.header, { borderBottomColor: colors.borderThin }]}>
-        <Text style={[styles.title, { color: colors.textPrimary }]}>Lobby</Text>
-      </View>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>Lobby</Text>
+        </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Game: {multiplayer.channelName}</Text>
           <Text style={[styles.playerCount, { color: colors.textTertiary }]}>{playerCount} player{playerCount !== 1 ? 's' : ''} connected</Text>
+          
+          {isHost && (
+            <View style={[styles.linkContainer, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+              <Text style={[styles.linkLabel, { color: colors.textSecondary }]}>
+                Share this link with players:
+              </Text>
+              <Text 
+                style={[styles.linkText, { color: colors.primary }]}
+                selectable
+              >
+                sudokufaceoff://{multiplayer.channelName}
+              </Text>
+              <TouchableOpacity 
+                style={[styles.shareButtonStyled, { backgroundColor: colors.primary }]}
+                onPress={handleShareLink}
+              >
+                <Share2 size={18} color="white" />
+                <Text style={styles.shareButtonText}>Share Link</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         <View style={styles.section}>
@@ -193,6 +239,36 @@ const styles = StyleSheet.create({
   },
   playerCount: {
     fontSize: 14,
+  },
+  linkContainer: {
+    marginTop: 12,
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  linkLabel: {
+    fontSize: 13,
+    marginBottom: 6,
+    fontWeight: '600',
+  },
+  linkText: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  shareButtonStyled: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    gap: 8,
+  },
+  shareButtonText: {
+    color: 'white',
+    fontSize: 15,
+    fontWeight: '600',
   },
   playersList: {
     gap: 12,

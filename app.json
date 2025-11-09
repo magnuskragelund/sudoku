@@ -2,10 +2,10 @@
   "expo": {
     "name": "Sudoku Face Off",
     "slug": "sudoku",
-    "version": "1.0.6",
+    "version": "1.0.7",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "sudoku",
+    "scheme": "sudokufaceoff",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "description": "A modern Sudoku puzzle game with real-time multiplayer. Play solo or challenge friends to solve puzzles together. Features multiple difficulty levels, customizable lives, and competitive gameplay.",
@@ -29,7 +29,7 @@
       "predictiveBackGestureEnabled": false,
       "supportsTablets": false,
       "package": "com.sudokufaceoff.sudoku",
-      "versionCode": 6,
+      "versionCode": 7,
       "permissions": [
         "INTERNET"
       ]
