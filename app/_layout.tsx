@@ -1,5 +1,5 @@
 import * as Linking from 'expo-linking';
-import { Stack, useRouter } from "expo-router";
+import { Stack, useRouter, useSegments } from "expo-router";
 import { useEffect, useRef } from 'react';
 import 'react-native-get-random-values';
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -10,16 +10,20 @@ import { ThemeProvider } from "../context/ThemeContext";
 
 function DeepLinkHandler() {
   const router = useRouter();
+  const segments = useSegments();
   const hasHandledInitialUrl = useRef(false);
 
   useEffect(() => {
     // Handle initial URL if app was opened via deep link
-    Linking.getInitialURL().then(url => {
+    const handleInitialUrl = async () => {
+      const url = await Linking.getInitialURL();
       if (url && !hasHandledInitialUrl.current) {
         hasHandledInitialUrl.current = true;
         handleDeepLink(url);
       }
-    });
+    };
+    
+    handleInitialUrl();
 
     // Listen for deep links while app is running
     const subscription = Linking.addEventListener('url', ({ url }) => {
@@ -37,19 +41,18 @@ function DeepLinkHandler() {
       return;
     }
 
-    // Parse URL - handles sudokufaceoff://game-name
-    const { hostname, path } = Linking.parse(url);
-    
-    // Extract game name from either format
-    let gameName = hostname || path?.replace(/^\//, '');
+    // Remove the scheme to get the game name
+    const gameName = url.replace('sudokufaceoff://', '').replace(/^\/+/, '').trim();
     
     // Only navigate if we have a valid game name
-    if (gameName && gameName.trim().length > 0) {
-      // Navigate to multiplayer screen with game name as param
-      router.push({
-        pathname: '/multiplayer',
-        params: { joinGame: gameName }
-      });
+    if (gameName && gameName.length > 0) {
+      // Use replace to avoid creating back stack issues
+      setTimeout(() => {
+        router.replace({
+          pathname: '/multiplayer',
+          params: { joinGame: gameName }
+        });
+      }, 100);
     }
   };
 
