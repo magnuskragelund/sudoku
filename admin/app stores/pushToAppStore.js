@@ -266,17 +266,24 @@ async function updateAppStoreVersionLocalization(token, locale) {
     // Create localization if it doesn't exist
     if (!localization) {
       console.log(`Creating new version localization for ${appleLocale}...`);
+      const attributes = {
+        locale: appleLocale,
+        description: appStoreCopy.description,
+        keywords: appStoreCopy.keywords,
+        whatsNew: appStoreCopy.whatsNew
+      };
+      
+      // Include promotionalText if it exists
+      if (appStoreCopy.promotionalText) {
+        attributes.promotionalText = appStoreCopy.promotionalText;
+      }
+      
       const createResponse = await axios.post(
         'https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations',
         {
           data: {
             type: 'appStoreVersionLocalizations',
-            attributes: {
-              locale: appleLocale,
-              description: appStoreCopy.description,
-              keywords: appStoreCopy.keywords,
-              whatsNew: appStoreCopy.whatsNew
-            },
+            attributes: attributes,
             relationships: {
               appStoreVersion: {
                 data: {
@@ -297,19 +304,26 @@ async function updateAppStoreVersionLocalization(token, locale) {
       localization = createResponse.data.data;
     }
     
-    // Update description, keywords, and what's new
-    console.log('Updating description, keywords, and release notes...');
+    // Update description, keywords, what's new, and promotional text
+    console.log('Updating description, keywords, release notes, and promotional text...');
+    const updateAttributes = {
+      description: appStoreCopy.description,
+      keywords: appStoreCopy.keywords,
+      whatsNew: appStoreCopy.whatsNew
+    };
+    
+    // Include promotionalText if it exists
+    if (appStoreCopy.promotionalText) {
+      updateAttributes.promotionalText = appStoreCopy.promotionalText;
+    }
+    
     await axios.patch(
       `https://api.appstoreconnect.apple.com/v1/appStoreVersionLocalizations/${localization.id}`,
       {
         data: {
           type: 'appStoreVersionLocalizations',
           id: localization.id,
-          attributes: {
-            description: appStoreCopy.description,
-            keywords: appStoreCopy.keywords,
-            whatsNew: appStoreCopy.whatsNew
-          }
+          attributes: updateAttributes
         }
       },
       {
@@ -320,7 +334,7 @@ async function updateAppStoreVersionLocalization(token, locale) {
       }
     );
     
-    console.log('✓ Description, keywords, and release notes updated');
+    console.log('✓ Description, keywords, release notes, and promotional text updated');
     
   } catch (error) {
     console.error('Error updating app store version localization:', error.response?.data || error.message);
