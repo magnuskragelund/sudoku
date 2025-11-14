@@ -524,18 +524,34 @@ class MultiplayerService {
       }
 
       // Clean up active subscription first
+      // Store channel reference before cleanup in case we need to do additional cleanup
+      const channelToCleanup = this.currentChannel;
       if (this.activeSubscription) {
         this.activeSubscription.cleanup();
         this.activeSubscription = null;
       }
 
       // Unsubscribe and remove channel
-      if (this.currentChannel) {
-        await this.currentChannel.unsubscribe();
+      if (channelToCleanup) {
+        // Ensure all listeners are removed (fallback cleanup)
+        // Remove any remaining broadcast listeners that might not have been cleaned up
+        if (typeof channelToCleanup.off === 'function') {
+          try {
+            // Remove all listeners for player-related events as a safety measure
+            // This ensures cleanup even if the subscription cleanup had issues
+            channelToCleanup.off('broadcast', { event: 'player-joined' });
+            channelToCleanup.off('broadcast', { event: 'request-player-list' });
+            channelToCleanup.off('broadcast', { event: 'my-player-info' });
+          } catch (error) {
+            logger.log('Error during additional listener cleanup:', error);
+          }
+        }
+        
+        await channelToCleanup.unsubscribe();
         
         // Additional cleanup: Remove the channel from Supabase client
-        if (typeof this.currentChannel.untrack === 'function') {
-          this.currentChannel.untrack();
+        if (typeof channelToCleanup.untrack === 'function') {
+          channelToCleanup.untrack();
         }
         
         this.currentChannel = null;

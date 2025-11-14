@@ -33,9 +33,15 @@ class MockChannel {
     const key = `${type}:${config.event}`;
     const handlers = this.listeners.get(key);
     if (handlers) {
-      const index = handlers.indexOf(handler);
-      if (index > -1) {
-        handlers.splice(index, 1);
+      if (handler) {
+        // Remove specific handler
+        const index = handlers.indexOf(handler);
+        if (index > -1) {
+          handlers.splice(index, 1);
+        }
+      } else {
+        // Remove all handlers for this event (when no handler provided)
+        handlers.length = 0;
       }
     }
     return this;
@@ -85,8 +91,8 @@ const mockSupabase = {
   },
   from: () => ({
     upsert: () => ({ error: null }),
-    select: () => ({
-      eq: () => ({
+    select: () => {
+      const queryBuilder = {
         eq: () => ({
           single: () => ({
             data: {
@@ -96,12 +102,28 @@ const mockSupabase = {
               difficulty: 'medium',
               lives: 5,
               status: 'waiting',
+              player_count: 2,
             },
             error: null,
           }),
+          eq: () => ({
+            single: () => ({
+              data: {
+                id: 'test-game-id',
+                channel_name: 'test-channel',
+                host_id: 'host-123',
+                difficulty: 'medium',
+                lives: 5,
+                status: 'waiting',
+                player_count: 2,
+              },
+              error: null,
+            }),
+          }),
         }),
-      }),
-    }),
+      };
+      return queryBuilder;
+    },
     update: () => ({
       eq: () => ({ error: null }),
     }),
