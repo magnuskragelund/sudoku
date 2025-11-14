@@ -1,5 +1,6 @@
+import * as Haptics from 'expo-haptics';
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useGame } from '../context/GameContext';
 import { useTheme } from '../context/ThemeContext';
 
@@ -14,6 +15,19 @@ function NumberPad() {
       const isEditable = initialBoard[row][col] === 0 && 
                         board[row][col] !== solution[row][col];
       if (isEditable) {
+        // Check if the move will be correct before placing - for immediate haptic feedback
+        const isCorrect = number === solution[row][col];
+        
+        // Trigger haptic feedback immediately for correct/wrong moves
+        if (Platform.OS !== 'web') {
+          if (isCorrect) {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          } else {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          }
+        }
+        
+        // Then place the number
         placeNumber(number);
       }
     }

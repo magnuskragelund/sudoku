@@ -23,31 +23,31 @@ function SudokuCell({ row, col, value, isSelected, selectedCell, onSelect }: Sud
   const noteKey = `${row}-${col}`;
   const cellNotes = notes.get(noteKey) || new Set();
   
-  // Animation for wrong number entry
-  const errorAnimation = useRef(new Animated.Value(0)).current;
+  // Animation for wrong number entry - using opacity with native driver for better performance
+  const errorOpacity = useRef(new Animated.Value(0)).current;
   
   const isWrongCell = wrongCell?.row === row && wrongCell?.col === col;
   
   // Trigger animation when this cell becomes the wrong cell
   useEffect(() => {
     if (isWrongCell) {
-      // Error color flash
+      // Simplified error animation - faster and uses native driver
       let timeoutId: any = null;
       
       Animated.sequence([
-        Animated.timing(errorAnimation, {
+        Animated.timing(errorOpacity, {
           toValue: 1,
-          duration: 100,
-          useNativeDriver: false,
+          duration: 50,
+          useNativeDriver: true,
         }),
-        Animated.timing(errorAnimation, {
+        Animated.timing(errorOpacity, {
           toValue: 0,
-          duration: 200,
-          useNativeDriver: false,
+          duration: 100,
+          useNativeDriver: true,
         }),
       ]).start(() => {
-        // Clear the wrong cell after animation
-        timeoutId = setTimeout(() => clearWrongCell(), 100);
+        // Clear the wrong cell after animation - faster timeout
+        timeoutId = setTimeout(() => clearWrongCell(), 50);
       });
 
       return () => {
@@ -56,7 +56,7 @@ function SudokuCell({ row, col, value, isSelected, selectedCell, onSelect }: Sud
         }
       };
     }
-  }, [isWrongCell, errorAnimation, clearWrongCell]);
+  }, [isWrongCell, errorOpacity, clearWrongCell]);
 
   // Determine if this cell is in the same row or column as selected cell
   const isInSameRowOrColumn = (selectedRow: number, selectedCol: number) => {
@@ -132,18 +132,23 @@ function SudokuCell({ row, col, value, isSelected, selectedCell, onSelect }: Sud
     return baseStyle;
   }, [colors]);
 
-  const errorColor = errorAnimation.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['transparent', colors.error],
-  });
-
   return (
     <Animated.View style={cellStyle}>
-      <Animated.View style={[styles.errorOverlay, { backgroundColor: errorColor }]} />
+      <Animated.View 
+        style={[
+          styles.errorOverlay, 
+          { 
+            backgroundColor: colors.error,
+            opacity: errorOpacity.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, 0.3],
+            }),
+          }
+        ]} 
+      />
       <TouchableOpacity
         style={styles.cellContent}
         onPressIn={onSelect}
-        onPress={onSelect}
         activeOpacity={0.7}
         testID={`cell-${row}-${col}`}
         accessibilityLabel={`Cell row ${row + 1} column ${col + 1}${value !== 0 ? ` value ${value}` : ' empty'}`}

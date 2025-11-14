@@ -1,6 +1,4 @@
-import * as Haptics from 'expo-haptics';
 import React, { createContext, useContext, useEffect, useReducer } from 'react';
-import { Platform } from 'react-native';
 import { Difficulty, DIFFICULTY_LIVES, GameActions, GameResult, GameState, MultiplayerGame, SerializableGameState } from '../types/game';
 import { analyticsService } from '../utils/analyticsService';
 import { serializeGameState } from '../utils/gameSerializer';
@@ -136,11 +134,6 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         const newBoard = copyBoard(state.board);
         newBoard[row][col] = action.number;
         
-        // Trigger subtle haptic feedback for correct placement (native only)
-        if (Platform.OS !== 'web') {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        }
-        
         // Check if puzzle is complete
         const isComplete = newBoard.every((row, r) => 
           row.every((cell, c) => cell === state.solution[r][c])
@@ -197,11 +190,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           selectedCell: { row, col }, // Keep cell selected
         };
       } else {
-        // Wrong number - any wrong guess loses a life (native only)
-        if (Platform.OS !== 'web') {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        }
-        
+        // Wrong number - any wrong guess loses a life
         const newLives = Math.max(0, state.lives - 1); // Prevent lives from going below zero
         
         // Track analytics for game lost

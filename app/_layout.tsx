@@ -1,12 +1,13 @@
 import * as Linking from 'expo-linking';
 import { Stack, useRouter, useSegments } from "expo-router";
+import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef } from 'react';
 import 'react-native-get-random-values';
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import 'react-native-url-polyfill/auto';
 import ErrorBoundary from "../components/ErrorBoundary";
 import { GameProvider } from "../context/GameContext";
-import { ThemeProvider } from "../context/ThemeContext";
+import { ThemeProvider, useTheme } from "../context/ThemeContext";
 
 function DeepLinkHandler() {
   const router = useRouter();
@@ -59,11 +60,19 @@ function DeepLinkHandler() {
   return null;
 }
 
+function StatusBarHandler() {
+  const { colorScheme } = useTheme();
+  return (
+    <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+  );
+}
+
 export default function RootLayout() {
   return (
     <ErrorBoundary>
       <SafeAreaProvider>
         <ThemeProvider>
+          <StatusBarHandler />
           <GameProvider>
             <DeepLinkHandler />
             <Stack
