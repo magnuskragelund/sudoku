@@ -53,7 +53,7 @@ const initialState: GameState = {
   gameSessionId: null,
 };
 
-function gameReducer(state: GameState, action: GameAction): GameState {
+export function gameReducer(state: GameState, action: GameAction): GameState {
   return (() => {
     switch (action.type) {
     case 'START_GAME':

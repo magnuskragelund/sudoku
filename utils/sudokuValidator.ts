@@ -35,8 +35,8 @@ export function isBoardValid(board: number[][]): boolean {
       // Skip empty cells
       if (num === 0) continue;
       
-      // Check if this number violates any rules
-      if (!isValidMove(board, row, col, num)) {
+      // Check if this number violates any rules (skip current cell since it's already filled)
+      if (!checkSudokuRules(board, row, col, num, { skipCurrentCell: true })) {
         return false;
       }
     }
