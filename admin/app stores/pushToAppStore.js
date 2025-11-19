@@ -229,9 +229,11 @@ async function updateAppStoreVersionLocalization(token, locale) {
   const appleLocale = formatLocale(locale);
   
   try {
-    // Get current app store version
+    // Get app store versions - only look for editable ones
+    // PREPARE_FOR_SUBMISSION = can edit
+    // DEVELOPER_REJECTED = can edit after rejection
     const versionsResponse = await axios.get(
-      `https://api.appstoreconnect.apple.com/v1/apps/${appId}/appStoreVersions?filter[appStoreState]=PREPARE_FOR_SUBMISSION,READY_FOR_SALE`,
+      `https://api.appstoreconnect.apple.com/v1/apps/${appId}/appStoreVersions?filter[appStoreState]=PREPARE_FOR_SUBMISSION,DEVELOPER_REJECTED`,
       {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -240,13 +242,31 @@ async function updateAppStoreVersionLocalization(token, locale) {
       }
     );
     
-    const version = versionsResponse.data.data[0];
+    // Sort versions by version string (newest first) since API doesn't support sort
+    const versions = versionsResponse.data.data;
+    versions.sort((a, b) => {
+      const aVersion = a.attributes.versionString.split('.').map(Number);
+      const bVersion = b.attributes.versionString.split('.').map(Number);
+      for (let i = 0; i < Math.max(aVersion.length, bVersion.length); i++) {
+        const aVal = aVersion[i] || 0;
+        const bVal = bVersion[i] || 0;
+        if (bVal !== aVal) return bVal - aVal;
+      }
+      return 0;
+    });
+    
+    const version = versions[0];
     if (!version) {
-      console.warn('No editable app store version found. Create a new version in App Store Connect first.');
+      console.error('\n❌ No editable app store version found!');
+      console.error('\n📋 To fix this:');
+      console.error('   1. Go to App Store Connect: https://appstoreconnect.apple.com');
+      console.error('   2. Select your app → App Store tab');
+      console.error('   3. Click "+" to create a new version (e.g., 1.0.9)');
+      console.error('   4. Wait 1-2 minutes, then run this script again\n');
       return;
     }
     
-    console.log(`Found app store version: ${version.attributes.versionString}`);
+    console.log(`Found editable app store version: ${version.attributes.versionString} (${version.attributes.appStoreState})`);
     
     // Get localizations for this version
     const localizationsResponse = await axios.get(
@@ -337,6 +357,25 @@ async function updateAppStoreVersionLocalization(token, locale) {
     console.log('✓ Description, keywords, release notes, and promotional text updated');
     
   } catch (error) {
+    // Check for STATE_ERROR (version not editable)
+    if (error.response?.status === 409) {
+      const errors = error.response?.data?.errors || [];
+      const stateError = errors.find(e => e.code === 'STATE_ERROR');
+      
+      if (stateError) {
+        console.error('\n❌ Cannot edit metadata - app version is not in editable state');
+        console.error(`\n📋 Error: ${stateError.detail || stateError.title}`);
+        console.error('\n💡 Solution:');
+        console.error('   1. Go to App Store Connect: https://appstoreconnect.apple.com');
+        console.error('   2. Select your app → App Store tab');
+        console.error('   3. Create a NEW version (e.g., 1.0.9)');
+        console.error('   4. Wait 1-2 minutes for it to appear');
+        console.error('   5. Run this script again\n');
+        console.error('   Note: Metadata can only be edited when version is in "Prepare for Submission" state');
+        throw new Error('Version not editable - create new version in App Store Connect');
+      }
+    }
+    
     console.error('Error updating app store version localization:', error.response?.data || error.message);
     throw error;
   }
@@ -367,7 +406,10 @@ async function main() {
     console.log('Note: Changes may need to be submitted for review depending on app state.\n');
     
   } catch (error) {
-    console.error('\n❌ Failed to push metadata:', error.message);
+    // Don't show duplicate error messages if we already showed helpful guidance
+    if (!error.message.includes('Version not editable')) {
+      console.error('\n❌ Failed to push metadata:', error.message);
+    }
     process.exit(1);
   }
 }
