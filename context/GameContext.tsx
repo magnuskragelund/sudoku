@@ -5,6 +5,7 @@ import { serializeGameState } from '../utils/gameSerializer';
 import { saveGameResult } from '../utils/highScoreStorage';
 import { logger } from '../utils/logger';
 import { multiplayerService } from '../utils/multiplayerService';
+import { ReviewService } from '../utils/reviewService';
 import { generatePuzzle } from '../utils/sudokuGenerator';
 import { copyBoard } from '../utils/sudokuRules';
 
@@ -181,6 +182,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             });
             logger.log('Broadcasting win to other players');
           }
+          
+          // Trigger review prompt logic (fire and forget)
+          ReviewService.onPuzzleCompleted(!!state.multiplayer).catch(err => 
+            logger.error('GameContext', 'Error checking review prompt', err)
+          );
         }
 
         return {

@@ -6,10 +6,11 @@ This directory contains app store copy in multiple languages and scripts to push
 
 ### Locale Files
 - `locales/{locale}.json` - App store copy for each language (e.g., `locales/en-us.json`, `locales/de-de.json`)
-- Each file contains: `appName`, `subtitle`, `description`, `keywords`
+- Each file contains: `appName`, `subtitle`, `description`, `keywords`, `whatsNew`, `promotionalText`
 
 ### Scripts
 - `listLocales.js` - List all available locale files
+- `verifyLocales.js` - **NEW!** Verify all locale files are valid before upload
 - `pushToAppStore.js` - Push single locale to Apple App Store
 - `pushToPlayStore.js` - Push single locale to Google Play Store
 - `pushToBoth.js` - Push single locale to both stores
@@ -85,6 +86,20 @@ npm install jsonwebtoken axios googleapis --save-dev
    ```
 
 ## 🚀 Usage
+
+### Verify Locale Files (Recommended First Step!)
+
+Before uploading, verify all locale files are valid:
+
+```bash
+node admin/app\ stores/verifyLocales.js
+```
+
+This checks:
+- ✅ All required fields are present
+- ✅ Field lengths are within limits
+- ✅ No typos or common errors
+- ✅ Keywords are optimized
 
 ### List Available Locales
 
@@ -173,6 +188,7 @@ The `supportUrl` field in locale JSON files is kept for documentation purposes b
 ✅ Description (per locale)  
 ✅ Keywords (per locale)  
 ✅ What's New / Release Notes (per locale)  
+✅ Promotional Text (per locale)  
 ✅ Subtitle (per locale)  
 ✅ Screenshots (via separate endpoints)  
 ❌ Support URL (manual only)  
@@ -216,7 +232,9 @@ Each locale file must follow this structure:
   "appName": "Your App Name",
   "subtitle": "Short subtitle (max 30 chars for App Store)",
   "description": "Full description with sections separated by \\n\\n",
-  "keywords": "keyword1, keyword2, keyword3 (max 100 chars for App Store)"
+  "keywords": "keyword1, keyword2, keyword3 (max 100 chars for App Store)",
+  "whatsNew": "What's new in this version (optional)",
+  "promotionalText": "Promotional text shown above description (optional, max 170 chars)"
 }
 ```
 
@@ -252,10 +270,32 @@ node admin/app\ stores/pushAllToBoth.js
 ### Test Single Locale Before Full Push
 
 ```bash
-# Test new German copy
+# 1. Verify all files first
+node admin/app\ stores/verifyLocales.js
+
+# 2. Test new German copy
 node admin/app\ stores/pushToAppStore.js de-de
 
-# If it works, push everything
+# 3. If it works, push everything
 node admin/app\ stores/pushAllToBoth.js
 ```
+
+## 📋 Quick Reference
+
+**Before uploading, always verify:**
+```bash
+node admin/app\ stores/verifyLocales.js
+```
+
+**See what will be uploaded:**
+```bash
+node admin/app\ stores/listLocales.js
+```
+
+**Upload all locales:**
+```bash
+node admin/app\ stores/pushAllToAppStore.js
+```
+
+**For detailed upload status, see:** `UPLOAD_READY.md`
 
