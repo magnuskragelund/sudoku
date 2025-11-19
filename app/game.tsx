@@ -6,7 +6,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import NumberPad from '../components/NumberPad';
 import SudokuBoard from '../components/SudokuBoard';
-import { useGame } from '../context/GameContext';
+import { useGame, useGameTime } from '../context/GameContext';
 import { useTheme } from '../context/ThemeContext';
 import { getBestTime } from '../utils/highScoreStorage';
 import { multiplayerService } from '../utils/multiplayerService';
@@ -19,7 +19,6 @@ export default function GameScreen() {
     status, 
     lives,
     initialLives, 
-    timeElapsed, 
     selectedCell,
     hintUsed,
     multiplayer,
@@ -36,6 +35,8 @@ export default function GameScreen() {
     leaveMultiplayerGame,
     startNewRound
   } = useGame();
+
+  const { timeElapsed } = useGameTime();
 
   const [bestTime, setBestTime] = useState<number | null>(null);
 

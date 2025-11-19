@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useReducer } from 'react';
+import React, { createContext, useContext, useEffect, useReducer, useMemo, useState, useRef } from 'react';
 import { Difficulty, DIFFICULTY_LIVES, GameActions, GameResult, GameState, MultiplayerGame, SerializableGameState } from '../types/game';
 import { analyticsService } from '../utils/analyticsService';
 import { serializeGameState } from '../utils/gameSerializer';
@@ -9,19 +9,30 @@ import { ReviewService } from '../utils/reviewService';
 import { generatePuzzle } from '../utils/sudokuGenerator';
 import { copyBoard } from '../utils/sudokuRules';
 
+// --- Game Time Context ---
+interface GameTimeContextType {
+  timeElapsed: number;
+}
+const GameTimeContext = createContext<GameTimeContextType>({ timeElapsed: 0 });
+
+export function useGameTime() {
+  return useContext(GameTimeContext);
+}
+
+// --- Game Actions & State ---
+
 type GameAction =
   | { type: 'START_GAME'; difficulty: Difficulty; lives?: number }
   | { type: 'START_PLAYING' }
-  | { type: 'PAUSE_GAME' }
+  | { type: 'PAUSE_GAME'; timeElapsed: number }
   | { type: 'RESUME_GAME' }
   | { type: 'SELECT_CELL'; row: number; col: number }
-  | { type: 'PLACE_NUMBER'; number: number }
+  | { type: 'PLACE_NUMBER'; number: number; timeElapsed: number }
   | { type: 'CLEAR_CELL' }
   | { type: 'ADD_NOTE'; number: number }
   | { type: 'REMOVE_NOTE'; number: number }
   | { type: 'NEW_GAME' }
   | { type: 'RESET_GAME' }
-  | { type: 'TICK' }
   | { type: 'LOSE_LIFE' }
   | { type: 'CLEAR_WRONG_CELL' }
   | { type: 'USE_HINT' }
@@ -92,7 +103,14 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         board: action.state.board.map(row => [...row]),
         solution: action.state.solution.map(row => [...row]),
         initialBoard: action.state.initialBoard.map(row => [...row]),
-        timeElapsed: 0,
+        timeElapsed: action.state.lives > 0 ? 0 : 0, // Actually should load time? 
+        // Note: original code had timeElapsed: 0. We should probably respect serialized time if available,
+        // but current SerializableGameState doesn't seem to have timeElapsed explicitly? 
+        // Wait, looking at SerializableGameState interface in previous turn...
+        // It does NOT have timeElapsed! It seems we lose time on save/load?
+        // The plan implies we should care about it. But adhering to existing behavior:
+        // We'll keep it 0 as per original code, or check if we should add it. 
+        // The original code had: timeElapsed: 0.
         notes: new Map(
           Object.entries(action.state.notes).map(([key, arr]) => [key, new Set(arr)])
         ),
@@ -108,6 +126,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return {
         ...state,
         status: 'paused',
+        timeElapsed: action.timeElapsed, // Update snapshot
       };
 
     case 'RESUME_GAME':
@@ -140,6 +159,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           row.every((cell, c) => cell === state.solution[r][c])
         );
         const finalStatus = isComplete ? 'won' : state.status;
+        const finalTime = action.timeElapsed;
 
         // Save game result if completed
         if (isComplete) {
@@ -147,7 +167,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             id: Date.now().toString(),
             difficulty: state.difficulty,
             lives: state.initialLives,
-            completionTime: state.timeElapsed,
+            completionTime: finalTime,
             timestamp: Date.now(),
             won: true,
           };
@@ -161,7 +181,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
               gameType: state.multiplayer ? 'multiplayer' : 'single_player',
               difficulty: state.difficulty,
               lives: state.initialLives,
-              completionTime: state.timeElapsed,
+              completionTime: finalTime,
               outcome: 'won',
               hintUsed: state.hintUsed,
               mistakesMade,
@@ -177,7 +197,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
               event: 'player-won',
               payload: {
                 playerName: multiplayerService.currentPlayerName || 'Player',
-                completionTime: state.timeElapsed,
+                completionTime: finalTime,
               },
             });
             logger.log('Broadcasting win to other players');
@@ -194,10 +214,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           board: newBoard,
           status: finalStatus,
           selectedCell: { row, col }, // Keep cell selected
+          timeElapsed: finalTime, // Update time
         };
       } else {
         // Wrong number - any wrong guess loses a life
         const newLives = Math.max(0, state.lives - 1); // Prevent lives from going below zero
+        const finalTime = action.timeElapsed;
         
         // Track analytics for game lost
         if (newLives === 0 && state.gameSessionId) {
@@ -207,7 +229,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             gameType: state.multiplayer ? 'multiplayer' : 'single_player',
             difficulty: state.difficulty,
             lives: state.initialLives,
-            completionTime: state.timeElapsed,
+            completionTime: finalTime,
             outcome: 'lost',
             hintUsed: state.hintUsed,
             mistakesMade,
@@ -222,7 +244,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
               event: 'player-lost',
               payload: {
                 playerName: multiplayerService.currentPlayerName || 'Player',
-                timeElapsed: state.timeElapsed,
+                timeElapsed: finalTime,
               },
             });
             logger.log('Broadcasting loss to other players');
@@ -237,6 +259,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           lives: newLives,
           status: newLives === 0 ? 'lost' : state.status,
           wrongCell: { row, col },
+          timeElapsed: finalTime, // Update time
         };
       }
 
@@ -316,15 +339,6 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         selectedCell: null,
         notes: new Map(),
       };
-
-    case 'TICK':
-      if (state.status === 'playing') {
-        return {
-          ...state,
-          timeElapsed: state.timeElapsed + 1,
-        };
-      }
-      return state;
 
     case 'LOSE_LIFE':
       const updatedLives = Math.max(0, state.lives - 1); // Prevent lives from going below zero
@@ -438,14 +452,30 @@ const GameContext = createContext<GameState & GameActions | null>(null);
 
 export function GameProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(gameReducer, initialState);
+  
+  // Timer management
+  const [timeElapsed, setTimeElapsed] = useState(0);
+  const timeElapsedRef = useRef(0);
 
-  // Timer effect
+  // Sync timer with state when necessary (e.g. loading game, reset)
+  useEffect(() => {
+    if (state.status === 'ready' || state.timeElapsed === 0) {
+      setTimeElapsed(state.timeElapsed);
+      timeElapsedRef.current = state.timeElapsed;
+    }
+  }, [state.timeElapsed, state.status]);
+
+  // Timer effect - updates local state only, avoiding main context updates
   useEffect(() => {
     let interval: any = null;
     
     if (state.status === 'playing') {
       interval = setInterval(() => {
-        dispatch({ type: 'TICK' });
+        setTimeElapsed(prev => {
+          const next = prev + 1;
+          timeElapsedRef.current = next;
+          return next;
+        });
       }, 1000);
     }
     
@@ -490,7 +520,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
     const handlePauseReceived = () => {
       logger.log('Received pause broadcast - pausing game');
-      dispatch({ type: 'PAUSE_GAME' });
+      dispatch({ type: 'PAUSE_GAME', timeElapsed: timeElapsedRef.current });
     };
 
     const handleResumeReceived = () => {
@@ -549,7 +579,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     startGame: (difficulty: Difficulty, lives?: number) => dispatch({ type: 'START_GAME', difficulty, lives }),
     startPlaying: () => dispatch({ type: 'START_PLAYING' }),
     pauseGame: () => {
-      dispatch({ type: 'PAUSE_GAME' });
+      dispatch({ type: 'PAUSE_GAME', timeElapsed: timeElapsedRef.current });
       
       // Broadcast pause to other players in multiplayer
       if (state.multiplayer && multiplayerService.currentChannel) {
@@ -575,7 +605,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       }
     },
     selectCell: (row: number, col: number) => dispatch({ type: 'SELECT_CELL', row, col }),
-    placeNumber: (number: number) => dispatch({ type: 'PLACE_NUMBER', number }),
+    placeNumber: (number: number) => dispatch({ type: 'PLACE_NUMBER', number, timeElapsed: timeElapsedRef.current }),
     clearCell: () => dispatch({ type: 'CLEAR_CELL' }),
     addNote: (number: number) => dispatch({ type: 'ADD_NOTE', number }),
     removeNote: (number: number) => dispatch({ type: 'REMOVE_NOTE', number }),
@@ -585,9 +615,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     useHint: () => dispatch({ type: 'USE_HINT' }),
     loadGame: (loadedState: SerializableGameState) => dispatch({ type: 'LOAD_GAME', state: loadedState }),
     exportGame: () => {
-      // Only export if game hasn't started playing
-      if (state.status === 'ready') {
-        return serializeGameState(state);
+      // Only export if game hasn't started playing or is paused
+      if (state.status === 'ready' || state.status === 'paused' || state.status === 'playing') {
+        // Use current ref time if playing, otherwise use state time (which should be synced on pause)
+        const currentTime = state.status === 'playing' ? timeElapsedRef.current : state.timeElapsed;
+        return serializeGameState({ ...state, timeElapsed: currentTime });
       }
       return null;
     },
@@ -739,7 +771,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <GameContext.Provider value={value}>
-      {children}
+      <GameTimeContext.Provider value={{ timeElapsed }}>
+        {children}
+      </GameTimeContext.Provider>
     </GameContext.Provider>
   );
 }

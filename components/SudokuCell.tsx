@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useGame } from '../context/GameContext';
 import { useTheme } from '../context/ThemeContext';
 
 interface SudokuCellProps {
@@ -8,29 +7,40 @@ interface SudokuCellProps {
   col: number;
   value: number;
   isSelected: boolean;
-  selectedCell: { row: number; col: number } | null;
-  onSelect: () => void;
+  isHighlighted: boolean;
+  isSameValue: boolean;
+  isInitial: boolean;
+  isCorrectlyFilled: boolean;
+  isWrong: boolean;
+  notes: Set<number>;
+  onSelect: (row: number, col: number) => void;
+  onClearWrongCell: () => void;
 }
 
-function SudokuCell({ row, col, value, isSelected, selectedCell, onSelect }: SudokuCellProps) {
-  const { initialBoard, notes, wrongCell, clearWrongCell, board, solution } = useGame();
+function SudokuCell({ 
+  row, 
+  col, 
+  value, 
+  isSelected, 
+  isHighlighted,
+  isSameValue,
+  isInitial,
+  isCorrectlyFilled,
+  isWrong,
+  notes,
+  onSelect,
+  onClearWrongCell
+}: SudokuCellProps) {
   const { colors } = useTheme();
   
-  const isInitial = initialBoard[row][col] !== 0;
-  // Cell is also "initial-like" if it's been correctly filled by the user
-  const isCorrectlyFilled = board[row][col] !== 0 && board[row][col] === solution[row][col] && !isInitial;
   const isNonEditable = isInitial || isCorrectlyFilled;
-  const noteKey = `${row}-${col}`;
-  const cellNotes = notes.get(noteKey) || new Set();
   
   // Animation for wrong number entry - using opacity with native driver for better performance
   const errorOpacity = useRef(new Animated.Value(0)).current;
   
-  const isWrongCell = wrongCell?.row === row && wrongCell?.col === col;
-  
   // Trigger animation when this cell becomes the wrong cell
   useEffect(() => {
-    if (isWrongCell) {
+    if (isWrong) {
       // Simplified error animation - faster and uses native driver
       let timeoutId: any = null;
       
@@ -47,7 +57,7 @@ function SudokuCell({ row, col, value, isSelected, selectedCell, onSelect }: Sud
         }),
       ]).start(() => {
         // Clear the wrong cell after animation - faster timeout
-        timeoutId = setTimeout(() => clearWrongCell(), 50);
+        timeoutId = setTimeout(() => onClearWrongCell(), 50);
       });
 
       return () => {
@@ -56,37 +66,7 @@ function SudokuCell({ row, col, value, isSelected, selectedCell, onSelect }: Sud
         }
       };
     }
-  }, [isWrongCell, errorOpacity, clearWrongCell]);
-
-  // Determine if this cell is in the same row or column as selected cell
-  const isInSameRowOrColumn = (selectedRow: number, selectedCol: number) => {
-    if (selectedRow === -1 || selectedCol === -1) return false;
-    
-    const sameRow = row === selectedRow;
-    const sameCol = col === selectedCol;
-    
-    return sameRow || sameCol;
-  };
-
-  // Determine if this cell is in the same 3x3 box as selected cell
-  const isInSameBox = (selectedRow: number, selectedCol: number) => {
-    if (selectedRow === -1 || selectedCol === -1) return false;
-    
-    return Math.floor(row / 3) === Math.floor(selectedRow / 3) && 
-           Math.floor(col / 3) === Math.floor(selectedCol / 3);
-  };
-
-  // Determine if this cell has the same value as the selected cell
-  const hasSameValue = (selectedRow: number, selectedCol: number, selectedValue: number) => {
-    if (selectedRow === -1 || selectedCol === -1 || selectedValue === 0) return false;
-    
-    return value === selectedValue;
-  };
-
-  // Memoize selected value to avoid recalculating on every render
-  const selectedValue = React.useMemo(() => {
-    return selectedCell ? board[selectedCell.row][selectedCell.col] : 0;
-  }, [selectedCell, board]);
+  }, [isWrong, errorOpacity, onClearWrongCell]);
 
   // Memoize style calculations to avoid recalculation on every render
   const cellStyle = React.useMemo(() => {
@@ -116,16 +96,14 @@ function SudokuCell({ row, col, value, isSelected, selectedCell, onSelect }: Sud
     // Background color based on state
     if (isSelected) {
       baseStyle.push({ backgroundColor: colors.cellSelected });
-    } else if (hasSameValue(selectedCell?.row ?? -1, selectedCell?.col ?? -1, selectedValue)) {
+    } else if (isSameValue) {
       baseStyle.push({ backgroundColor: colors.cellSameValue });
-    } else if (isInSameRowOrColumn(selectedCell?.row ?? -1, selectedCell?.col ?? -1)) {
-      baseStyle.push({ backgroundColor: colors.cellHighlight });
-    } else if (isInSameBox(selectedCell?.row ?? -1, selectedCell?.col ?? -1)) {
+    } else if (isHighlighted) {
       baseStyle.push({ backgroundColor: colors.cellHighlight });
     }
     
     return baseStyle;
-  }, [isSelected, selectedCell, isNonEditable, row, col, selectedValue, colors]);
+  }, [isSelected, isSameValue, isHighlighted, row, col, colors]);
 
   const textStyle = React.useMemo(() => {
     const baseStyle = [styles.cellText, { color: colors.textPrimary }];
@@ -148,7 +126,7 @@ function SudokuCell({ row, col, value, isSelected, selectedCell, onSelect }: Sud
       />
       <TouchableOpacity
         style={styles.cellContent}
-        onPressIn={onSelect}
+        onPressIn={() => onSelect(row, col)}
         activeOpacity={0.7}
         testID={`cell-${row}-${col}`}
         accessibilityLabel={`Cell row ${row + 1} column ${col + 1}${value !== 0 ? ` value ${value}` : ' empty'}`}
@@ -156,7 +134,7 @@ function SudokuCell({ row, col, value, isSelected, selectedCell, onSelect }: Sud
       >
         {value !== 0 ? (
           <Text style={textStyle}>{value}</Text>
-        ) : cellNotes.size > 0 ? (
+        ) : notes.size > 0 ? (
           <View style={styles.notesContainer}>
             {Array.from({ length: 9 }, (_, i) => (
               <Text
@@ -164,7 +142,7 @@ function SudokuCell({ row, col, value, isSelected, selectedCell, onSelect }: Sud
                 style={[
                   styles.noteText,
                   { color: colors.textSecondary },
-                  { opacity: cellNotes.has(i + 1) ? 1 : 0 }
+                  { opacity: notes.has(i + 1) ? 1 : 0 }
                 ]}
               >
                 {i + 1}
@@ -198,7 +176,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     opacity: 0.3,
   },
-  // Removed bottom/right thick helpers; borders are computed inline to avoid overlaps
   cellText: {
     fontSize: 30,
     fontWeight: '400',
