@@ -1,0 +1,1 @@
+most of the blue buttons in the modals have an uneven padding resulting in a label that is not vertically centered.
