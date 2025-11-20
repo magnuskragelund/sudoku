@@ -90,7 +90,7 @@ describe('Game Flow Integration Tests', () => {
       expect(state.selectedCell).toEqual({ row: 0, col: 2 });
       
       // 3. Place correct number
-      state = gameReducer(state, { type: 'PLACE_NUMBER', number: 4 });
+      state = gameReducer(state, { type: 'PLACE_NUMBER', number: 4, timeElapsed: 10 });
       expect(state.board[0][2]).toBe(4);
       
       // 4. Simulate completing the puzzle by filling all cells
@@ -105,7 +105,8 @@ describe('Game Flow Integration Tests', () => {
             });
             state = gameReducer(state, { 
               type: 'PLACE_NUMBER', 
-              number: state.solution[row][col] 
+              number: state.solution[row][col],
+              timeElapsed: 100 // arbitrary time
             });
           }
         }
@@ -113,20 +114,6 @@ describe('Game Flow Integration Tests', () => {
       
       // 5. Verify game is won
       expect(state.status).toBe('won');
-    });
-
-    it('should track time during gameplay', () => {
-      let state = createInitialState();
-      
-      state = gameReducer(state, { type: 'START_GAME', difficulty: 'easy' });
-      expect(state.timeElapsed).toBe(0);
-      
-      // Simulate timer ticks
-      for (let i = 0; i < 5; i++) {
-        state = gameReducer(state, { type: 'TICK' });
-      }
-      
-      expect(state.timeElapsed).toBe(5);
     });
   });
 
@@ -316,21 +303,16 @@ describe('Game Flow Integration Tests', () => {
       expect(state.status).toBe('playing');
       
       // Pause
-      state = gameReducer(state, { type: 'PAUSE_GAME' });
+      const timeAtPause = 123;
+      state = gameReducer(state, { type: 'PAUSE_GAME', timeElapsed: timeAtPause });
       expect(state.status).toBe('paused');
-      
-      // Timer should not increment when paused
-      const timeBefore = state.timeElapsed;
-      state = gameReducer(state, { type: 'TICK' });
-      expect(state.timeElapsed).toBe(timeBefore);
+      expect(state.timeElapsed).toBe(timeAtPause);
       
       // Resume
       state = gameReducer(state, { type: 'RESUME_GAME' });
       expect(state.status).toBe('playing');
-      
-      // Timer should increment when playing
-      state = gameReducer(state, { type: 'TICK' });
-      expect(state.timeElapsed).toBe(timeBefore + 1);
+      // Time should be preserved
+      expect(state.timeElapsed).toBe(timeAtPause);
     });
   });
 

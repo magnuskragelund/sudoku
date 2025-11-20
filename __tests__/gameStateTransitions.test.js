@@ -389,30 +389,6 @@ describe('Game State Transitions Tests', () => {
     });
   });
 
-  describe('TICK', () => {
-    it('should increment time when playing', () => {
-      const state = createInitialState();
-      state.status = 'playing';
-      state.timeElapsed = 10;
-      
-      const action = { type: 'TICK' };
-      const newState = gameReducer(state, action);
-      
-      expect(newState.timeElapsed).toBe(11);
-    });
-
-    it('should not increment time when paused', () => {
-      const state = createInitialState();
-      state.status = 'paused';
-      state.timeElapsed = 10;
-      
-      const action = { type: 'TICK' };
-      const newState = gameReducer(state, action);
-      
-      expect(newState.timeElapsed).toBe(10);
-    });
-  });
-
   describe('LOSE_LIFE', () => {
     it('should decrement lives', () => {
       const state = createInitialState();
