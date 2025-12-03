@@ -13,6 +13,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 import * as StoreReview from 'expo-store-review';
 import { logger } from './logger';
 
@@ -67,7 +68,9 @@ export class ReviewService {
       if (completionCount >= CONFIG.GAMES_BEFORE_PROMPT) {
         // Small delay to let victory animation complete
         setTimeout(() => {
-          this.requestReview();
+          this.requestReview().catch(err => 
+            logger.error('ReviewService', 'Error in requestReview from setTimeout', err)
+          );
         }, 2000);
       }
     } catch (error) {
@@ -212,8 +215,7 @@ export class ReviewService {
   private static async getCurrentAppVersion(): Promise<string> {
     try {
       // In Expo, you can get this from Constants
-      const Constants = await import('expo-constants');
-      return Constants.default.expoConfig?.version || '1.0.0';
+      return Constants.expoConfig?.version || '1.0.0';
     } catch (error) {
       logger.error('ReviewService', 'Error getting app version', error);
       return '1.0.0';
