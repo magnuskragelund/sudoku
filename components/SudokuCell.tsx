@@ -31,7 +31,7 @@ function SudokuCell({
   onSelect,
   onClearWrongCell
 }: SudokuCellProps) {
-  const { colors } = useTheme();
+  const { colors, typography } = useTheme();
   
   const isNonEditable = isInitial || isCorrectlyFilled;
   
@@ -106,9 +106,23 @@ function SudokuCell({
   }, [isSelected, isSameValue, isHighlighted, row, col, colors]);
 
   const textStyle = React.useMemo(() => {
-    const baseStyle = [styles.cellText, { color: colors.textPrimary }];
+    const baseStyle = [
+      styles.cellText, 
+      { 
+        color: isInitial ? colors.textPrimary : colors.textSecondary,
+        fontFamily: typography.fontSerif,
+        fontSize: 28,
+        fontWeight: isInitial ? '600' : '400',
+      }
+    ];
     return baseStyle;
-  }, [colors]);
+  }, [colors, typography, isInitial]);
+  
+  const noteTextStyle = React.useMemo(() => ({
+    fontFamily: typography.fontBody,
+    fontSize: 9,
+    color: colors.textTertiary,
+  }), [colors, typography]);
 
   return (
     <Animated.View style={cellStyle}>
@@ -140,8 +154,7 @@ function SudokuCell({
               <Text
                 key={i}
                 style={[
-                  styles.noteText,
-                  { color: colors.textSecondary },
+                  noteTextStyle,
                   { opacity: notes.has(i + 1) ? 1 : 0 }
                 ]}
               >
@@ -177,9 +190,7 @@ const styles = StyleSheet.create({
     opacity: 0.3,
   },
   cellText: {
-    fontSize: 30,
-    fontWeight: '400',
-    fontFamily: 'Inter',
+    // Dynamic styles applied in component
   },
   notesContainer: {
     flexDirection: 'row',
@@ -188,12 +199,7 @@ const styles = StyleSheet.create({
     height: '100%',
     justifyContent: 'space-around',
     alignItems: 'center',
-  },
-  noteText: {
-    fontSize: 8,
-    fontFamily: 'Inter',
-    width: '33%',
-    textAlign: 'center',
+    padding: 2,
   },
 });
 

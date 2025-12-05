@@ -1,13 +1,31 @@
 import * as Linking from 'expo-linking';
+import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from "expo-router";
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef } from 'react';
 import 'react-native-get-random-values';
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import 'react-native-url-polyfill/auto';
+import {
+  PlayfairDisplay_400Regular,
+  PlayfairDisplay_500Medium,
+  PlayfairDisplay_600SemiBold,
+  PlayfairDisplay_700Bold,
+} from '@expo-google-fonts/playfair-display';
+import {
+  CormorantGaramond_300Light,
+  CormorantGaramond_400Regular,
+  CormorantGaramond_500Medium,
+  CormorantGaramond_600SemiBold,
+  CormorantGaramond_700Bold,
+} from '@expo-google-fonts/cormorant-garamond';
 import ErrorBoundary from "../components/ErrorBoundary";
 import { GameProvider } from "../context/GameContext";
 import { ThemeProvider, useTheme } from "../context/ThemeContext";
+
+// Keep the splash screen visible while we fetch resources
+SplashScreen.preventAutoHideAsync();
 
 function DeepLinkHandler() {
   const router = useRouter();
@@ -68,6 +86,28 @@ function StatusBarHandler() {
 }
 
 export default function RootLayout() {
+  const [fontsLoaded, fontError] = useFonts({
+    'PlayfairDisplay-Regular': PlayfairDisplay_400Regular,
+    'PlayfairDisplay-Medium': PlayfairDisplay_500Medium,
+    'PlayfairDisplay-SemiBold': PlayfairDisplay_600SemiBold,
+    'PlayfairDisplay-Bold': PlayfairDisplay_700Bold,
+    'CormorantGaramond-Light': CormorantGaramond_300Light,
+    'CormorantGaramond-Regular': CormorantGaramond_400Regular,
+    'CormorantGaramond-Medium': CormorantGaramond_500Medium,
+    'CormorantGaramond-SemiBold': CormorantGaramond_600SemiBold,
+    'CormorantGaramond-Bold': CormorantGaramond_700Bold,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded || fontError) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded, fontError]);
+
+  if (!fontsLoaded && !fontError) {
+    return null;
+  }
+
   return (
     <ErrorBoundary>
       <SafeAreaProvider>

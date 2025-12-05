@@ -1,198 +1,261 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Moon, Star, Sun, Trophy, Users } from 'lucide-react-native';
+import { Moon, Palette, Sun, Trophy, User, Users } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useGame } from '../context/GameContext';
 import { useTheme } from '../context/ThemeContext';
-import { Difficulty } from '../types/game';
 
 export default function WelcomeScreen() {
   const router = useRouter();
-  const { startGame, loadGame } = useGame();
-  const { theme, setTheme, colors } = useTheme();
-  const [selectedLives, setSelectedLives] = useState(5);
-  const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | null>(null);
-  const [isStartingGame, setIsStartingGame] = useState(false);
-
-  const handleStartGame = async (difficulty: Difficulty) => {
-    if (isStartingGame) return; // Prevent multiple presses
-    
-    setIsStartingGame(true);
-    
-    // Small delay to allow UI to update and show disabled state
-    await new Promise(resolve => setTimeout(resolve, 50));
-    
-    startGame(difficulty, selectedLives);
-    
-    // Navigate after state is set
-    setTimeout(() => {
-      router.push('/game');
-      setIsStartingGame(false);
-    }, 100);
-  };
+  const { theme, setTheme, colors, typography, spacing, colorScheme } = useTheme();
+  const [showThemeSelector, setShowThemeSelector] = useState(false);
+  const { width } = useWindowDimensions();
+  
+  // Responsive max width: 600px for phones, 1000px for tablets/web
+  const maxContentWidth = width >= 768 ? 1000 : 600;
 
 
-  const difficulties: { label: string; value: Difficulty; stars: number }[] = [
-    { label: 'Easy', value: 'easy', stars: 1 },
-    { label: 'Medium', value: 'medium', stars: 2 },
-    { label: 'Hard', value: 'hard', stars: 3 },
-    { label: 'Master', value: 'master', stars: 4 },
-  ];
-
-  const livesOptions = [1, 2, 3, 4, 5];
+  const Divider = () => (
+    <View style={styles.dividerContainer}>
+      <View style={[styles.divider, { backgroundColor: colors.divider }]} />
+    </View>
+  );
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        bounces={false}
-        keyboardShouldPersistTaps="handled"
+      <LinearGradient
+        colors={[colors.backgroundGradientFrom, colors.backgroundGradientTo]}
+        style={styles.gradient}
       >
-        <View style={styles.contentWrapper}>
-          <View style={styles.titleContainer}>
-          <Text style={[styles.titleLarge, { color: colors.textPrimary }]}>Sudoku</Text>
-          <Text style={[styles.titleSmall, { color: colors.textSecondary }]}>Face Off</Text>
-        </View>
-        
-
-        
-        <View style={styles.secondaryActionsRow}>
-          <TouchableOpacity 
-            style={[styles.secondaryButton, { backgroundColor: colors.buttonBackgroundSecondary, borderColor: colors.border }]}
-            onPress={() => router.push('/highscores')}
-          >
-            <Trophy size={18} color="#2B7FFF" />
-            <Text style={[styles.secondaryButtonText, { color: colors.textSecondary }]}>High Scores</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.secondaryButton, { backgroundColor: colors.buttonBackgroundSecondary, borderColor: colors.border }]}
-            onPress={() => router.push('/multiplayer')}
-          >
-            <Users size={18} color="#22C55E" />
-            <Text style={[styles.secondaryButtonText, { color: colors.textSecondary }]}>Multiplayer</Text>
-          </TouchableOpacity>
-        </View>
-                {/* Theme Toggle */}
-                <View style={styles.themeSection}>
-          <Text style={[styles.livesLabel, { color: colors.textSecondary }]}>Theme</Text>
-          <View style={styles.themeContainer}>
-            <TouchableOpacity
-              style={[
-                styles.themeButton,
-                { backgroundColor: colors.buttonBackground, borderColor: colors.border },
-                theme === 'light' && { backgroundColor: colors.primary, borderColor: colors.primary }
-              ]}
-              onPress={() => setTheme('light')}
-            >
-              <Sun size={16} color={theme === 'light' ? 'white' : colors.textSecondary} />
-              <Text style={[
-                styles.themeButtonText,
-                { color: colors.textSecondary },
-                theme === 'light' && { color: 'white' }
-              ]}>
-                Light
-              </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[
-                styles.themeButton,
-                { backgroundColor: colors.buttonBackground, borderColor: colors.border },
-                theme === 'system' && { backgroundColor: colors.primary, borderColor: colors.primary }
-              ]}
-              onPress={() => setTheme('system')}
-            >
-              <Text style={[
-                styles.themeButtonText,
-                { color: colors.textSecondary },
-                theme === 'system' && { color: 'white' }
-              ]}>
-                Auto
-              </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[
-                styles.themeButton,
-                { backgroundColor: colors.buttonBackground, borderColor: colors.border },
-                theme === 'dark' && { backgroundColor: colors.primary, borderColor: colors.primary }
-              ]}
-              onPress={() => setTheme('dark')}
-            >
-              <Moon size={16} color={theme === 'dark' ? 'white' : colors.textSecondary} />
-              <Text style={[
-                styles.themeButtonText,
-                { color: colors.textSecondary },
-                theme === 'dark' && { color: 'white' }
-              ]}>
-                Dark
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-        <View style={styles.livesSection}>
-          <Text style={[styles.livesLabel, { color: colors.textSecondary }]}>Lives</Text>
-          <View style={styles.livesContainer}>
-          {livesOptions.map((lives) => (
-            <TouchableOpacity
-              key={lives}
-              style={[
-                styles.livesButton,
-                { backgroundColor: colors.buttonBackground },
-                selectedLives === lives && [styles.livesButtonSelected, { backgroundColor: colors.primary }]
-              ]}
-              onPress={() => setSelectedLives(lives)}
-            >
-              <Text style={[
-                styles.livesButtonText,
-                { color: colors.textTertiary },
-                selectedLives === lives && styles.livesButtonTextSelected
-              ]}>
-                {lives}
-              </Text>
-            </TouchableOpacity>
-          ))}
-          </View>
-        </View>
-
-        <View style={styles.heroSection}>
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Choose Difficulty</Text>
-          <View style={styles.difficultyContainer}>
-          {difficulties.map((difficulty) => {
-            const isThisButtonLoading = isStartingGame && selectedDifficulty === difficulty.value;
-            
-            return (
-              <TouchableOpacity
-                key={difficulty.value}
-                style={[styles.difficultyButton, isStartingGame && styles.difficultyButtonDisabled]}
-                onPress={() => {
-                  setSelectedDifficulty(difficulty.value);
-                  handleStartGame(difficulty.value);
-                }}
-                disabled={isStartingGame}
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+        >
+          <View style={[styles.contentWrapper, { maxWidth: maxContentWidth }]}>
+            {/* Masthead Section */}
+            <View style={[styles.masthead, { marginBottom: spacing.xl3 }]}>
+              <Text 
+                style={[
+                  styles.establishedLabel, 
+                  { 
+                    color: colors.textLabel,
+                    fontFamily: typography.fontBody,
+                    fontSize: typography.textXs,
+                    letterSpacing: typography.textXs * typography.trackingWide,
+                    marginBottom: spacing.sm,
+                  }
+                ]}
               >
-                {isThisButtonLoading ? (
-                  <Text style={styles.difficultyText}>Loading...</Text>
-                ) : (
-                  <>
-                    <Text style={styles.difficultyText}>{difficulty.label}</Text>
-                    <View style={styles.starsContainer}>
-                      {Array.from({ length: difficulty.stars }, (_, i) => (
-                        <Star key={i} size={16} color="white" fill="white" />
-                      ))}
+                EST. 2025
+              </Text>
+              
+              <Text 
+                style={[
+                  styles.mainTitle, 
+                  { 
+                    fontFamily: typography.fontSerif,
+                    fontSize: typography.text8xl,
+                    letterSpacing: typography.text8xl * typography.trackingTight,
+                    lineHeight: typography.text8xl * typography.leadingTight,
+                    marginBottom: spacing.sm,
+                    color: colors.textPrimary,
+                  }
+                ]}
+              >
+                Sudoku
+              </Text>
+              
+              <Divider />
+              
+              <Text 
+                style={[
+                  styles.subtitle, 
+                  { 
+                    color: colors.textSubtitle,
+                    fontFamily: typography.fontBody,
+                    fontSize: typography.textSm,
+                    letterSpacing: typography.textSm * typography.trackingNormal,
+                    marginTop: spacing.md,
+                  }
+                ]}
+              >
+                THE DAILY PUZZLE • VOLUME I
+              </Text>
+            </View>
+
+            {/* Theme Selector Modal */}
+            {showThemeSelector && (
+              <View style={[styles.selectorOverlay, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder }]}>
+                <Text style={[styles.selectorLabel, { fontFamily: typography.fontBody, fontSize: typography.textXs, letterSpacing: typography.textXs * typography.trackingNormal, color: colors.textLabel, marginBottom: spacing.md }]}>
+                  APPEARANCE
+                </Text>
+                {(['light', 'system', 'dark'] as const).map((themeOption) => (
+                  <TouchableOpacity
+                    key={themeOption}
+                    style={[
+                      styles.themeOption,
+                      { 
+                        borderColor: colors.cardBorder,
+                        backgroundColor: theme === themeOption ? colors.primary : 'transparent',
+                        marginBottom: spacing.sm,
+                      }
+                    ]}
+                    onPress={() => setTheme(themeOption)}
+                  >
+                    <View style={styles.themeOptionContent}>
+                      {themeOption === 'light' && <Sun size={20} color={theme === themeOption ? colors.cardBackground : colors.textSecondary} />}
+                      {themeOption === 'dark' && <Moon size={20} color={theme === themeOption ? colors.cardBackground : colors.textSecondary} />}
+                      <Text style={[
+                        styles.themeOptionText,
+                        {
+                          fontFamily: typography.fontBody,
+                          fontSize: typography.textBase,
+                          color: theme === themeOption ? colors.cardBackground : colors.textPrimary,
+                          marginLeft: spacing.sm,
+                        }
+                      ]}>
+                        {themeOption.charAt(0).toUpperCase() + themeOption.slice(1)}
+                      </Text>
                     </View>
-                  </>
-                )}
-              </TouchableOpacity>
-            );
-          })}
+                  </TouchableOpacity>
+                ))}
+                <TouchableOpacity
+                  style={[styles.cancelButton, { backgroundColor: colors.buttonBackground, marginTop: spacing.md }]}
+                  onPress={() => setShowThemeSelector(false)}
+                >
+                  <Text style={[styles.cancelButtonText, { fontFamily: typography.fontBody, fontSize: typography.textSm, letterSpacing: typography.textSm * typography.trackingNormal, color: colors.textSecondary }]}>
+                    CLOSE
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {!showThemeSelector && (
+              <>
+                {/* Main Content Cards */}
+                <View style={{ marginBottom: spacing.xl }}>
+                  {/* Featured - Single Player Card */}
+                  <TouchableOpacity
+                    style={[
+                      styles.featuredCard,
+                      { 
+                        backgroundColor: colors.cardBackground,
+                        borderColor: colors.cardBorder,
+                        marginBottom: spacing.lg,
+                        shadowColor: colors.cardShadow,
+                      }
+                    ]}
+                    onPress={() => router.push('/difficulty')}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.featuredCardContent}>
+                      <View style={styles.featuredCardText}>
+                        <Text style={[styles.cardLabel, { fontFamily: typography.fontBody, fontSize: typography.textXs, letterSpacing: typography.textXs * typography.trackingNormal, color: colors.textLabel, marginBottom: spacing.sm }]}>
+                          FEATURED
+                        </Text>
+                        <Text style={[styles.featuredCardTitle, { fontFamily: typography.fontSerif, fontSize: typography.text5xl, lineHeight: typography.text5xl * typography.leadingTight, color: colors.textPrimary, marginBottom: spacing.md }]}>
+                          Single Player
+                        </Text>
+                        <Text style={[styles.featuredCardDescription, { fontFamily: typography.fontBody, fontSize: typography.textLg, lineHeight: typography.textLg * typography.leadingRelaxed, color: colors.textSecondary }]}>
+                          Challenge yourself with our curated selection of puzzles. From beginner to master difficulty.
+                        </Text>
+                      </View>
+                      <View style={[styles.featuredCardIcon, { backgroundColor: colors.buttonBackground }]}>
+                        <User size={40} color={colors.textPrimary} strokeWidth={1.5} />
+                      </View>
+                      </View>
+                    </TouchableOpacity>
+
+                  {/* Two Column Cards */}
+                  <View style={styles.twoColumnContainer}>
+                    {/* Multiplayer Card */}
+                    <TouchableOpacity
+                      style={[
+                        styles.smallCard,
+                        { 
+                          backgroundColor: colors.cardBackground,
+                          borderColor: colors.cardBorder,
+                          shadowColor: colors.cardShadow,
+                        }
+                      ]}
+                      onPress={() => router.push('/multiplayer')}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.cardLabel, { fontFamily: typography.fontBody, fontSize: typography.textXs, letterSpacing: typography.textXs * typography.trackingNormal, color: colors.textLabel, marginBottom: spacing.sm }]}>
+                        COMPETITION
+                      </Text>
+                      <Text style={[styles.smallCardTitle, { fontFamily: typography.fontSerif, fontSize: typography.text3xl, lineHeight: typography.text3xl * typography.leadingTight, color: colors.textPrimary, marginBottom: spacing.sm }]}>
+                        Face Off
+                      </Text>
+                      <Text style={[styles.smallCardDescription, { fontFamily: typography.fontBody, fontSize: typography.textSm, lineHeight: typography.textSm * typography.leadingRelaxed, color: colors.textSecondary, marginBottom: spacing.lg }]}>
+                        Race against opponents in real-time
+                      </Text>
+                      <View style={[styles.smallCardIcon, { backgroundColor: colors.buttonBackground }]}>
+                        <Users size={28} color={colors.textPrimary} strokeWidth={1.5} />
+                      </View>
+                    </TouchableOpacity>
+
+                    {/* Highscores Card */}
+                    <TouchableOpacity
+                      style={[
+                        styles.smallCard,
+                        { 
+                          backgroundColor: colors.cardBackground,
+                          borderColor: colors.cardBorder,
+                          shadowColor: colors.cardShadow,
+                        }
+                      ]}
+                      onPress={() => router.push('/highscores')}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.cardLabel, { fontFamily: typography.fontBody, fontSize: typography.textXs, letterSpacing: typography.textXs * typography.trackingNormal, color: colors.textLabel, marginBottom: spacing.sm }]}>
+                        LEADERBOARD
+                      </Text>
+                      <Text style={[styles.smallCardTitle, { fontFamily: typography.fontSerif, fontSize: typography.text3xl, lineHeight: typography.text3xl * typography.leadingTight, color: colors.textPrimary, marginBottom: spacing.sm }]}>
+                        Highscores
+                      </Text>
+                      <Text style={[styles.smallCardDescription, { fontFamily: typography.fontBody, fontSize: typography.textSm, lineHeight: typography.textSm * typography.leadingRelaxed, color: colors.textSecondary, marginBottom: spacing.lg }]}>
+                        View the top performers
+                      </Text>
+                      <View style={[styles.smallCardIcon, { backgroundColor: colors.buttonBackground }]}>
+                        <Trophy size={28} color={colors.textPrimary} strokeWidth={1.5} />
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Appearance Settings Button */}
+                  <TouchableOpacity
+                    style={[styles.darkButton, { marginTop: spacing.lg }]}
+                    onPress={() => setShowThemeSelector(true)}
+                    activeOpacity={0.8}
+                  >
+                    <LinearGradient
+                      colors={[colors.buttonBackgroundDarkFrom, colors.buttonBackgroundDarkTo]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={styles.darkButtonGradient}
+                    >
+                      <Palette size={20} color={colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF'} strokeWidth={1.5} />
+                      <Text style={[styles.darkButtonText, { fontFamily: typography.fontBody, fontSize: typography.textSm, letterSpacing: typography.textSm * typography.trackingNormal, color: colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF' }]}>
+                        APPEARANCE SETTINGS
+                      </Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+
+            {/* Footer */}
+            <View style={[styles.footer, { marginTop: spacing.xl2 }]}>
+              <Text style={[styles.footerText, { fontFamily: typography.fontBody, fontSize: typography.textXs, letterSpacing: typography.textXs * typography.trackingNormal, color: colors.textLabel }]}>
+                © 2025 THE SUDOKU TIMES • ALL RIGHTS RESERVED
+              </Text>
+            </View>
           </View>
-        </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </LinearGradient>
     </SafeAreaView>
   );
 }
@@ -201,160 +264,167 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  gradient: {
+    flex: 1,
+  },
   scrollContent: {
     flexGrow: 1,
   },
   contentWrapper: {
-    maxWidth: 600,
     width: '100%',
     alignSelf: 'center',
-    alignItems: 'center',
     paddingHorizontal: 24,
-    paddingVertical: 60,
+    paddingVertical: 48,
     paddingBottom: 80,
   },
-  titleContainer: {
+  masthead: {
     alignItems: 'center',
-    marginBottom: 32,
   },
-  titleSmall: {
-    fontSize: 18,
-    fontWeight: 'normal',
-    fontFamily: 'Inter',
+  establishedLabel: {
     textAlign: 'center',
-    marginBottom: 0,
+    textTransform: 'uppercase',
   },
-  titleLarge: {
-    fontSize: 42,
-    fontWeight: 'bold',
-    fontFamily: 'Inter',
+  mainTitle: {
     textAlign: 'center',
+    fontWeight: '400',
   },
-  themeSection: {
+  dividerContainer: {
+    width: 96,
+    height: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  divider: {
     width: '100%',
-    maxWidth: 400,
-    marginBottom: 20,
+    height: 1,
   },
-  themeContainer: {
-    flexDirection: 'row',
-    gap: 8,
-    justifyContent: 'center',
+  subtitle: {
+    textAlign: 'center',
+    textTransform: 'uppercase',
   },
-  themeButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+  featuredCard: {
+    borderRadius: 16,
     borderWidth: 1,
+    padding: 32,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 15,
+    elevation: 5,
   },
-  themeButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-    fontFamily: 'Inter',
+  featuredCardContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
   },
-  secondaryActionsRow: {
+  featuredCardText: {
+    flex: 1,
+    marginRight: 16,
+  },
+  cardLabel: {
+    textTransform: 'uppercase',
+  },
+  featuredCardTitle: {
+    fontWeight: '400',
+  },
+  featuredCardDescription: {
+    fontWeight: '400',
+  },
+  featuredCardIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  twoColumnContainer: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 28,
-    width: '100%',
-    maxWidth: 400,
   },
-  secondaryButton: {
+  smallCard: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    borderRadius: 16,
     borderWidth: 1,
+    padding: 24,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 15,
+    elevation: 5,
   },
-  secondaryButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-    fontFamily: 'Inter',
+  smallCardTitle: {
+    fontWeight: '400',
   },
-  livesSection: {
-    width: '100%',
-    maxWidth: 400,
-    marginBottom: 28,
+  smallCardDescription: {
+    fontWeight: '400',
+    flex: 1,
   },
-  livesLabel: {
-    fontSize: 14,
-    marginBottom: 8,
-    fontFamily: 'Inter',
-    textAlign: 'center',
-  },
-  livesContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: 8,
-    marginBottom: 0,
-  },
-  livesButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  smallCardIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'transparent',
+    alignSelf: 'flex-start',
   },
-  livesButtonSelected: {
-    borderColor: '#1E40AF',
+  darkButton: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 15,
+    elevation: 5,
   },
-  livesButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Inter',
+  darkButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    paddingVertical: 20,
+    paddingHorizontal: 24,
   },
-  livesButtonTextSelected: {
-    color: 'white',
+  darkButtonText: {
+    textTransform: 'uppercase',
   },
-  heroSection: {
-    width: '100%',
-    maxWidth: 400,
+  footer: {
+    alignItems: 'center',
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 16,
-    fontFamily: 'Inter',
+  footerText: {
     textAlign: 'center',
+    textTransform: 'uppercase',
   },
-  difficultyContainer: {
-    width: '100%',
+  selectorOverlay: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 24,
+    marginVertical: 32,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
   },
-  difficultyButton: {
-    backgroundColor: '#2B7FFF',
-    paddingVertical: 16,
+  selectorLabel: {
+    textAlign: 'center',
+    textTransform: 'uppercase',
+  },
+  themeOption: {
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingVertical: 14,
     paddingHorizontal: 20,
-    borderRadius: 8,
-    marginBottom: 12,
+  },
+  themeOptionContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: 60,
   },
-  difficultyButtonDisabled: {
-    backgroundColor: '#9CA3AF',
-    opacity: 0.6,
+  themeOptionText: {
+    fontWeight: '400',
   },
-  difficultyText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Inter',
-    textAlign: 'left',
+  cancelButton: {
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    alignItems: 'center',
   },
-  starsContainer: {
-    flexDirection: 'row',
-    gap: 2,
+  cancelButtonText: {
+    textTransform: 'uppercase',
   },
 });

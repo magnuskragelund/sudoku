@@ -94,7 +94,7 @@ export default function SudokuBoard() {
   }, [renderRow]);
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.backgroundElevated }]}>
+    <View style={[styles.container, { backgroundColor: colors.cardBackground, borderColor: colors.borderThick, shadowColor: colors.cardShadow }]}>
       {boardRows}
     </View>
   );
@@ -103,11 +103,17 @@ export default function SudokuBoard() {
 const styles = StyleSheet.create({
   container: {
     padding: 0,
-    width: '100%', // Ensure board takes full available width
-    aspectRatio: 1, // Maintain square shape
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: 8,
+    overflow: 'hidden',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
   },
   row: {
     flexDirection: 'row',
-    flex: 1, // Each row takes equal space
+    flex: 1,
   },
 });

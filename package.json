@@ -15,6 +15,8 @@
     "test:coverage:threshold": "jest --coverage --coverageThreshold='{\"global\":{\"branches\":70,\"functions\":70,\"lines\":70,\"statements\":70},\"./utils/\":{\"branches\":80,\"functions\":80,\"lines\":80,\"statements\":80}}'"
   },
   "dependencies": {
+    "@expo-google-fonts/cormorant-garamond": "^0.4.1",
+    "@expo-google-fonts/playfair-display": "^0.4.2",
     "@expo/vector-icons": "^15.0.3",
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-navigation/bottom-tabs": "^7.4.0",
@@ -29,6 +31,7 @@
     "expo-font": "~14.0.9",
     "expo-haptics": "~15.0.7",
     "expo-image": "~3.0.10",
+    "expo-linear-gradient": "^15.0.7",
     "expo-linking": "~8.0.8",
     "expo-router": "~6.0.13",
     "expo-splash-screen": "~31.0.10",

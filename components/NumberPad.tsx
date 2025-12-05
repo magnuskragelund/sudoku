@@ -6,7 +6,7 @@ import { useTheme } from '../context/ThemeContext';
 
 function NumberPad() {
   const { placeNumber, selectedCell, initialBoard, board, solution } = useGame();
-  const { colors } = useTheme();
+  const { colors, typography, spacing } = useTheme();
 
   const handleNumberPress = (number: number) => {
     if (selectedCell) {
@@ -88,7 +88,15 @@ function NumberPad() {
           return (
             <TouchableOpacity
               key={number}
-              style={[styles.numberButton, { backgroundColor: colors.buttonBackground, borderColor: colors.border }]}
+              style={[
+                styles.numberButton, 
+                { 
+                  backgroundColor: colors.cardBackground,
+                  borderColor: colors.borderThin,
+                  borderWidth: 1,
+                  shadowColor: colors.cardShadow,
+                }
+              ]}
               onPress={() => handleNumberPress(number)}
               disabled={!isSelectedCellEditable}
               testID={`number-${number}`}
@@ -97,8 +105,12 @@ function NumberPad() {
             >
               <Text style={[
                 styles.numberText,
-                { color: colors.primary },
-                { opacity: isSelectedCellEditable ? 1 : 0.3 }
+                { 
+                  fontFamily: typography.fontSerif,
+                  fontSize: 26,
+                  color: colors.textPrimary,
+                  opacity: isSelectedCellEditable ? 1 : 0.3,
+                }
               ]}>
                 {number}
               </Text>
@@ -112,34 +124,36 @@ function NumberPad() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 25,
+    paddingTop: 16,
     width: '100%',
   },
   numberRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 36,
+    marginBottom: 24,
     width: '100%',
+    paddingHorizontal: 4,
   },
   numberButton: {
     flex: 1,
-    height: 52,
+    height: 48,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 0,
-    marginHorizontal: 4,
+    marginHorizontal: 3,
+    borderRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
   hiddenButton: {
     flex: 1,
-    height: 52,
-    marginHorizontal: 4,
-    // Invisible placeholder to maintain layout
+    height: 48,
+    marginHorizontal: 3,
   },
   numberText: {
-    fontSize: 28,
-    fontWeight: '600',
-    fontFamily: 'Inter',
+    fontWeight: '400',
   },
 });
 

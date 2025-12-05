@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
-import { Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Modal from '../components/Modal';
 import { useGame } from '../context/GameContext';
@@ -13,6 +13,10 @@ export default function MultiplayerScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { createMultiplayerGame, joinMultiplayerGame } = useGame();
+  const { width } = useWindowDimensions();
+  
+  // Responsive max width: 600px for phones, 1000px for tablets/web
+  const maxContentWidth = width >= 768 ? 1000 : 600;
   
   // Get deep link params
   const params = useLocalSearchParams();
@@ -215,7 +219,7 @@ export default function MultiplayerScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.contentWrapper}>
+      <View style={[styles.contentWrapper, { maxWidth: maxContentWidth }]}>
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <ChevronLeft size={24} color={colors.textPrimary} />
@@ -387,7 +391,6 @@ const styles = StyleSheet.create({
   },
   contentWrapper: {
     flex: 1,
-    maxWidth: 600,
     width: '100%',
     alignSelf: 'center',
   },

@@ -30,7 +30,7 @@ export default function Modal({
   secondaryButton,
   onClose,
 }: ModalProps) {
-  const { colors } = useTheme();
+  const { colors, typography, spacing, colorScheme } = useTheme();
   
   return (
     <RNModal
@@ -41,29 +41,97 @@ export default function Modal({
     >
       <View style={styles.overlay}>
         <BlurView intensity={40} tint={colors.overlayTint} style={styles.blurBackground}>
-          <View style={[styles.modal, { backgroundColor: colors.modalBackground }]}>
-            {title && <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>}
-            {subtitle && <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{subtitle}</Text>}
+          <View style={[styles.modal, { backgroundColor: colors.modalBackground, borderColor: colors.cardBorder, shadowColor: colors.cardShadow }]}>
+            {title && (
+              <Text 
+                style={[
+                  styles.title, 
+                  { 
+                    fontFamily: typography.fontSerif,
+                    fontSize: typography.text3xl,
+                    color: colors.textPrimary,
+                    marginBottom: spacing.sm,
+                  }
+                ]}
+              >
+                {title}
+              </Text>
+            )}
+            {subtitle && (
+              <Text 
+                style={[
+                  styles.subtitle, 
+                  { 
+                    fontFamily: typography.fontBody,
+                    fontSize: typography.textBase,
+                    color: colors.textSecondary,
+                    marginBottom: spacing.xl,
+                  }
+                ]}
+              >
+                {subtitle}
+              </Text>
+            )}
             
-            {children && <View style={styles.content}>{children}</View>}
+            {children && <View style={[styles.content, { marginBottom: spacing.xl }]}>{children}</View>}
             
-            <View style={styles.buttons}>
+            <View style={[styles.buttons, { gap: spacing.sm }]}>
               {primaryButton && (
                 <TouchableOpacity
-                  style={[styles.primaryButton, { backgroundColor: colors.primary }, primaryButton.disabled && styles.buttonDisabled]}
+                  style={[
+                    styles.primaryButton, 
+                    { 
+                      backgroundColor: colors.primary,
+                      paddingVertical: spacing.lg,
+                      paddingHorizontal: spacing.xl,
+                    }, 
+                    primaryButton.disabled && styles.buttonDisabled
+                  ]}
                   onPress={primaryButton.onPress}
                   disabled={primaryButton.disabled}
                 >
-                  <Text style={styles.primaryButtonText}>{primaryButton.text}</Text>
+                  <Text 
+                    style={[
+                      styles.primaryButtonText,
+                      { 
+                        fontFamily: typography.fontBody,
+                        fontSize: typography.textSm,
+                        letterSpacing: typography.textSm * typography.trackingNormal,
+                        color: colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF',
+                      }
+                    ]}
+                  >
+                    {primaryButton.text.toUpperCase()}
+                  </Text>
                 </TouchableOpacity>
               )}
               {secondaryButton && (
                 <TouchableOpacity
-                  style={[styles.secondaryButton, { backgroundColor: colors.buttonBackground }, secondaryButton.disabled && styles.buttonDisabled]}
+                  style={[
+                    styles.secondaryButton, 
+                    { 
+                      backgroundColor: colors.buttonBackground,
+                      paddingVertical: spacing.md,
+                      paddingHorizontal: spacing.xl,
+                    }, 
+                    secondaryButton.disabled && styles.buttonDisabled
+                  ]}
                   onPress={secondaryButton.onPress}
                   disabled={secondaryButton.disabled}
                 >
-                  <Text style={[styles.secondaryButtonText, { color: colors.textPrimary }]}>{secondaryButton.text}</Text>
+                  <Text 
+                    style={[
+                      styles.secondaryButtonText, 
+                      { 
+                        fontFamily: typography.fontBody,
+                        fontSize: typography.textSm,
+                        letterSpacing: typography.textSm * typography.trackingNormal,
+                        color: colors.textSecondary,
+                      }
+                    ]}
+                  >
+                    {secondaryButton.text.toUpperCase()}
+                  </Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -94,61 +162,48 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modal: {
-    borderRadius: 8,
-    padding: 24,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 32,
     alignItems: 'center',
     marginHorizontal: 24,
     minWidth: 280,
     width: '90%',
     maxWidth: 400,
+    shadowOffset: { width: 0, height: 20 },
+    shadowOpacity: 0.15,
+    shadowRadius: 25,
+    elevation: 15,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    fontFamily: 'Inter',
     textAlign: 'center',
+    fontWeight: '400',
   },
   subtitle: {
-    fontSize: 16,
-    marginBottom: 24,
     textAlign: 'center',
-    fontFamily: 'Inter',
+    fontWeight: '400',
   },
   content: {
     width: '100%',
-    marginBottom: 24,
   },
   buttons: {
     width: '100%',
-    gap: 12,
   },
   primaryButton: {
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 8,
+    borderRadius: 12,
     width: '100%',
     alignItems: 'center',
-    minHeight: 52,
   },
   primaryButtonText: {
-    color: 'white',
-    fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'Inter',
   },
   secondaryButton: {
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 8,
+    borderRadius: 12,
     width: '100%',
     alignItems: 'center',
-    minHeight: 52,
   },
   secondaryButtonText: {
-    fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'Inter',
   },
   buttonDisabled: {
     opacity: 0.5,
