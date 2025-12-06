@@ -81,7 +81,7 @@ export default function WelcomeScreen() {
                   }
                 ]}
               >
-                THE DAILY PUZZLE • VOLUME I
+                THE DAILY PUZZLE
               </Text>
             </View>
 

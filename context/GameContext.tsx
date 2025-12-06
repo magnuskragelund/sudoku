@@ -23,6 +23,7 @@ export function useGameTime() {
 
 type GameAction =
   | { type: 'START_GAME'; difficulty: Difficulty; lives?: number }
+  | { type: 'SET_LOADING'; isLoading: boolean }
   | { type: 'START_PLAYING' }
   | { type: 'PAUSE_GAME'; timeElapsed: number }
   | { type: 'RESUME_GAME' }
@@ -57,6 +58,7 @@ const initialState: GameState = {
   notes: new Map(),
   wrongCell: null,
   hintUsed: false,
+  isLoading: false,
   multiplayer: null,
   multiplayerWinner: null,
   multiplayerLoser: null,
@@ -66,6 +68,12 @@ const initialState: GameState = {
 export function gameReducer(state: GameState, action: GameAction): GameState {
   return (() => {
     switch (action.type) {
+    case 'SET_LOADING':
+      return {
+        ...state,
+        isLoading: action.isLoading,
+      };
+
     case 'START_GAME':
       // Generate a new puzzle with guaranteed unique solution
       const { puzzle, solution } = generatePuzzle(action.difficulty);
@@ -91,6 +99,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         initialBoard: puzzle.map(row => [...row]),
         timeElapsed: 0,
         gameSessionId: sessionId,
+        isLoading: state.isLoading, // Preserve loading state, will be cleared by action
       };
 
     case 'LOAD_GAME':
@@ -114,6 +123,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         notes: new Map(
           Object.entries(action.state.notes).map(([key, arr]) => [key, new Set(arr)])
         ),
+        isLoading: false,
       };
 
     case 'START_PLAYING':
@@ -327,6 +337,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         ...initialState,
         difficulty: state.difficulty,
         timeElapsed: 0,
+        isLoading: false,
       };
 
     case 'RESET_GAME':
@@ -408,6 +419,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         timeElapsed: 0,
         multiplayer: state.multiplayer, // Keep multiplayer state
         gameSessionId: multiplayerSessionId,
+        isLoading: false,
       };
 
     case 'SHOW_MULTIPLAYER_WINNER':
@@ -576,7 +588,24 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   // Memoize actions to prevent unnecessary re-renders
   const actions: GameActions = React.useMemo(() => ({
-    startGame: (difficulty: Difficulty, lives?: number) => dispatch({ type: 'START_GAME', difficulty, lives }),
+    startGame: async (difficulty: Difficulty, lives?: number) => {
+      dispatch({ type: 'SET_LOADING', isLoading: true });
+      try {
+        // Allow React to render the loading state before generating puzzle
+        await new Promise<void>((resolve) => {
+          // Use requestAnimationFrame to ensure loading state is rendered
+          requestAnimationFrame(() => {
+            // Use setTimeout to allow the frame to paint
+            setTimeout(() => {
+              dispatch({ type: 'START_GAME', difficulty, lives });
+              resolve();
+            }, 0);
+          });
+        });
+      } finally {
+        dispatch({ type: 'SET_LOADING', isLoading: false });
+      }
+    },
     startPlaying: () => dispatch({ type: 'START_PLAYING' }),
     pauseGame: () => {
       dispatch({ type: 'PAUSE_GAME', timeElapsed: timeElapsedRef.current });

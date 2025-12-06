@@ -124,6 +124,9 @@ export default function HighScoresScreen() {
                 }}
               >
                 <Text
+                  numberOfLines={1}
+                  adjustsFontSizeToFit={true}
+                  minimumFontScale={0.85}
                   style={[
                     styles.tabText,
                     { 
@@ -285,10 +288,11 @@ const styles = StyleSheet.create({
   tab: {
     flex: 1,
     paddingVertical: 10,
-    paddingHorizontal: 8,
+    paddingHorizontal: 4,
     borderRadius: 8,
     alignItems: 'center',
     borderWidth: 1,
+    minWidth: 0, // Allows flex item to shrink below content size
   },
   tabText: {
     textTransform: 'uppercase',
@@ -300,16 +304,15 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 16,
     paddingBottom: 80,
-    flexGrow: 1,
   },
   scrollContentEmpty: {
+    flexGrow: 1,
     justifyContent: 'center',
-    minHeight: '100%',
   },
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 64,
+    paddingVertical: 32,
     width: '100%',
   },
   emptyText: {

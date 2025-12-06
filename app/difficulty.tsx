@@ -1,7 +1,8 @@
+import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenHeader from '../components/ScreenHeader';
 import { useGame } from '../context/GameContext';
@@ -10,7 +11,7 @@ import { Difficulty } from '../types/game';
 
 export default function DifficultyScreen() {
   const router = useRouter();
-  const { startGame } = useGame();
+  const { startGame, isLoading } = useGame();
   const { colors, typography, spacing } = useTheme();
   const [selectedLives, setSelectedLives] = useState(5);
   const [isStartingGame, setIsStartingGame] = useState(false);
@@ -25,26 +26,25 @@ export default function DifficultyScreen() {
     edition: string;
     description: string;
   }[] = [
-    { label: 'Easy', value: 'easy', edition: 'MORNING EDITION', description: 'Suitable for newcomers and casual solvers' },
-    { label: 'Medium', value: 'medium', edition: 'AFTERNOON EDITION', description: 'A balanced challenge for regular players' },
-    { label: 'Hard', value: 'hard', edition: 'EVENING EDITION', description: 'For seasoned puzzle enthusiasts' },
     { label: 'Master', value: 'master', edition: 'WEEKEND EDITION', description: 'The ultimate test of skill and patience' },
+    { label: 'Hard', value: 'hard', edition: 'EVENING EDITION', description: 'For seasoned puzzle enthusiasts' },
+    { label: 'Medium', value: 'medium', edition: 'AFTERNOON EDITION', description: 'A balanced challenge for regular players' },
+    { label: 'Easy', value: 'easy', edition: 'MORNING EDITION', description: 'Suitable for newcomers and casual solvers' },
   ];
 
   const livesOptions = [1, 2, 3, 4, 5];
 
   const handleStartGame = async (difficulty: Difficulty) => {
-    if (isStartingGame) return;
+    if (isStartingGame || isLoading) return;
     
     setIsStartingGame(true);
-    await new Promise(resolve => setTimeout(resolve, 50));
     
-    startGame(difficulty, selectedLives);
-    
-    setTimeout(() => {
+    try {
+      await startGame(difficulty, selectedLives);
       router.push('/game');
+    } finally {
       setIsStartingGame(false);
-    }, 100);
+    }
   };
 
   return (
@@ -197,6 +197,30 @@ export default function DifficultyScreen() {
           </View>
         </ScrollView>
       </LinearGradient>
+
+      {/* Loading Overlay */}
+      {(isStartingGame || isLoading) && (
+        <View style={styles.loadingOverlay}>
+          <BlurView intensity={40} tint={colors.overlayTint} style={styles.blurBackground}>
+            <View style={[styles.loadingCard, { backgroundColor: colors.modalBackground, borderColor: colors.cardBorder }]}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text 
+                style={[
+                  styles.loadingText,
+                  {
+                    fontFamily: typography.fontBody,
+                    fontSize: typography.textBase,
+                    color: colors.textSecondary,
+                    marginTop: spacing.md,
+                  }
+                ]}
+              >
+                Generating puzzle...
+              </Text>
+            </View>
+          </BlurView>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -279,6 +303,40 @@ const styles = StyleSheet.create({
   },
   livesButtonText: {
     fontWeight: '600',
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  blurBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 200,
+    shadowOffset: { width: 0, height: 20 },
+    shadowOpacity: 0.15,
+    shadowRadius: 25,
+    elevation: 15,
+  },
+  loadingText: {
+    textAlign: 'center',
+    fontWeight: '400',
   },
 });
 

@@ -25,6 +25,7 @@ export interface GameState {
   notes: Map<string, Set<number>>;
   wrongCell: { row: number; col: number } | null;
   hintUsed: boolean;
+  isLoading: boolean; // Loading state when initializing a game
   // Multiplayer state
   multiplayer: MultiplayerGame | null;
   multiplayerWinner: WinnerInfo | null; // Winner info when another player finishes
@@ -75,7 +76,7 @@ export interface MultiplayerGame {
 }
 
 export interface GameActions {
-  startGame: (difficulty: Difficulty, lives?: number) => void;
+  startGame: (difficulty: Difficulty, lives?: number) => Promise<void>;
   startPlaying: () => void;
   pauseGame: () => void;
   resumeGame: () => void;

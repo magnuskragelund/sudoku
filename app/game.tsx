@@ -3,7 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Clock, Heart, Lightbulb, Moon, Pause, Play, Sun } from 'lucide-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import NumberPad from '../components/NumberPad';
 import SudokuBoard from '../components/SudokuBoard';
@@ -22,6 +22,7 @@ export default function GameScreen() {
     initialLives, 
     selectedCell,
     hintUsed,
+    isLoading,
     multiplayer,
     multiplayerWinner,
     multiplayerLoser,
@@ -332,6 +333,30 @@ export default function GameScreen() {
                       LEAVE GAME
                     </Text>
                   </TouchableOpacity>
+                </View>
+              </BlurView>
+            </View>
+          )}
+
+          {/* Loading Overlay */}
+          {isLoading && (
+            <View style={styles.overlay}>
+              <BlurView intensity={40} tint={colors.overlayTint} style={styles.blurBackground}>
+                <View style={[styles.modalCard, { backgroundColor: colors.modalBackground, borderColor: colors.cardBorder }]}>
+                  <ActivityIndicator size="large" color={colors.primary} />
+                  <Text 
+                    style={[
+                      styles.modalSubtitle,
+                      {
+                        fontFamily: typography.fontBody,
+                        fontSize: typography.textBase,
+                        color: colors.textSecondary,
+                        marginTop: spacing.md,
+                      }
+                    ]}
+                  >
+                    Generating puzzle...
+                  </Text>
                 </View>
               </BlurView>
             </View>
