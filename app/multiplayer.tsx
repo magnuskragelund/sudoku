@@ -1,10 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ChevronLeft } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Modal from '../components/Modal';
+import ScreenHeader from '../components/ScreenHeader';
 import { useGame } from '../context/GameContext';
 import { useTheme } from '../context/ThemeContext';
 import { Difficulty } from '../types/game';
@@ -220,13 +220,11 @@ export default function MultiplayerScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.contentWrapper, { maxWidth: maxContentWidth }]}>
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <ChevronLeft size={24} color={colors.textPrimary} />
-        </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.textPrimary }]}>Multiplayer</Text>
-        <View style={styles.placeholder} />
-      </View>
+        <ScreenHeader
+          label="COMPETITION"
+          title="Face Off"
+          subtitle="RACE AGAINST OPPONENTS IN REAL-TIME"
+        />
 
       <View style={[styles.tabs, { borderBottomColor: colors.border }]}>
         <TouchableOpacity
@@ -390,30 +388,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentWrapper: {
-    flex: 1,
     width: '100%',
     alignSelf: 'center',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  placeholder: {
-    width: 40,
+    paddingHorizontal: 24,
+    paddingTop: 24,
   },
   tabs: {
     flexDirection: 'row',

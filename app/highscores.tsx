@@ -1,10 +1,11 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { CheckCircle, ChevronLeft, Trophy, XCircle, XSquare } from 'lucide-react-native';
+import { CheckCircle, Trophy, XCircle, XSquare } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Modal from '../components/Modal';
+import ScreenHeader from '../components/ScreenHeader';
 import { useTheme } from '../context/ThemeContext';
 import { Difficulty, GameResult } from '../types/game';
 import { clearHighScores, formatDate, formatTime, getHighScores } from '../utils/highScoreStorage';
@@ -80,12 +81,6 @@ export default function HighScoresScreen() {
     return Math.min(...wonResults.map(r => r.completionTime));
   };
 
-  const Divider = () => (
-    <View style={styles.dividerContainer}>
-      <View style={[styles.divider, { backgroundColor: colors.divider }]} />
-    </View>
-  );
-
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <LinearGradient
@@ -93,47 +88,11 @@ export default function HighScoresScreen() {
         style={styles.gradient}
       >
         <View style={[styles.contentWrapper, { maxWidth: maxContentWidth }]}>
-          {/* Masthead */}
-          <View style={[styles.masthead, { paddingHorizontal: spacing.xl, paddingTop: spacing.xl, paddingBottom: spacing.lg }]}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-              <ChevronLeft size={20} color={colors.textSecondary} strokeWidth={1.5} />
-            </TouchableOpacity>
-            
-            <View style={styles.mastheadCenter}>
-              <Text 
-                style={[
-                  styles.mastheadLabel, 
-                  { 
-                    fontFamily: typography.fontBody,
-                    fontSize: typography.textXs,
-                    letterSpacing: typography.textXs * typography.trackingWide,
-                    color: colors.textLabel,
-                    marginBottom: spacing.xs,
-                  }
-                ]}
-              >
-                LEADERBOARD
-              </Text>
-              <Text 
-                style={[
-                  styles.mastheadTitle, 
-                  { 
-                    fontFamily: typography.fontSerif,
-                    fontSize: typography.text5xl,
-                    letterSpacing: typography.text5xl * typography.trackingTight,
-                    lineHeight: typography.text5xl * typography.leadingTight,
-                    color: colors.textPrimary,
-                  }
-                ]}
-              >
-                Highscores
-              </Text>
-            </View>
-            
-            <View style={styles.backButtonPlaceholder} />
-          </View>
-
-          <Divider />
+          <ScreenHeader
+            label="LEADERBOARD"
+            title="Highscores"
+            subtitle="VIEW YOUR BEST PERFORMANCES"
+          />
 
           {/* Difficulty Tabs */}
           <View style={[styles.tabs, { borderBottomColor: colors.borderThin, borderBottomWidth: 1, paddingHorizontal: spacing.lg, paddingVertical: spacing.md }]}>
@@ -297,47 +256,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentWrapper: {
-    flex: 1,
     width: '100%',
     alignSelf: 'center',
-  },
-  masthead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  backButton: {
-    width: 32,
-    height: 32,
-    justifyContent: 'center',
-    alignItems: 'flex-start',
-  },
-  backButtonPlaceholder: {
-    width: 32,
-  },
-  mastheadCenter: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  mastheadLabel: {
-    textAlign: 'center',
-    textTransform: 'uppercase',
-  },
-  mastheadTitle: {
-    textAlign: 'center',
-    fontWeight: '400',
-  },
-  dividerContainer: {
-    width: 96,
-    height: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-    alignSelf: 'center',
-    marginBottom: 16,
-  },
-  divider: {
-    width: '100%',
-    height: 1,
+    paddingHorizontal: 24,
+    paddingTop: 24,
   },
   tabs: {
     flexDirection: 'row',
