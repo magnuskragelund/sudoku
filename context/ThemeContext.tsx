@@ -10,7 +10,7 @@ type ColorScheme = 'light' | 'dark';
 interface Typography {
   // Font Families
   fontSerif: string; // Playfair Display
-  fontBody: string;  // Cormorant Garamond
+  fontBody: string;  // EB Garamond
   
   // Size Scale
   text8xl: number;  // 96px - Main title
@@ -123,7 +123,7 @@ const THEME_STORAGE_KEY = '@sudoku_theme_preference';
 const typography: Typography = {
   // Font Families
   fontSerif: 'PlayfairDisplay-Regular',
-  fontBody: 'CormorantGaramond-Regular',
+  fontBody: 'EBGaramond-Regular',
   
   // Size Scale (headers reduced by 20%)
   text8xl: 77,
@@ -167,6 +167,15 @@ const spacing: Spacing = {
   xl4: 64,
 };
 
+// Base color definitions for light mode
+const lightBaseColors = {
+  primary: '#2D3748', // Dark gray instead of pure black for more subtle appearance
+  primaryDark: '#1A202C', // Darker variant for gradients
+  error: '#FB2C36',
+  success: '#22C55E',
+  warning: '#FF8C00',
+};
+
 const lightColors: Colors = {
   // Backgrounds
   background: '#F9FAFB',
@@ -200,18 +209,18 @@ const lightColors: Colors = {
   cellInitial: '#E0E7F1',
   cellCorrect: '#E8F5E9',
   
-  // Accents
-  primary: '#000000',
-  error: '#FB2C36',
-  success: '#22C55E',
-  warning: '#FF8C00',
+  // Accents (derived from base colors)
+  primary: lightBaseColors.primary,
+  error: lightBaseColors.error,
+  success: lightBaseColors.success,
+  warning: lightBaseColors.warning,
   
   // UI Elements
   buttonBackground: '#F9FAFB',
   buttonBackgroundSecondary: '#F3F4F6',
-  buttonBackgroundDark: '#101828',
-  buttonBackgroundDarkFrom: '#101828',
-  buttonBackgroundDarkTo: '#000000',
+  buttonBackgroundDark: lightBaseColors.primary, // Same as primary
+  buttonBackgroundDarkFrom: lightBaseColors.primary, // Same as primary
+  buttonBackgroundDarkTo: lightBaseColors.primaryDark, // Darker variant for gradient
   inputBackground: '#FFFFFF',
   cardBackground: '#FFFFFF',
   cardBorder: '#E5E7EB',
@@ -220,6 +229,15 @@ const lightColors: Colors = {
   // Modal
   modalBackground: '#FFFFFF',
   overlayTint: 'dark',
+};
+
+// Base color definitions for dark mode
+const darkBaseColors = {
+  primary: '#C4C9D1', // Light gray instead of pure white for more subtle appearance
+  primaryDark: '#9CA3AF', // Darker variant for gradients
+  error: '#FB2C36',
+  success: '#22C55E',
+  warning: '#FF8C00',
 };
 
 const darkColors: Colors = {
@@ -255,18 +273,18 @@ const darkColors: Colors = {
   cellInitial: '#2D3748',
   cellCorrect: '#1F4529',
   
-  // Accents
-  primary: '#FFFFFF',
-  error: '#FB2C36',
-  success: '#22C55E',
-  warning: '#FF8C00',
+  // Accents (derived from base colors)
+  primary: darkBaseColors.primary,
+  error: darkBaseColors.error,
+  success: darkBaseColors.success,
+  warning: darkBaseColors.warning,
   
   // UI Elements
   buttonBackground: '#2A2A2A',
   buttonBackgroundSecondary: '#3A3A3A',
-  buttonBackgroundDark: '#FFFFFF',
-  buttonBackgroundDarkFrom: '#FFFFFF',
-  buttonBackgroundDarkTo: '#E5E7EB',
+  buttonBackgroundDark: darkBaseColors.primary, // Same as primary
+  buttonBackgroundDarkFrom: darkBaseColors.primary, // Same as primary
+  buttonBackgroundDarkTo: darkBaseColors.primaryDark, // Darker variant for gradient
   inputBackground: '#1A1A1A',
   cardBackground: '#1A1A1A',
   cardBorder: '#2A2A2A',

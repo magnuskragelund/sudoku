@@ -14,12 +14,12 @@ import {
   PlayfairDisplay_700Bold,
 } from '@expo-google-fonts/playfair-display';
 import {
-  CormorantGaramond_300Light,
-  CormorantGaramond_400Regular,
-  CormorantGaramond_500Medium,
-  CormorantGaramond_600SemiBold,
-  CormorantGaramond_700Bold,
-} from '@expo-google-fonts/cormorant-garamond';
+  EBGaramond_400Regular,
+  EBGaramond_500Medium,
+  EBGaramond_600SemiBold,
+  EBGaramond_700Bold,
+  EBGaramond_800ExtraBold,
+} from '@expo-google-fonts/eb-garamond';
 import ErrorBoundary from "../components/ErrorBoundary";
 import { GameProvider } from "../context/GameContext";
 import { ThemeProvider, useTheme } from "../context/ThemeContext";
@@ -91,11 +91,11 @@ export default function RootLayout() {
     'PlayfairDisplay-Medium': PlayfairDisplay_500Medium,
     'PlayfairDisplay-SemiBold': PlayfairDisplay_600SemiBold,
     'PlayfairDisplay-Bold': PlayfairDisplay_700Bold,
-    'CormorantGaramond-Light': CormorantGaramond_300Light,
-    'CormorantGaramond-Regular': CormorantGaramond_400Regular,
-    'CormorantGaramond-Medium': CormorantGaramond_500Medium,
-    'CormorantGaramond-SemiBold': CormorantGaramond_600SemiBold,
-    'CormorantGaramond-Bold': CormorantGaramond_700Bold,
+    'EBGaramond-Regular': EBGaramond_400Regular,
+    'EBGaramond-Medium': EBGaramond_500Medium,
+    'EBGaramond-SemiBold': EBGaramond_600SemiBold,
+    'EBGaramond-Bold': EBGaramond_700Bold,
+    'EBGaramond-ExtraBold': EBGaramond_800ExtraBold,
   });
 
   useEffect(() => {

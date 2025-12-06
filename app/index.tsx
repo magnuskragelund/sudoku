@@ -31,7 +31,6 @@ export default function WelcomeScreen() {
         <ScrollView 
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
-          bounces={false}
         >
           <View style={[styles.contentWrapper, { maxWidth: maxContentWidth }]}>
             {/* Masthead Section */}
