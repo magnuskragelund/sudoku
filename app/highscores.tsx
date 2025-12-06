@@ -14,6 +14,7 @@ export default function HighScoresScreen() {
   const router = useRouter();
   const { colors, typography, spacing } = useTheme();
   const [scores, setScores] = useState<GameResult[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | null>(null);
   const [expandedCombo, setExpandedCombo] = useState<string | null>(null);
   const [showClearModal, setShowClearModal] = useState(false);
@@ -27,8 +28,16 @@ export default function HighScoresScreen() {
   }, []);
 
   const loadScores = async () => {
-    const data = await getHighScores();
-    setScores(data.results);
+    try {
+      setIsLoading(true);
+      const data = await getHighScores();
+      setScores(data.results || []);
+    } catch (error) {
+      console.error('Error loading scores:', error);
+      setScores([]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const clearScores = async () => {
@@ -134,8 +143,15 @@ export default function HighScoresScreen() {
           </View>
 
           {/* Scores List */}
-          <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-            {sortedGroupedScores.length === 0 ? (
+          <ScrollView 
+            style={styles.scrollView} 
+            contentContainerStyle={[
+              styles.scrollContent,
+              sortedGroupedScores.length === 0 && styles.scrollContentEmpty
+            ]}
+            showsVerticalScrollIndicator={true}
+          >
+            {!isLoading && sortedGroupedScores.length === 0 ? (
               <View style={styles.emptyContainer}>
                 <Trophy size={48} color={colors.borderThin} strokeWidth={1.5} />
                 <Text style={[styles.emptyText, { fontFamily: typography.fontSerif, fontSize: typography.textXl, color: colors.textTertiary, marginTop: spacing.lg }]}>
@@ -145,7 +161,7 @@ export default function HighScoresScreen() {
                   Start playing to see your progress!
                 </Text>
               </View>
-            ) : (
+            ) : !isLoading ? (
               sortedGroupedScores.map(({ key, difficulty, lives, results }) => {
                 const bestTime = getBestTime(results);
                 const isExpanded = expandedCombo === key;
@@ -212,7 +228,7 @@ export default function HighScoresScreen() {
                   </View>
                 );
               })
-            )}
+            ) : null}
           </ScrollView>
 
           {/* Clear Button */}
@@ -256,6 +272,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentWrapper: {
+    flex: 1,
     width: '100%',
     alignSelf: 'center',
     paddingHorizontal: 24,
@@ -283,11 +300,17 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 16,
     paddingBottom: 80,
+    flexGrow: 1,
+  },
+  scrollContentEmpty: {
+    justifyContent: 'center',
+    minHeight: '100%',
   },
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 64,
+    width: '100%',
   },
   emptyText: {
     fontWeight: '400',

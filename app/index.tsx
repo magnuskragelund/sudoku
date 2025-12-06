@@ -151,21 +151,23 @@ export default function WelcomeScreen() {
                     activeOpacity={0.7}
                   >
                     <View style={styles.featuredCardContent}>
-                      <View style={styles.featuredCardText}>
-                        <Text style={[styles.cardLabel, { fontFamily: typography.fontBody, fontSize: typography.textXs, letterSpacing: typography.textXs * typography.trackingNormal, color: colors.textLabel, marginBottom: spacing.sm }]}>
-                          FEATURED
-                        </Text>
-                        <Text style={[styles.featuredCardTitle, { fontFamily: typography.fontSerif, fontSize: typography.text5xl, lineHeight: typography.text5xl * typography.leadingTight, color: colors.textPrimary, marginBottom: spacing.md }]}>
-                          Single Player
-                        </Text>
-                        <Text style={[styles.featuredCardDescription, { fontFamily: typography.fontBody, fontSize: typography.textLg, lineHeight: typography.textLg * typography.leadingRelaxed, color: colors.textSecondary }]}>
-                          Challenge yourself with our curated selection of puzzles. From beginner to master difficulty.
-                        </Text>
+                      <View style={[styles.featuredCardHeader, { marginBottom: spacing.md }]}>
+                        <View style={styles.featuredCardText}>
+                          <Text style={[styles.cardLabel, { fontFamily: typography.fontBody, fontSize: typography.textXs, letterSpacing: typography.textXs * typography.trackingNormal, color: colors.textLabel, marginBottom: spacing.sm }]}>
+                            FEATURED
+                          </Text>
+                          <Text style={[styles.featuredCardTitle, { fontFamily: typography.fontSerif, fontSize: typography.text5xl, lineHeight: typography.text5xl * typography.leadingTight, color: colors.textPrimary, marginBottom: spacing.md }]}>
+                            Single Player
+                          </Text>
+                        </View>
+                        <View style={[styles.featuredCardIcon, { backgroundColor: colors.buttonBackground }]}>
+                          <User size={40} color={colors.textPrimary} strokeWidth={1.5} />
+                        </View>
                       </View>
-                      <View style={[styles.featuredCardIcon, { backgroundColor: colors.buttonBackground }]}>
-                        <User size={40} color={colors.textPrimary} strokeWidth={1.5} />
-                      </View>
-                      </View>
+                      <Text style={[styles.featuredCardDescription, { fontFamily: typography.fontBody, fontSize: typography.textLg, lineHeight: typography.textLg * typography.leadingRelaxed, color: colors.textSecondary, width: '100%' }]}>
+                        Challenge yourself with our curated selection of puzzles. From beginner to master difficulty.
+                      </Text>
+                    </View>
                     </TouchableOpacity>
 
                   {/* Two Column Cards */}
@@ -213,8 +215,12 @@ export default function WelcomeScreen() {
                       <Text style={[styles.cardLabel, { fontFamily: typography.fontBody, fontSize: typography.textXs, letterSpacing: typography.textXs * typography.trackingNormal, color: colors.textLabel, marginBottom: spacing.sm }]}>
                         LEADERBOARD
                       </Text>
-                      <Text style={[styles.smallCardTitle, { fontFamily: typography.fontSerif, fontSize: typography.text3xl, lineHeight: typography.text3xl * typography.leadingTight, color: colors.textPrimary, marginBottom: spacing.sm }]}>
-                        Highscores
+                      <Text 
+                        numberOfLines={2}
+                        adjustsFontSizeToFit={true}
+                        minimumFontScale={0.85}
+                        style={[styles.smallCardTitle, { fontFamily: typography.fontSerif, fontSize: typography.text3xl, lineHeight: typography.text3xl * typography.leadingTight, color: colors.textPrimary, marginBottom: spacing.sm }]}>
+                        High Scores
                       </Text>
                       <Text style={[styles.smallCardDescription, { fontFamily: typography.fontBody, fontSize: typography.textSm, lineHeight: typography.textSm * typography.leadingRelaxed, color: colors.textSecondary, marginBottom: spacing.lg }]}>
                         View the top performers
@@ -312,6 +318,9 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   featuredCardContent: {
+    width: '100%',
+  },
+  featuredCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
@@ -352,6 +361,7 @@ const styles = StyleSheet.create({
   },
   smallCardTitle: {
     fontWeight: '400',
+    flexShrink: 1,
   },
   smallCardDescription: {
     fontWeight: '400',
