@@ -24,14 +24,13 @@ export default function LobbyScreen() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [playerCount, setPlayerCount] = useState(0);
   const [showErrorModal, setShowErrorModal] = useState(false);
-  const [isReady, setIsReady] = useState(false);
   const { width } = useWindowDimensions();
   
   // Responsive max width: 600px for phones, 1000px for tablets/web
   const maxContentWidth = width >= 768 ? 1000 : 600;
   
-  // Max players for this game (2 players based on design)
-  const maxPlayers = 2;
+  // Max players for this game (up to 10 players)
+  const maxPlayers = 10;
 
   const difficulties: { label: string; edition: string; value: string }[] = [
     { label: 'Easy', edition: 'MORNING EDITION', value: 'easy' },
@@ -97,11 +96,6 @@ export default function LobbyScreen() {
     router.replace('/');
   };
 
-
-  const handleToggleReady = () => {
-    setIsReady(!isReady);
-  };
-
   const getDifficultyInfo = () => {
     const diff = difficulties.find(d => d.value === multiplayer?.difficulty);
     return diff || difficulties[1]; // Default to Medium
@@ -128,7 +122,7 @@ export default function LobbyScreen() {
           ]}>
             {/* Header */}
             <TouchableOpacity 
-              onPress={() => router.back()} 
+              onPress={handleLeave} 
               style={[styles.backButton, { marginBottom: spacing.lg }]}
             >
               <ChevronLeft size={16} color={colors.textSecondary} strokeWidth={1.5} />
@@ -144,7 +138,7 @@ export default function LobbyScreen() {
                   }
                 ]}
               >
-                RETURN
+                LEAVE GAME
               </Text>
             </TouchableOpacity>
 
@@ -193,7 +187,7 @@ export default function LobbyScreen() {
                   }
                 ]}
               >
-                LET CHALLENGERS JOIN
+                {isHost ? 'LET CHALLENGERS JOIN' : 'WAITING FOR HOST'}
               </Text>
             </View>
 
@@ -241,95 +235,80 @@ export default function LobbyScreen() {
                   PARTICIPANTS ({playerCount}/{maxPlayers})
                 </SectionLabel>
                 
-                {/* Current Player Card */}
-                <ParticipantCard
-                  name={players.find(p => p.id === multiplayerService.getPlayerId())?.name || 'You'}
-                  isReady={isReady}
-                  onToggleReady={handleToggleReady}
-                  isTop
-                />
-                
-                {/* Opponent Card(s) */}
-                {players.filter(p => p.id !== multiplayerService.getPlayerId()).map((player, index, array) => (
-                  <ParticipantCard
-                    key={player.id}
-                    name={player.name}
-                    isMiddle={index < array.length - 1 || playerCount < maxPlayers}
-                    isBottom={index === array.length - 1 && playerCount >= maxPlayers}
-                  />
-                ))}
-                
-                {/* Awaiting Opponent Placeholder */}
-                {playerCount < maxPlayers && (
-                  <ParticipantCard
-                    name="Awaiting opponent..."
-                    isBottom
-                    isPlaceholder
-                  />
-                )}
+                {/* All Players */}
+                {players.map((player, index) => {
+                  const isCurrentPlayer = player.id === multiplayerService.getPlayerId();
+                  const isLast = index === players.length - 1;
+                  const isFirst = index === 0;
+                  
+                  return (
+                    <ParticipantCard
+                      key={player.id}
+                      name={isCurrentPlayer ? `${player.name} (You)` : player.name}
+                      isTop={isFirst}
+                      isMiddle={!isFirst && !isLast}
+                      isBottom={isLast}
+                    />
+                  );
+                })}
               </ContentSection>
 
               <Divider />
 
-              {/* Status Section */}
-              <ContentSection>
-                <StatusRow 
-                  icon={Clock}
-                  text="WAITING FOR OPPONENT TO JOIN"
-                />
-              </ContentSection>
+              {/* Host Section */}
+              {isHost && (
+                <>
+                  <ContentSection>
+                    <StatusRow 
+                      icon={Clock}
+                      text={`${playerCount} PLAYER${playerCount !== 1 ? 'S' : ''} CONNECTED`}
+                    />
+                  </ContentSection>
 
-              <Divider />
+                  <Divider />
 
-              {/* Awaiting Full Roster Button */}
-              <ContentSection>
-                <TouchableOpacity
-                  style={[
-                    styles.fullRosterButton,
-                    {
-                      backgroundColor: colors.cardBackground,
-                      borderColor: colors.cardBorder,
-                    },
-                    playerCount < maxPlayers && styles.fullRosterButtonDisabled,
-                  ]}
-                  onPress={playerCount >= maxPlayers ? handleStartGame : undefined}
-                  disabled={playerCount < maxPlayers}
-                  activeOpacity={0.7}
-                >
-                  <Text 
-                    style={[
-                      styles.fullRosterButtonText,
-                      {
-                        fontFamily: typography.fontBody,
-                        fontSize: typography.textSm,
-                        letterSpacing: typography.textSm * typography.trackingNormal,
-                        color: playerCount < maxPlayers ? colors.textTertiary : colors.textPrimary,
-                      }
-                    ]}
-                  >
-                    AWAITING FULL ROSTER
-                  </Text>
-                </TouchableOpacity>
-              </ContentSection>
+                  <ContentSection>
+                    <TouchableOpacity
+                      style={[
+                        styles.startButton,
+                        {
+                          backgroundColor: playerCount >= 2 ? colors.primary : colors.cardBackground,
+                          borderColor: playerCount >= 2 ? colors.primary : colors.cardBorder,
+                        },
+                        playerCount < 2 && styles.startButtonDisabled,
+                      ]}
+                      onPress={playerCount >= 2 ? handleStartGame : undefined}
+                      disabled={playerCount < 2}
+                      activeOpacity={0.7}
+                    >
+                      <Text 
+                        style={[
+                          styles.startButtonText,
+                          {
+                            fontFamily: typography.fontBody,
+                            fontSize: typography.textSm,
+                            letterSpacing: typography.textSm * typography.trackingNormal,
+                            color: playerCount >= 2 ? '#FFFFFF' : colors.textTertiary,
+                          }
+                        ]}
+                      >
+                        START GAME
+                      </Text>
+                    </TouchableOpacity>
+                  </ContentSection>
+                </>
+              )}
+
+              {/* Guest Section */}
+              {!isHost && (
+                <ContentSection>
+                  <StatusRow 
+                    icon={Clock}
+                    text="WAITING FOR HOST TO START THE GAME"
+                  />
+                </ContentSection>
+              )}
             </ContentBox>
-            
-            {/* Coming Soon Message */}
-            <View style={styles.comingSoonSection}>
-              <Text 
-                style={[
-                  styles.comingSoonText,
-                  {
-                    fontFamily: typography.fontBody,
-                    fontSize: typography.textXs,
-                    letterSpacing: typography.textXs * typography.trackingWide,
-                    color: colors.textLabel,
-                    textAlign: 'center',
-                  }
-                ]}
-              >
-                MULTIPLAYER MODE COMING SOON
-              </Text>
-            </View>
           </View>
         </ScrollView>
       </LinearGradient>
@@ -406,7 +385,7 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     gap: 0,
   },
-  fullRosterButton: {
+  startButton: {
     width: '100%',
     borderRadius: 12,
     borderWidth: 1,
@@ -414,18 +393,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     alignItems: 'center',
   },
-  fullRosterButtonDisabled: {
+  startButtonDisabled: {
     opacity: 0.5,
   },
-  fullRosterButtonText: {
+  startButtonText: {
     textTransform: 'uppercase',
     fontWeight: '600',
-  },
-  comingSoonSection: {
-    width: '100%',
-    paddingTop: 24,
-  },
-  comingSoonText: {
-    textTransform: 'uppercase',
   },
 });
