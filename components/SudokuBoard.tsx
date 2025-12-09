@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
     padding: 0,
     width: '100%',
     aspectRatio: 1,
-    borderRadius: 8,
+    borderRadius: 0,
     overflow: 'hidden',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,

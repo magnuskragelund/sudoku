@@ -154,6 +154,8 @@ const styles = StyleSheet.create({
   },
   numberText: {
     fontWeight: '400',
+    textAlign: 'center',
+    lineHeight: 26,
   },
 });
 

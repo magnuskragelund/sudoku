@@ -1,7 +1,6 @@
-import * as Clipboard from 'expo-clipboard';
-import { Copy } from 'lucide-react-native';
+import { Share2 } from 'lucide-react-native';
 import React from 'react';
-import { Alert, Platform, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { Platform, Share, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 
 interface RoomIdentifierProps {
@@ -13,18 +12,27 @@ export default function RoomIdentifier({ roomCode }: RoomIdentifierProps) {
   const { width } = useWindowDimensions();
   const isMobile = width < 400;
 
-  const handleCopy = async () => {
-    const roomId = roomCode.toUpperCase();
+  const handleShare = async () => {
+    if (!roomCode) return;
+    
+    const deepLink = `sudokufaceoff://${roomCode}`;
     
     try {
-      await Clipboard.setStringAsync(roomId);
       if (Platform.OS === 'web') {
-        alert('Room ID copied to clipboard!');
+        // On web, copy to clipboard
+        if (typeof navigator !== 'undefined' && navigator.clipboard) {
+          await navigator.clipboard.writeText(deepLink);
+          alert('Link copied to clipboard!');
+        }
       } else {
-        Alert.alert('Copied', 'Room ID copied to clipboard!');
+        // On mobile, use native share
+        await Share.share({
+          message: `Join my Sudoku game! Use this link to join: ${deepLink}`,
+          title: 'Join Sudoku Game',
+        });
       }
     } catch (error) {
-      console.error('Error copying room ID:', error);
+      console.error('Error sharing:', error);
     }
   };
 
@@ -58,14 +66,14 @@ export default function RoomIdentifier({ roomCode }: RoomIdentifierProps) {
         </View>
         <TouchableOpacity 
           style={[
-            styles.copyButton,
+            styles.shareButton,
             { backgroundColor: '#252A35' },
-            isMobile && styles.copyButtonMobile
+            isMobile && styles.shareButtonMobile
           ]}
-          onPress={handleCopy}
+          onPress={handleShare}
           activeOpacity={0.7}
         >
-          <Copy size={20} color="#FFFFFF" strokeWidth={1.5} />
+          <Share2 size={20} color="#FFFFFF" strokeWidth={1.5} />
         </TouchableOpacity>
       </View>
     </View>
@@ -99,14 +107,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '400',
   },
-  copyButton: {
+  shareButton: {
     width: 48,
     height: 48,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  copyButtonMobile: {
+  shareButtonMobile: {
     width: 44,
     height: 44,
   },

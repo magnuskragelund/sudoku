@@ -1,8 +1,9 @@
+import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Clock } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ConfigCard from '../components/ConfigCard';
 import ContentBox from '../components/ContentBox';
@@ -20,7 +21,7 @@ import { multiplayerService, Player } from '../utils/multiplayerService';
 export default function LobbyScreen() {
   const router = useRouter();
   const { colors, typography, spacing, colorScheme } = useTheme();
-  const { multiplayer, startMultiplayerGame, leaveMultiplayerGame } = useGame();
+  const { multiplayer, startMultiplayerGame, leaveMultiplayerGame, isLoading } = useGame();
   const [players, setPlayers] = useState<Player[]>([]);
   const [playerCount, setPlayerCount] = useState(0);
   const [showErrorModal, setShowErrorModal] = useState(false);
@@ -314,6 +315,30 @@ export default function LobbyScreen() {
       </LinearGradient>
       
       
+      {/* Loading Overlay */}
+      {isLoading && (
+        <View style={styles.overlay}>
+          <BlurView intensity={40} tint={colors.overlayTint} style={styles.blurBackground}>
+            <View style={[styles.modalCard, { backgroundColor: colors.modalBackground, borderColor: colors.cardBorder }]}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text 
+                style={[
+                  styles.modalSubtitle,
+                  {
+                    fontFamily: typography.fontBody,
+                    fontSize: typography.textBase,
+                    color: colors.textSecondary,
+                    marginTop: spacing.md,
+                  }
+                ]}
+              >
+                Generating puzzle...
+              </Text>
+            </View>
+          </BlurView>
+        </View>
+      )}
+
       {/* Error Modal */}
       <Modal
         visible={showErrorModal}
@@ -399,5 +424,42 @@ const styles = StyleSheet.create({
   startButtonText: {
     textTransform: 'uppercase',
     fontWeight: '600',
+  },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  blurBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 32,
+    marginHorizontal: 24,
+    minWidth: 280,
+    width: '90%',
+    maxWidth: 400,
+    alignItems: 'center',
+    shadowOffset: { width: 0, height: 20 },
+    shadowOpacity: 0.15,
+    shadowRadius: 25,
+    elevation: 15,
+  },
+  modalSubtitle: {
+    textAlign: 'center',
+    fontWeight: '400',
   },
 });

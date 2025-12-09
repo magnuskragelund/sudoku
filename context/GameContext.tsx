@@ -506,18 +506,26 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     const unsubscribeGameBoard = multiplayerService.subscribeToGameBoard((payload: any) => {
       logger.log('Received shared game board:', payload);
       
+      // Set loading state for guests receiving the board
+      dispatch({ type: 'SET_LOADING', isLoading: true });
+      
       // Ensure any lingering overlays/modals are cleared before loading the new round
       dispatch({ type: 'DISMISS_WINNER_MODAL' });
       dispatch({ type: 'DISMISS_LOSER_MODAL' });
 
-      // Load the shared game (this resets state to initial and sets status to playing)
-      dispatch({ 
-        type: 'LOAD_MULTIPLAYER_GAME', 
-        difficulty: payload.difficulty, 
-        lives: payload.lives, 
-        board: payload.board, 
-        solution: payload.solution, 
-        initialBoard: payload.initialBoard 
+      // Allow React to render the loading state before loading the game
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          // Load the shared game (this resets state to initial and sets status to playing)
+          dispatch({ 
+            type: 'LOAD_MULTIPLAYER_GAME', 
+            difficulty: payload.difficulty, 
+            lives: payload.lives, 
+            board: payload.board, 
+            solution: payload.solution, 
+            initialBoard: payload.initialBoard 
+          });
+        }, 0);
       });
     });
 
@@ -710,7 +718,17 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       }
     },
     startMultiplayerGame: async () => {
+      dispatch({ type: 'SET_LOADING', isLoading: true });
       try {
+        // Allow React to render the loading state before generating puzzle
+        await new Promise<void>((resolve) => {
+          requestAnimationFrame(() => {
+            setTimeout(() => {
+              resolve();
+            }, 0);
+          });
+        });
+
         // Generate puzzle for multiplayer
         if (!state.multiplayer) throw new Error('No multiplayer game active');
         
@@ -737,6 +755,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       } catch (error) {
         logger.error('Failed to start multiplayer game:', error);
         throw error;
+      } finally {
+        dispatch({ type: 'SET_LOADING', isLoading: false });
       }
     },
     startNewRound: async () => {
