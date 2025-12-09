@@ -1,24 +1,44 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Share2 } from 'lucide-react-native';
+import { ChevronLeft, Clock } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
-import { Platform, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ConfigCard from '../components/ConfigCard';
+import ContentBox from '../components/ContentBox';
+import ContentSection from '../components/ContentSection';
+import Divider from '../components/Divider';
 import Modal from '../components/Modal';
+import ParticipantCard from '../components/ParticipantCard';
+import RoomIdentifier from '../components/RoomIdentifier';
+import SectionLabel from '../components/SectionLabel';
+import StatusRow from '../components/StatusRow';
 import { useGame } from '../context/GameContext';
 import { useTheme } from '../context/ThemeContext';
 import { multiplayerService, Player } from '../utils/multiplayerService';
 
 export default function LobbyScreen() {
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors, typography, spacing, colorScheme } = useTheme();
   const { multiplayer, startMultiplayerGame, leaveMultiplayerGame } = useGame();
   const [players, setPlayers] = useState<Player[]>([]);
   const [playerCount, setPlayerCount] = useState(0);
   const [showErrorModal, setShowErrorModal] = useState(false);
+  const [isReady, setIsReady] = useState(false);
   const { width } = useWindowDimensions();
   
   // Responsive max width: 600px for phones, 1000px for tablets/web
   const maxContentWidth = width >= 768 ? 1000 : 600;
+  
+  // Max players for this game (2 players based on design)
+  const maxPlayers = 2;
+
+  const difficulties: { label: string; edition: string; value: string }[] = [
+    { label: 'Easy', edition: 'MORNING EDITION', value: 'easy' },
+    { label: 'Medium', edition: 'AFTERNOON EDITION', value: 'medium' },
+    { label: 'Hard', edition: 'EVENING EDITION', value: 'hard' },
+    { label: 'Master', edition: 'WEEKEND EDITION', value: 'master' },
+  ];
 
   // Subscribe once on mount, never re-subscribe
   useEffect(() => {
@@ -77,28 +97,14 @@ export default function LobbyScreen() {
     router.replace('/');
   };
 
-  const handleShareLink = async () => {
-    if (!multiplayer?.channelName) return;
-    
-    const deepLink = `sudokufaceoff://${multiplayer.channelName}`;
-    
-    try {
-      if (Platform.OS === 'web') {
-        // On web, copy to clipboard
-        if (typeof navigator !== 'undefined' && navigator.clipboard) {
-          await navigator.clipboard.writeText(deepLink);
-          alert('Link copied to clipboard!');
-        }
-      } else {
-        // On mobile, use native share
-        await Share.share({
-          message: `Join my Sudoku game! Use this link to join: ${deepLink}`,
-          title: 'Join Sudoku Game',
-        });
-      }
-    } catch (error) {
-      console.error('Error sharing:', error);
-    }
+
+  const handleToggleReady = () => {
+    setIsReady(!isReady);
+  };
+
+  const getDifficultyInfo = () => {
+    const diff = difficulties.find(d => d.value === multiplayer?.difficulty);
+    return diff || difficulties[1]; // Default to Medium
   };
 
   if (!multiplayer) {
@@ -107,92 +113,227 @@ export default function LobbyScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.contentWrapper, { maxWidth: maxContentWidth }]}>
-        <View style={[styles.header, { borderBottomColor: colors.borderThin }]}>
-          <Text style={[styles.title, { color: colors.textPrimary }]}>Lobby</Text>
-        </View>
-
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Game: {multiplayer.channelName}</Text>
-          <Text style={[styles.playerCount, { color: colors.textTertiary }]}>{playerCount} player{playerCount !== 1 ? 's' : ''} connected</Text>
-          
-          {isHost && (
-            <View style={[styles.linkContainer, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
-              <Text style={[styles.linkLabel, { color: colors.textSecondary }]}>
-                Share this link with players:
-              </Text>
-              <Text 
-                style={[styles.linkText, { color: colors.primary }]}
-                selectable
-              >
-                sudokufaceoff://{multiplayer.channelName}
-              </Text>
-              <TouchableOpacity 
-                style={[styles.shareButtonStyled, { backgroundColor: colors.primary }]}
-                onPress={handleShareLink}
-              >
-                <Share2 size={18} color="white" />
-                <Text style={styles.shareButtonText}>Share Link</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Players</Text>
-          <View style={styles.playersList}>
-            {players.map((player) => {
-              const currentPlayerId = multiplayerService.getPlayerId();
-              const isCurrentPlayer = player.id === currentPlayerId;
-              
-              return (
-                <View key={player.id} style={[styles.playerItem, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
-                  <View style={styles.playerInfo}>
-                    <Text style={[styles.playerName, { color: colors.textPrimary }]}>{player.name}</Text>
-                    {isCurrentPlayer && <Text style={[styles.guestBadge, { color: colors.textTertiary }]}>(You)</Text>}
-                    {player.isHost && <Text style={[styles.hostBadge, { color: colors.primary }]}>(Host)</Text>}
-                    {!isCurrentPlayer && !player.isHost && <Text style={[styles.guestBadge, { color: colors.textTertiary }]}>(Player)</Text>}
-                  </View>
-                </View>
-              );
-            })}
-          </View>
-        </View>
-
-        {isHost && (
-          <View style={styles.hostSection}>
-            <Text style={[styles.hostNote, { color: colors.textTertiary }]}>
-              You are the host. Start the game when all players have joined.
-            </Text>
-            <TouchableOpacity
-              style={[
-                styles.startButton,
-                { backgroundColor: colors.primary },
-                playerCount < 2 && styles.startButtonDisabled,
-              ]}
-              onPress={handleStartGame}
-              disabled={playerCount < 2}
+      <LinearGradient
+        colors={[colors.backgroundGradientFrom, colors.backgroundGradientTo]}
+        style={styles.gradient}
+      >
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={[
+            styles.contentWrapper,
+            { maxWidth: maxContentWidth },
+            width < 400 && styles.contentWrapperMobile
+          ]}>
+            {/* Header */}
+            <TouchableOpacity 
+              onPress={() => router.back()} 
+              style={[styles.backButton, { marginBottom: spacing.lg }]}
             >
-              <Text style={styles.startButtonText}>Start Game</Text>
+              <ChevronLeft size={16} color={colors.textSecondary} strokeWidth={1.5} />
+              <Text 
+                style={[
+                  styles.backButtonText,
+                  {
+                    fontFamily: typography.fontBody,
+                    fontSize: typography.textSm,
+                    letterSpacing: typography.textSm * typography.trackingNormal,
+                    color: colors.textSecondary,
+                    marginLeft: spacing.xs,
+                  }
+                ]}
+              >
+                RETURN
+              </Text>
             </TouchableOpacity>
-          </View>
-        )}
 
-        {!isHost && (
-          <View style={styles.guestSection}>
-            <Text style={[styles.waitNote, { color: colors.textTertiary, backgroundColor: colors.cardBackground }]}>
-              Waiting for the host to start the game...
-            </Text>
-          </View>
-        )}
-      </ScrollView>
+            <View style={[styles.masthead, { marginBottom: spacing.xl2 }]}>
+              <Text 
+                style={[
+                  styles.label,
+                  {
+                    fontFamily: typography.fontBody,
+                    fontSize: typography.textXs,
+                    letterSpacing: typography.textXs * typography.trackingWide,
+                    color: colors.textLabel,
+                    marginBottom: spacing.sm,
+                  }
+                ]}
+              >
+                COMPETITION ROOM
+              </Text>
+              
+              <Text 
+                style={[
+                  styles.title,
+                  {
+                    fontFamily: typography.fontSerif,
+                    fontSize: typography.text5xl * 1.5,
+                    letterSpacing: (typography.text5xl * 1.5) * typography.trackingTight,
+                    lineHeight: (typography.text5xl * 1.5) * typography.leadingTight,
+                    color: colors.textPrimary,
+                    marginBottom: spacing.md,
+                  }
+                ]}
+              >
+                Multiplayer Lobby
+              </Text>
+              
+              <View style={[styles.titleUnderline, { backgroundColor: colors.divider, marginBottom: spacing.md }]} />
+              
+              <Text 
+                style={[
+                  styles.statusText,
+                  {
+                    fontFamily: typography.fontBody,
+                    fontSize: typography.textSm,
+                    letterSpacing: typography.textSm * typography.trackingNormal,
+                    color: colors.textSecondary,
+                  }
+                ]}
+              >
+                LET CHALLENGERS JOIN
+              </Text>
+            </View>
 
-      <View style={[styles.footer, { borderTopColor: colors.borderThin }]}>
-        <TouchableOpacity style={[styles.leaveButton, { backgroundColor: colors.error }]} onPress={handleLeave}>
-          <Text style={styles.leaveButtonText}>Leave Game</Text>
-        </TouchableOpacity>
-      </View>
+            {/* Main Content Box - All content in one box */}
+            <ContentBox style={{ marginBottom: spacing.xl2 }}>
+              {/* Room Identifier Section - Dark Background */}
+              <ContentSection 
+                isDark 
+                style={{ backgroundColor: colors.primary }}
+              >
+                <SectionLabel>ROOM IDENTIFIER</SectionLabel>
+                <RoomIdentifier roomCode={multiplayer?.channelName || ''} />
+              </ContentSection>
+
+              <Divider />
+
+              {/* Match Configuration Section */}
+              <ContentSection>
+                <SectionLabel>MATCH CONFIGURATION</SectionLabel>
+                <View style={[
+                  styles.configContainer,
+                  width < 400 && styles.configContainerMobile,
+                ]}>
+                  <ConfigCard
+                    label="DIFFICULTY"
+                    value={getDifficultyInfo().label}
+                    subtext={getDifficultyInfo().edition}
+                    isLeft
+                  />
+                  <ConfigCard
+                    label="LIVES"
+                    value={String(multiplayer?.lives || 3)}
+                    subtext="MISTAKES ALLOWED"
+                    isRight
+                    isLast
+                  />
+                </View>
+              </ContentSection>
+
+              <Divider />
+
+              {/* Participants Section */}
+              <ContentSection>
+                <SectionLabel style={{ marginBottom: spacing.md }}>
+                  PARTICIPANTS ({playerCount}/{maxPlayers})
+                </SectionLabel>
+                
+                {/* Current Player Card */}
+                <ParticipantCard
+                  name={players.find(p => p.id === multiplayerService.getPlayerId())?.name || 'You'}
+                  isReady={isReady}
+                  onToggleReady={handleToggleReady}
+                  isTop
+                />
+                
+                {/* Opponent Card(s) */}
+                {players.filter(p => p.id !== multiplayerService.getPlayerId()).map((player, index, array) => (
+                  <ParticipantCard
+                    key={player.id}
+                    name={player.name}
+                    isMiddle={index < array.length - 1 || playerCount < maxPlayers}
+                    isBottom={index === array.length - 1 && playerCount >= maxPlayers}
+                  />
+                ))}
+                
+                {/* Awaiting Opponent Placeholder */}
+                {playerCount < maxPlayers && (
+                  <ParticipantCard
+                    name="Awaiting opponent..."
+                    isBottom
+                    isPlaceholder
+                  />
+                )}
+              </ContentSection>
+
+              <Divider />
+
+              {/* Status Section */}
+              <ContentSection>
+                <StatusRow 
+                  icon={Clock}
+                  text="WAITING FOR OPPONENT TO JOIN"
+                />
+              </ContentSection>
+
+              <Divider />
+
+              {/* Awaiting Full Roster Button */}
+              <ContentSection>
+                <TouchableOpacity
+                  style={[
+                    styles.fullRosterButton,
+                    {
+                      backgroundColor: colors.cardBackground,
+                      borderColor: colors.cardBorder,
+                    },
+                    playerCount < maxPlayers && styles.fullRosterButtonDisabled,
+                  ]}
+                  onPress={playerCount >= maxPlayers ? handleStartGame : undefined}
+                  disabled={playerCount < maxPlayers}
+                  activeOpacity={0.7}
+                >
+                  <Text 
+                    style={[
+                      styles.fullRosterButtonText,
+                      {
+                        fontFamily: typography.fontBody,
+                        fontSize: typography.textSm,
+                        letterSpacing: typography.textSm * typography.trackingNormal,
+                        color: playerCount < maxPlayers ? colors.textTertiary : colors.textPrimary,
+                      }
+                    ]}
+                  >
+                    AWAITING FULL ROSTER
+                  </Text>
+                </TouchableOpacity>
+              </ContentSection>
+            </ContentBox>
+            
+            {/* Coming Soon Message */}
+            <View style={styles.comingSoonSection}>
+              <Text 
+                style={[
+                  styles.comingSoonText,
+                  {
+                    fontFamily: typography.fontBody,
+                    fontSize: typography.textXs,
+                    letterSpacing: typography.textXs * typography.trackingWide,
+                    color: colors.textLabel,
+                    textAlign: 'center',
+                  }
+                ]}
+              >
+                MULTIPLAYER MODE COMING SOON
+              </Text>
+            </View>
+          </View>
+        </ScrollView>
+      </LinearGradient>
+      
       
       {/* Error Modal */}
       <Modal
@@ -205,7 +346,6 @@ export default function LobbyScreen() {
         }}
         onClose={() => setShowErrorModal(false)}
       />
-      </View>
     </SafeAreaView>
   );
 }
@@ -214,131 +354,78 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  contentWrapper: {
+  gradient: {
     flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 80,
+  },
+  contentWrapper: {
     width: '100%',
     alignSelf: 'center',
-  },
-  header: {
     paddingHorizontal: 24,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
+    paddingTop: 24,
+  },
+  contentWrapperMobile: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+  },
+  backButtonText: {
+    textTransform: 'uppercase',
+  },
+  masthead: {
+    alignItems: 'center',
+  },
+  label: {
+    textAlign: 'center',
+    textTransform: 'uppercase',
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  content: {
-    flex: 1,
-    padding: 24,
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  playerCount: {
-    fontSize: 14,
-  },
-  linkContainer: {
-    marginTop: 12,
-    padding: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  linkLabel: {
-    fontSize: 13,
-    marginBottom: 6,
-    fontWeight: '600',
-  },
-  linkText: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 12,
-  },
-  shareButtonStyled: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    gap: 8,
-  },
-  shareButtonText: {
-    color: 'white',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  playersList: {
-    gap: 12,
-  },
-  playerItem: {
-    borderRadius: 8,
-    padding: 16,
-    borderWidth: 1,
-  },
-  playerInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  playerName: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  hostBadge: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  guestBadge: {
-    fontSize: 12,
-  },
-  hostSection: {
-    marginTop: 8,
-  },
-  hostNote: {
-    fontSize: 14,
-    marginBottom: 16,
     textAlign: 'center',
+    fontWeight: '400',
   },
-  startButton: {
+  titleUnderline: {
+    width: 96,
+    height: 1,
+  },
+  statusText: {
+    textAlign: 'center',
+    textTransform: 'uppercase',
+  },
+  configContainer: {
+    flexDirection: 'row',
+    gap: 0,
+  },
+  configContainerMobile: {
+    flexDirection: 'column',
+    gap: 0,
+  },
+  fullRosterButton: {
+    width: '100%',
+    borderRadius: 12,
+    borderWidth: 1,
     paddingVertical: 16,
-    borderRadius: 8,
+    paddingHorizontal: 24,
     alignItems: 'center',
   },
-  startButtonDisabled: {
-    backgroundColor: '#9CA3AF',
+  fullRosterButtonDisabled: {
+    opacity: 0.5,
   },
-  startButtonText: {
-    color: 'white',
-    fontSize: 16,
+  fullRosterButtonText: {
+    textTransform: 'uppercase',
     fontWeight: '600',
   },
-  guestSection: {
-    marginTop: 8,
+  comingSoonSection: {
+    width: '100%',
+    paddingTop: 24,
   },
-  waitNote: {
-    fontSize: 14,
-    textAlign: 'center',
-    padding: 16,
-    borderRadius: 8,
-  },
-  footer: {
-    padding: 24,
-    borderTopWidth: 1,
-  },
-  leaveButton: {
-    paddingVertical: 14,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  leaveButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
+  comingSoonText: {
+    textTransform: 'uppercase',
   },
 });

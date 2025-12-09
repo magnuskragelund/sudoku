@@ -1,0 +1,15 @@
+Never use theme variables (spacing, colors, typography) directly in StyleSheet.create() blocks. These variables are only available in component scope, not at module level.
+
+Instead:
+- Use numeric values directly (e.g., `paddingVertical: 16` instead of `paddingVertical: spacing.lg`)
+- Apply theme variables inline in the component JSX (e.g., `style={[styles.card, { padding: spacing.lg }]}`)
+
+Common spacing values:
+- spacing.xs = 4
+- spacing.sm = 8
+- spacing.md = 12
+- spacing.lg = 16
+- spacing.xl = 24
+- spacing.xl2 = 32
+- spacing.xl3 = 48
+- spacing.xl4 = 64

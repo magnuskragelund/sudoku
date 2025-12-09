@@ -1,5 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { ChevronLeft } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,18 +13,19 @@ import { Difficulty } from '../types/game';
 
 export default function MultiplayerScreen() {
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors, typography, spacing, colorScheme } = useTheme();
   const { createMultiplayerGame, joinMultiplayerGame } = useGame();
   const { width } = useWindowDimensions();
   
   // Responsive max width: 600px for phones, 1000px for tablets/web
   const maxContentWidth = width >= 768 ? 1000 : 600;
   
-  // Get deep link params
+  // Get deep link params and mode
   const params = useLocalSearchParams();
   const joinGameParam = params.joinGame as string | undefined;
+  const modeParam = params.mode as 'create' | 'join' | undefined;
   
-  const [activeTab, setActiveTab] = useState<'create' | 'join'>('create');
+  const [activeTab, setActiveTab] = useState<'create' | 'join'>(modeParam || 'create');
   
   // Create form state
   const [channelName, setChannelName] = useState('');
@@ -37,11 +40,11 @@ export default function MultiplayerScreen() {
   // Modal state
   const [errorModal, setErrorModal] = useState<{ title: string; message: string } | null>(null);
 
-  const difficulties: { label: string; value: Difficulty }[] = [
-    { label: 'Easy', value: 'easy' },
-    { label: 'Medium', value: 'medium' },
-    { label: 'Hard', value: 'hard' },
-    { label: 'Master', value: 'master' },
+  const difficulties: { label: string; edition: string; value: Difficulty }[] = [
+    { label: 'Easy', edition: 'MORNING', value: 'easy' },
+    { label: 'Medium', edition: 'AFTERNOON', value: 'medium' },
+    { label: 'Hard', edition: 'EVENING', value: 'hard' },
+    { label: 'Master', edition: 'WEEKEND', value: 'master' },
   ];
 
   const livesOptions = [1, 2, 3, 4, 5];
@@ -92,6 +95,13 @@ export default function MultiplayerScreen() {
     loadPlayerNames();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Set active tab based on mode parameter
+  useEffect(() => {
+    if (modeParam) {
+      setActiveTab(modeParam);
+    }
+  }, [modeParam]);
 
   // Handle deep link - auto-join if player name exists, otherwise pre-fill
   useEffect(() => {
@@ -174,13 +184,16 @@ export default function MultiplayerScreen() {
   }, [activeTab]);
 
   const handleCreateGame = async () => {
-    if (!channelName.trim() || !playerName.trim()) {
-      setErrorModal({ title: 'Validation Error', message: 'Please enter both game name and your name' });
+    if (!playerName.trim()) {
+      setErrorModal({ title: 'Validation Error', message: 'Please enter your name' });
       return;
     }
     
+    // Auto-generate game name if not set
+    const gameName = channelName.trim() || generateGameName();
+    
     try {
-      await createMultiplayerGame?.(channelName.trim(), playerName.trim(), difficulty, lives);
+      await createMultiplayerGame?.(gameName, playerName.trim(), difficulty, lives);
       
       // Wait a bit for state to be set
       await new Promise(resolve => setTimeout(resolve, 300));
@@ -217,155 +230,482 @@ export default function MultiplayerScreen() {
     }
   };
 
+  const handleShareRoomId = async () => {
+    if (!channelName.trim()) return;
+    
+    const roomId = `SUDOKU-${channelName.toUpperCase()}`;
+    const deepLink = `sudokufaceoff://${channelName}`;
+    
+    try {
+      if (Platform.OS === 'web') {
+        // On web, copy to clipboard
+        if (typeof navigator !== 'undefined' && navigator.clipboard) {
+          await navigator.clipboard.writeText(deepLink);
+          alert('Room link copied to clipboard!');
+        }
+      } else {
+        // On mobile, use native share
+        await Share.share({
+          message: `Join my Sudoku game! Room ID: ${roomId}\nUse this link: ${deepLink}`,
+          title: 'Join Sudoku Game',
+        });
+      }
+    } catch (error) {
+      console.error('Error sharing room ID:', error);
+    }
+  };
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.contentWrapper, { maxWidth: maxContentWidth }]}>
-        <ScreenHeader
-          label="COMPETITION"
-          title="Face Off"
-          subtitle="RACE AGAINST OPPONENTS IN REAL-TIME"
-        />
-
-      <View style={[styles.tabs, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'create' && [styles.activeTab, { borderBottomColor: colors.primary }]]}
-          onPress={() => setActiveTab('create')}
+      <LinearGradient
+        colors={[colors.backgroundGradientFrom, colors.backgroundGradientTo]}
+        style={styles.gradient}
+      >
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
         >
-          <Text style={[styles.tabText, { color: activeTab === 'create' ? colors.primary : colors.textSecondary }]}>
-            Create
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'join' && [styles.activeTab, { borderBottomColor: colors.primary }]]}
-          onPress={() => setActiveTab('join')}
-        >
-          <Text style={[styles.tabText, { color: activeTab === 'join' ? colors.primary : colors.textSecondary }]}>
-            Join
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {activeTab === 'create' ? (
-          <View style={styles.form}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>Game Name</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.textPrimary }]}
-              value={channelName}
-              autoCapitalize="none"
-              autoCorrect={false}
-              onChangeText={(text) => {
-                const normalized = text
-                  .toLowerCase()
-                  .replace(/\s+/g, '-')
-                  .replace(/[^a-z-]/g, '');
-                setChannelName(normalized);
-              }}
-              placeholder="e.g., cool-game-123"
-              placeholderTextColor={colors.textTertiary}
-            />
-
-            <Text style={[styles.label, { color: colors.textSecondary }]}>Your Name</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.textPrimary }]}
-              value={playerName}
-              onChangeText={async (val) => {
-                setPlayerName(val);
-                setJoinPlayerName(val);
-                try { await prefStorage.setItem(PLAYER_NAME_KEY, val); } catch (e) { /* Failed to save - silently continue */ }
-              }}
-              placeholder="Enter your name"
-              placeholderTextColor={colors.textTertiary}
-            />
-
-            <Text style={[styles.label, { color: colors.textSecondary }]}>Difficulty</Text>
-            <View style={styles.difficultyContainer}>
-              {difficulties.map((diff) => (
-                <TouchableOpacity
-                  key={diff.value}
-                  style={[
-                    styles.difficultyButton,
-                    { backgroundColor: colors.buttonBackground },
-                    difficulty === diff.value && [styles.difficultyButtonSelected, { backgroundColor: colors.primary }],
-                  ]}
-                  onPress={() => handleSelectDifficulty(diff.value)}
+          <View style={[styles.contentWrapper, { maxWidth: maxContentWidth }]}>
+            {activeTab === 'create' ? (
+              <>
+                {/* Custom Header */}
+                <TouchableOpacity 
+                  onPress={() => router.back()} 
+                  style={[styles.backButton, { marginBottom: spacing.lg }]}
                 >
-                  <Text
+                  <ChevronLeft size={16} color={colors.textSecondary} strokeWidth={1.5} />
+                  <Text 
                     style={[
-                      styles.difficultyButtonText,
-                      { color: colors.textSecondary },
-                      difficulty === diff.value && styles.difficultyButtonTextSelected,
+                      styles.backButtonText,
+                      {
+                        fontFamily: typography.fontBody,
+                        fontSize: typography.textSm,
+                        letterSpacing: typography.textSm * typography.trackingNormal,
+                        color: colors.textSecondary,
+                        marginLeft: spacing.xs,
+                      }
                     ]}
                   >
-                    {diff.label}
+                    RETURN
                   </Text>
                 </TouchableOpacity>
-              ))}
-            </View>
 
-            <Text style={[styles.label, { color: colors.textSecondary }]}>Lives</Text>
-            <View style={styles.livesContainer}>
-              {livesOptions.map((life) => (
-                <TouchableOpacity
-                  key={life}
-                  style={[styles.lifeButton, { backgroundColor: colors.buttonBackground }, lives === life && [styles.lifeButtonSelected, { backgroundColor: colors.primary }]]}
-                  onPress={() => setLives(life)}
-                >
-                  <Text
+                <View style={[styles.masthead, { marginBottom: spacing.xl2 }]}>
+                  <Text 
                     style={[
-                      styles.lifeButtonText,
-                      { color: colors.textSecondary },
-                      lives === life && styles.lifeButtonTextSelected,
+                      styles.subtitleLabel,
+                      {
+                        fontFamily: typography.fontBody,
+                        fontSize: typography.textSm,
+                        letterSpacing: typography.textSm * typography.trackingNormal,
+                        color: colors.textLabel,
+                        marginBottom: spacing.sm,
+                      }
                     ]}
                   >
-                    {life}
+                    Host a Challenge
                   </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+                  
+                  <Text 
+                    style={[
+                      styles.mainTitle,
+                      {
+                        fontFamily: typography.fontSerif,
+                        fontSize: typography.text5xl * 1.5,
+                        letterSpacing: (typography.text5xl * 1.5) * typography.trackingTight,
+                        lineHeight: (typography.text5xl * 1.5) * typography.leadingTight,
+                        color: colors.textPrimary,
+                        marginBottom: spacing.md,
+                      }
+                    ]}
+                  >
+                    Create Game
+                  </Text>
+                  
+                  <View style={[styles.titleUnderline, { backgroundColor: colors.divider, marginBottom: spacing.md }]} />
+                  
+                  <Text 
+                    style={[
+                      styles.subtitleText,
+                      {
+                        fontFamily: typography.fontBody,
+                        fontSize: typography.textSm,
+                        letterSpacing: typography.textSm * typography.trackingNormal,
+                        color: colors.textLabel,
+                      }
+                    ]}
+                  >
+                    Configure Your Match Settings
+                  </Text>
+                </View>
 
-            <TouchableOpacity style={[styles.primaryButton, { backgroundColor: colors.primary }]} onPress={handleCreateGame}>
-              <Text style={styles.primaryButtonText}>Create Game</Text>
-            </TouchableOpacity>
+                {/* Form Card */}
+                <View style={[
+                  styles.formCard,
+                  {
+                    backgroundColor: colors.cardBackground,
+                    borderColor: colors.cardBorder,
+                    shadowColor: colors.cardShadow,
+                  }
+                ]}>
+                  {/* HOST INFORMATION Section */}
+                  <View style={styles.section}>
+                    <Text 
+                      style={[
+                        styles.sectionTitle,
+                        {
+                          fontFamily: typography.fontBody,
+                          fontSize: typography.textXs,
+                          letterSpacing: typography.textXs * typography.trackingWide,
+                          color: colors.textLabel,
+                          marginBottom: spacing.lg,
+                        }
+                      ]}
+                    >
+                      HOST INFORMATION
+                    </Text>
+                    
+                    <Text style={[
+                      styles.label,
+                      {
+                        fontFamily: typography.fontBody,
+                        fontSize: typography.textXs,
+                        letterSpacing: typography.textXs * typography.trackingWide,
+                        color: colors.textSecondary,
+                        marginBottom: spacing.md,
+                      }
+                    ]}>
+                      YOUR NAME
+                    </Text>
+                    <TextInput
+                      style={[
+                        styles.input,
+                        {
+                          backgroundColor: colors.inputBackground,
+                          borderColor: colors.borderThin,
+                          color: colors.textPrimary,
+                          fontFamily: typography.fontBody,
+                          fontSize: typography.textBase,
+                          marginBottom: spacing.xl2,
+                        }
+                      ]}
+                      value={playerName}
+                      onChangeText={async (val) => {
+                        setPlayerName(val);
+                        setJoinPlayerName(val);
+                        try { await prefStorage.setItem(PLAYER_NAME_KEY, val); } catch (e) { /* Failed to save - silently continue */ }
+                      }}
+                      placeholder="Enter your name"
+                      placeholderTextColor={colors.textTertiary}
+                    />
+                  </View>
+
+                  {/* GAME CONFIGURATION Section */}
+                  <View style={styles.section}>
+                    <Text 
+                      style={[
+                        styles.sectionTitle,
+                        {
+                          fontFamily: typography.fontBody,
+                          fontSize: typography.textXs,
+                          letterSpacing: typography.textXs * typography.trackingWide,
+                          color: colors.textLabel,
+                          marginBottom: spacing.lg,
+                        }
+                      ]}
+                    >
+                      GAME CONFIGURATION
+                    </Text>
+                    
+                    <Text style={[
+                      styles.label,
+                      {
+                        fontFamily: typography.fontBody,
+                        fontSize: typography.textXs,
+                        letterSpacing: typography.textXs * typography.trackingWide,
+                        color: colors.textSecondary,
+                        marginBottom: spacing.md,
+                      }
+                    ]}>
+                      DIFFICULTY LEVEL
+                    </Text>
+                    <View style={[
+                      styles.difficultyContainer,
+                      width < 400 && styles.difficultyContainerMobile
+                    ]}>
+                      {difficulties.map((diff) => (
+                        <TouchableOpacity
+                          key={diff.value}
+                          style={[
+                            styles.difficultyButton,
+                            width < 400 && styles.difficultyButtonMobile,
+                            {
+                              backgroundColor: difficulty === diff.value 
+                                ? colors.primary
+                                : colors.cardBackground,
+                              borderColor: difficulty === diff.value 
+                                ? colors.primary
+                                : colors.borderThin,
+                            },
+                          ]}
+                          onPress={() => handleSelectDifficulty(diff.value)}
+                          activeOpacity={0.7}
+                        >
+                          <Text
+                            style={[
+                              styles.difficultyButtonMainText,
+                              {
+                                fontFamily: typography.fontSerif,
+                                fontSize: typography.textBase,
+                                color: difficulty === diff.value 
+                                  ? '#FFFFFF'
+                                  : colors.textPrimary,
+                                marginBottom: 2,
+                              }
+                            ]}
+                          >
+                            {diff.label}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.difficultyButtonEditionText,
+                              {
+                                fontFamily: typography.fontBody,
+                                fontSize: typography.textXs,
+                                letterSpacing: typography.textXs * typography.trackingWide,
+                                color: difficulty === diff.value 
+                                  ? '#FFFFFF'
+                                  : colors.textLabel,
+                              }
+                            ]}
+                          >
+                            {diff.edition}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+
+                    <Text style={[
+                      styles.label,
+                      {
+                        fontFamily: typography.fontBody,
+                        fontSize: typography.textXs,
+                        letterSpacing: typography.textXs * typography.trackingWide,
+                        color: colors.textSecondary,
+                        marginTop: spacing.xl,
+                        marginBottom: spacing.md,
+                      }
+                    ]}>
+                      NUMBER OF LIVES
+                    </Text>
+                    <View style={styles.livesContainer}>
+                      {livesOptions.map((life) => (
+                        <TouchableOpacity
+                          key={life}
+                          style={[
+                            styles.lifeButton,
+                            {
+                              backgroundColor: lives === life 
+                                ? colors.primary
+                                : colors.cardBackground,
+                              borderColor: lives === life 
+                                ? colors.primary
+                                : colors.borderThin,
+                            }
+                          ]}
+                          onPress={() => setLives(life)}
+                          activeOpacity={0.7}
+                        >
+                          <Text
+                            style={[
+                              styles.lifeButtonText,
+                              {
+                                fontFamily: typography.fontBody,
+                                fontSize: typography.textBase,
+                                fontWeight: '600',
+                                color: lives === life 
+                                  ? '#FFFFFF'
+                                  : colors.textPrimary,
+                              }
+                            ]}
+                          >
+                            {life}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                    
+                    <Text 
+                      style={[
+                        styles.hintText,
+                        {
+                          fontFamily: typography.fontBody,
+                          fontSize: typography.textXs,
+                          color: colors.textTertiary,
+                          marginTop: spacing.md,
+                        }
+                      ]}
+                    >
+                      Players will be eliminated after making this many mistakes
+                    </Text>
+                  </View>
+
+                  {/* CREATE LOBBY Button */}
+                  <TouchableOpacity
+                    style={[
+                      styles.createLobbyButton,
+                      {
+                        backgroundColor: colors.primary,
+                        marginTop: spacing.xl2,
+                      }
+                    ]}
+                    onPress={handleCreateGame}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        styles.createLobbyButtonText,
+                        {
+                          fontFamily: typography.fontBody,
+                          fontSize: typography.textSm,
+                          letterSpacing: typography.textSm * typography.trackingNormal,
+                          color: '#FFFFFF',
+                        }
+                      ]}
+                    >
+                      CREATE LOBBY
+                    </Text>
+                  </TouchableOpacity>
+                  
+                  <Text 
+                    style={[
+                      styles.hintText,
+                      {
+                        fontFamily: typography.fontBody,
+                        fontSize: typography.textXs,
+                        color: colors.textTertiary,
+                        marginTop: spacing.md,
+                        textAlign: 'center',
+                      }
+                    ]}
+                  >
+                    Your opponents will be able to join your game, once you create a lobby
+                  </Text>
+                </View>
+              </>
+            ) : (
+              <>
+                <ScreenHeader
+                  label="COMPETITION"
+                  title="Face Off"
+                  subtitle="RACE AGAINST OPPONENTS IN REAL-TIME"
+                />
+
+                <View style={styles.form}>
+                  <Text style={[
+                    styles.label,
+                    {
+                      fontFamily: typography.fontBody,
+                      fontSize: typography.textXs,
+                      letterSpacing: typography.textXs * typography.trackingWide,
+                      color: colors.textLabel,
+                      marginBottom: spacing.md,
+                    }
+                  ]}>
+                    GAME NAME
+                  </Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      {
+                        backgroundColor: colors.inputBackground,
+                        borderColor: colors.cardBorder,
+                        color: colors.textPrimary,
+                        fontFamily: typography.fontBody,
+                        fontSize: typography.textBase,
+                        marginBottom: spacing.xl,
+                      }
+                    ]}
+                    value={joinChannelName}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    onChangeText={(text) => {
+                      const normalized = text
+                        .toLowerCase()
+                        .replace(/\s+/g, '-')
+                        .replace(/[^a-z-]/g, '');
+                      setJoinChannelName(normalized);
+                    }}
+                    placeholder="Enter game name"
+                    placeholderTextColor={colors.textTertiary}
+                  />
+
+                  <Text style={[
+                    styles.label,
+                    {
+                      fontFamily: typography.fontBody,
+                      fontSize: typography.textXs,
+                      letterSpacing: typography.textXs * typography.trackingWide,
+                      color: colors.textLabel,
+                      marginBottom: spacing.md,
+                    }
+                  ]}>
+                    YOUR NAME
+                  </Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      {
+                        backgroundColor: colors.inputBackground,
+                        borderColor: colors.cardBorder,
+                        color: colors.textPrimary,
+                        fontFamily: typography.fontBody,
+                        fontSize: typography.textBase,
+                        marginBottom: spacing.xl,
+                      }
+                    ]}
+                    value={joinPlayerName}
+                    onChangeText={async (val) => {
+                      setJoinPlayerName(val);
+                      setPlayerName(val);
+                      try { await prefStorage.setItem(PLAYER_NAME_KEY, val); } catch (e) { /* Failed to save - silently continue */ }
+                    }}
+                    placeholder="Enter your name"
+                    placeholderTextColor={colors.textTertiary}
+                  />
+
+                  <TouchableOpacity
+                    style={[
+                      styles.primaryButton,
+                      {
+                        backgroundColor: colors.primary,
+                        marginTop: spacing.xl2,
+                      }
+                    ]}
+                    onPress={handleJoinGame}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        styles.primaryButtonText,
+                        {
+                          fontFamily: typography.fontBody,
+                          fontSize: typography.textSm,
+                          letterSpacing: typography.textSm * typography.trackingNormal,
+                          color: colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF',
+                        }
+                      ]}
+                    >
+                      JOIN GAME
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
           </View>
-        ) : (
-          <View style={styles.form}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>Game Name</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.textPrimary }]}
-              value={joinChannelName}
-              autoCapitalize="none"
-              autoCorrect={false}
-              onChangeText={(text) => {
-                const normalized = text
-                  .toLowerCase()
-                  .replace(/\s+/g, '-')
-                  .replace(/[^a-z-]/g, '');
-                setJoinChannelName(normalized);
-              }}
-              placeholder="Enter game name"
-              placeholderTextColor={colors.textTertiary}
-            />
-
-            <Text style={[styles.label, { color: colors.textSecondary }]}>Your Name</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.textPrimary }]}
-              value={joinPlayerName}
-              onChangeText={async (val) => {
-                setJoinPlayerName(val);
-                setPlayerName(val);
-                try { await prefStorage.setItem(PLAYER_NAME_KEY, val); } catch (e) { /* Failed to save - silently continue */ }
-              }}
-              placeholder="Enter your name"
-              placeholderTextColor={colors.textTertiary}
-            />
-
-            <TouchableOpacity style={[styles.primaryButton, { backgroundColor: colors.primary }]} onPress={handleJoinGame}>
-              <Text style={styles.primaryButtonText}>Join Game</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </ScrollView>
+        </ScrollView>
+      </LinearGradient>
+      
       
       {/* Error Modal */}
       <Modal
@@ -378,7 +718,6 @@ export default function MultiplayerScreen() {
         }}
         onClose={() => setErrorModal(null)}
       />
-      </View>
     </SafeAreaView>
   );
 }
@@ -387,112 +726,142 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  gradient: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 80,
+  },
   contentWrapper: {
     width: '100%',
     alignSelf: 'center',
     paddingHorizontal: 24,
     paddingTop: 24,
   },
-  tabs: {
+  backButton: {
     flexDirection: 'row',
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 0,
-    gap: 0,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 14,
-    paddingHorizontal: 8,
     alignItems: 'center',
-    borderBottomWidth: 3,
-    borderBottomColor: 'transparent',
+    alignSelf: 'flex-start',
   },
-  activeTab: {
-    borderBottomWidth: 3,
+  backButtonText: {
+    textTransform: 'uppercase',
   },
-  tabText: {
-    fontSize: 15,
-    fontWeight: '600',
-    letterSpacing: 0.3,
+  masthead: {
+    alignItems: 'center',
   },
-  activeTabText: {
-    color: 'inherit',
+  subtitleLabel: {
+    textAlign: 'center',
   },
-  content: {
-    flex: 1,
+  mainTitle: {
+    textAlign: 'center',
+    fontWeight: '400',
+  },
+  titleUnderline: {
+    width: 96,
+    height: 1,
+  },
+  subtitleText: {
+    textAlign: 'center',
+    textTransform: 'uppercase',
+  },
+  formCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 32,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 15,
+    elevation: 5,
+  },
+  section: {
+    marginBottom: 32,
+  },
+  sectionTitle: {
+    textTransform: 'uppercase',
   },
   form: {
-    padding: 24,
-    gap: 20,
+    width: '100%',
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
+    textTransform: 'uppercase',
   },
   input: {
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
   },
   difficultyContainer: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 12,
+  },
+  difficultyContainerMobile: {
+    flexWrap: 'wrap',
   },
   difficultyButton: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 8,
     alignItems: 'center',
-    borderRadius: 8,
+    justifyContent: 'center',
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'transparent',
+    minHeight: 80,
   },
-  difficultyButtonSelected: {
-    borderColor: 'transparent',
+  difficultyButtonMobile: {
+    flexBasis: '47%',
+    minWidth: '47%',
+    maxWidth: '47%',
   },
-  difficultyButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+  difficultyButtonMainText: {
+    fontWeight: '400',
+    textAlign: 'center',
   },
-  difficultyButtonTextSelected: {
-    color: 'white',
+  difficultyButtonEditionText: {
+    textTransform: 'uppercase',
+    textAlign: 'center',
   },
   livesContainer: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 12,
   },
   lifeButton: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 16,
     alignItems: 'center',
-    borderRadius: 8,
+    justifyContent: 'center',
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  lifeButtonSelected: {
-    borderColor: 'transparent',
+    minHeight: 48,
   },
   lifeButtonText: {
-    fontSize: 16,
+    textAlign: 'center',
+  },
+  hintText: {
+    fontWeight: '400',
+  },
+  createLobbyButton: {
+    width: '100%',
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+  },
+  createLobbyButtonText: {
+    textTransform: 'uppercase',
     fontWeight: '600',
   },
-  lifeButtonTextSelected: {
-    color: 'white',
-  },
   primaryButton: {
+    width: '100%',
+    borderRadius: 12,
     paddingVertical: 16,
-    borderRadius: 8,
+    paddingHorizontal: 24,
     alignItems: 'center',
-    marginTop: 8,
   },
   primaryButtonText: {
-    color: 'white',
-    fontSize: 16,
+    textTransform: 'uppercase',
     fontWeight: '600',
   },
 });

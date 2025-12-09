@@ -181,7 +181,7 @@ export default function WelcomeScreen() {
                           shadowColor: colors.cardShadow,
                         }
                       ]}
-                      onPress={() => router.push('/multiplayer')}
+                      onPress={() => router.push('/multiplayer-select')}
                       activeOpacity={0.7}
                     >
                       <Text style={[styles.cardLabel, { fontFamily: typography.fontBody, fontSize: typography.textXs, letterSpacing: typography.textXs * typography.trackingNormal, color: colors.textLabel, marginBottom: spacing.sm }]}>
