@@ -11,6 +11,7 @@ This directory contains app store copy in multiple languages and scripts to push
 ### Scripts
 - `listLocales.js` - List all available locale files
 - `verifyLocales.js` - **NEW!** Verify all locale files are valid before upload
+- `generateLocales.js` - **NEW!** Generate translations from en-us.json using AI or prompts
 - `pushToAppStore.js` - Push single locale to Apple App Store
 - `pushToPlayStore.js` - Push single locale to Google Play Store
 - `pushToBoth.js` - Push single locale to both stores
@@ -166,6 +167,41 @@ Create `locales/fr-fr.json`:
 ```
 
 The script will automatically find and push it!
+
+### Generate Translations
+
+Use `generateLocales.js` to automatically generate translations from `en-us.json`:
+
+**Generate prompt for manual translation:**
+```bash
+# Generate a prompt file for a single locale
+node admin/app\ stores/generateLocales.js --prompt fr-fr
+
+# Generate prompts for all missing locales
+node admin/app\ stores/generateLocales.js --all
+```
+
+This creates a `{locale}-prompt.txt` file that you can use with any AI assistant (like Cursor, ChatGPT, Claude, etc.) to get translations.
+
+**Use AI API directly (requires API keys):**
+```bash
+# Using OpenAI (requires OPENAI_API_KEY env var)
+export OPENAI_API_KEY=your-key-here
+node admin/app\ stores/generateLocales.js --api openai fr-fr
+
+# Using Anthropic (requires ANTHROPIC_API_KEY env var)
+export ANTHROPIC_API_KEY=your-key-here
+node admin/app\ stores/generateLocales.js --api anthropic de-de
+```
+
+The script uses guidelines from `locales/locale-generation-prompt.json` to ensure high-quality, culturally appropriate translations.
+
+**Workflow:**
+1. Update `locales/en-us.json` with your latest copy
+2. Generate translations: `node generateLocales.js --all` (or use API)
+3. Review generated locale files
+4. Verify: `node verifyLocales.js`
+5. Push to stores: `node pushAllToBoth.js`
 
 ## ⚠️ API Limitations
 

@@ -1,0 +1,68 @@
+
+TRANSLATION GUIDELINES:
+{
+  "tone": "Friendly, natural, and light-hearted, without sounding childish or unprofessional.",
+  "localization": "Do not translate literally. Adapt copy to feel native for the target country and culture.",
+  "language_rules": {
+    "primary": "Write in the local language of the target market (e.g. Spanish for Spain, Japanese for Japan).",
+    "secondary": "Avoid direct translations that feel unnatural or culturally inconsistent.",
+    "brand_consistency": "Keep product names, keywords, and trademark terms unchanged unless a localized official variant exists."
+  },
+  "sudoku": {
+    "local_word_required": "Use the word for Sudoku in the target language (if different from English).",
+    "english_required": "Also include the English word 'sudoku' at least once for SEO and recognition.",
+    "format_rule": "Do not replace multiple mentions with only one version—ensure both local and English terms appear naturally in the copy."
+  },
+  "store_guidelines": {
+    "clarity": "Copy must be easy to scan, concise, and suitable for mobile readers.",
+    "cultural_fit": "Avoid idioms, jokes, or references that do not work in the target market.",
+    "legal_safety": "Do not include medical, financial, or legal claims unless verifiable and allowed in that region.",
+    "emoji_policy": "Use emojis sparingly and only when appropriate for the region and tone."
+  },
+  "style_preferences": {
+    "writing_style": "Conversational, engaging, and benefit-driven.",
+    "avoid": [
+      "awkward machine-like phrasing",
+      "word-for-word translation",
+      "excessive punctuation",
+      "all caps",
+      "overuse of slang"
+    ],
+    "allowed": [
+      "local expressions if natural",
+      "short punchy sentences",
+      "soft calls to action"
+    ]
+  },
+  "market_sensitivity": {
+    "currency": "Use local currency formats when referencing pricing or value.",
+    "units": "Localize measurements (e.g. meters vs feet, 24h vs 12h).",
+    "calendar": "Use locally common date formats."
+  },
+  "app_store_goal": "Maximize conversions by emphasizing fun, ease of use, and addictive gameplay without overpromising."
+}
+
+TARGET LOCALE: es-es (Spanish (Spain))
+
+SOURCE CONTENT (English - en-us):
+{
+  "appName": "Sudoku Face Off",
+  "subtitle": "Multiplayer Sudoku, No Ads",
+  "description": "Race your friends in real-time Sudoku battles! Free for a limited time.\n\nChallenge others on the same board with the same timer – may the fastest solver win. Or solve solo at your own pace. Clean interface, zero ads, pure focus.\n\n• Real-Time Multiplayer\nCompete side-by-side or remotely on the same puzzle. Fair game, same timer. See who solves it first.\n\n• Solo Play\nRelax and solve at your own pace. No pressure, just you and the puzzle.\n\n• Zero Ads, Zero Interruptions\nNo full-screen ads breaking your concentration mid-puzzle. No surprise data usage from ad networks. No paywalls or overpriced \"remove ads\" options. One fair price, yours forever – no subscriptions, no coins, no pop-ups.\n\n• All Skill Levels\nEasy, medium, or hard puzzles. Perfect for beginners or Sudoku masters.\n\nClean, fast, and distraction-free. This is Sudoku done right.",
+  "keywords": "puzzle,brain,logic,board,multiplayer,offline,classic,strategy,mind,numbers,challenge,duo,ad-free",
+  "supportUrl": "https://sudokufaceoff.com",
+  "whatsNew": "Experience Sudoku without distractions. No ads, no in-app purchases, no interruptions – just pure puzzle solving. We've also improved the playing experience with small adjustments to the game board.",
+  "promotionalText": "Limited time: Premium Sudoku, now free. Download before Dec 1, 2025!"
+}
+
+INSTRUCTIONS:
+1. Translate the source content to Spanish (Spain) (locale code: es-es)
+2. Follow all guidelines in the translation guidelines above
+3. Maintain the exact JSON structure
+4. Keep "appName" as "Sudoku Face Off" (brand name)
+5. Keep "supportUrl" unchanged
+6. Adapt all other fields naturally for the target language and culture
+7. Ensure keywords include both local language terms and "sudoku" for SEO
+8. Return ONLY valid JSON, no explanations or markdown formatting
+
+TRANSLATED JSON:

@@ -87,13 +87,13 @@ export default function GameScreen() {
 
   const isHost = !!multiplayer && multiplayer.hostId === multiplayerService.getPlayerId();
 
-  const toggleTheme = () => {
+  const toggleTheme = async () => {
     if (theme === 'system') {
-      setTheme(colorScheme === 'dark' ? 'light' : 'dark');
+      await setTheme(colorScheme === 'dark' ? 'light' : 'dark');
     } else if (theme === 'light') {
-      setTheme('dark');
+      await setTheme('dark');
     } else {
-      setTheme('light');
+      await setTheme('light');
     }
   };
 
@@ -143,7 +143,11 @@ export default function GameScreen() {
             </View>
             
             <View style={styles.headerRight}>
-              <TouchableOpacity onPress={toggleTheme} style={[styles.iconButton, { backgroundColor: colors.buttonBackground }]}>
+              <TouchableOpacity 
+                onPress={toggleTheme} 
+                style={[styles.iconButton, { backgroundColor: colors.buttonBackground }]}
+                activeOpacity={0.7}
+              >
                 {colorScheme === 'dark' ? (
                   <Moon size={16} color={colors.textSecondary} strokeWidth={1.5} />
                 ) : (
