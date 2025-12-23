@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useGame } from '../context/GameContext';
 import { useTheme } from '../context/ThemeContext';
 
 interface SudokuCellProps {
@@ -9,6 +10,7 @@ interface SudokuCellProps {
   isSelected: boolean;
   isHighlighted: boolean;
   isSameValue: boolean;
+  isSameValueDigit: boolean;
   isInitial: boolean;
   isCorrectlyFilled: boolean;
   isWrong: boolean;
@@ -24,6 +26,7 @@ function SudokuCell({
   isSelected, 
   isHighlighted,
   isSameValue,
+  isSameValueDigit,
   isInitial,
   isCorrectlyFilled,
   isWrong,
@@ -32,6 +35,7 @@ function SudokuCell({
   onClearWrongCell
 }: SudokuCellProps) {
   const { colors, typography } = useTheme();
+  const { selectedDigit, placeNumberDigitFirst, selectDigit, clearCellAt, initialBoard, board, solution } = useGame();
   
   const isNonEditable = isInitial || isCorrectlyFilled;
   
@@ -98,12 +102,15 @@ function SudokuCell({
       baseStyle.push({ backgroundColor: colors.cellSelected });
     } else if (isSameValue) {
       baseStyle.push({ backgroundColor: colors.cellSameValue });
+    } else if (isSameValueDigit) {
+      // Digit First mode: highlight all instances of selected digit
+      baseStyle.push({ backgroundColor: colors.cellSameValue });
     } else if (isHighlighted) {
       baseStyle.push({ backgroundColor: colors.cellHighlight });
     }
     
     return baseStyle;
-  }, [isSelected, isSameValue, isHighlighted, row, col, colors]);
+  }, [isSelected, isSameValue, isSameValueDigit, isHighlighted, row, col, colors]);
 
   // Calculate responsive font size based on screen width
   const [cellFontSize, setCellFontSize] = React.useState(() => {
@@ -156,7 +163,59 @@ function SudokuCell({
       />
       <TouchableOpacity
         style={styles.cellContent}
-        onPressIn={() => onSelect(row, col)}
+        onPress={() => {
+          // Digit First mode: If a digit is selected
+          if (selectedDigit !== null) {
+            // Check if digit is already complete - if so, deselect it
+            let userRequiredCount = 0;
+            let userFilledCount = 0;
+            for (let r = 0; r < 9; r++) {
+              for (let c = 0; c < 9; c++) {
+                if (solution[r][c] === selectedDigit) {
+                  if (initialBoard[r][c] === 0) {
+                    userRequiredCount++;
+                    if (board[r][c] === selectedDigit) {
+                      userFilledCount++;
+                    }
+                  }
+                }
+              }
+            }
+            const isDigitComplete = userRequiredCount > 0 && userFilledCount === userRequiredCount;
+            
+            if (isDigitComplete) {
+              // Digit is complete, deselect it
+              selectDigit(null);
+              return;
+            }
+            
+            // Edge case: Tap existing number switches selection to that number
+            if (value !== 0 && value !== selectedDigit) {
+              selectDigit(value);
+              return;
+            }
+            
+            // If cell is empty and editable, place the selected digit
+            if (value === 0 && initialBoard[row][col] === 0) {
+              placeNumberDigitFirst(row, col);
+              return;
+            }
+            
+            // If tapping existing selected digit, do nothing (visualization)
+            if (value === selectedDigit) {
+              return;
+            }
+          }
+          
+          // Cell First mode: select the cell
+          onSelect(row, col);
+        }}
+        onLongPress={() => {
+          // Long press: clear cell (erase)
+          if (!isInitial && value !== 0) {
+            clearCellAt(row, col);
+          }
+        }}
         activeOpacity={0.7}
         testID={`cell-${row}-${col}`}
         accessibilityLabel={`Cell row ${row + 1} column ${col + 1}${value !== 0 ? ` value ${value}` : ' empty'}`}

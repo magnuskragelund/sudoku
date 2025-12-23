@@ -12,11 +12,16 @@ interface NumberPadProps {
 }
 
 function NumberPad({ noteMode = false, addNote, removeNote, notes }: NumberPadProps) {
-  const { placeNumber, selectedCell, initialBoard, board, solution } = useGame();
+  const { placeNumber, selectDigit, selectedCell, selectedDigit, initialBoard, board, solution } = useGame();
   const { colors, typography, spacing, colorScheme } = useTheme();
 
   const handleNumberPress = (number: number) => {
-    if (!selectedCell) return;
+    // Digit First mode: If no cell is selected, select the digit
+    if (!selectedCell) {
+      // Toggle: if same digit is selected, deselect it
+      selectDigit(selectedDigit === number ? null : number);
+      return;
+    }
     
     const { row, col } = selectedCell;
     
@@ -46,7 +51,7 @@ function NumberPad({ noteMode = false, addNote, removeNote, notes }: NumberPadPr
       return;
     }
     
-    // Normal mode: place numbers
+    // Cell First mode: place numbers in selected cell
     // Only allow placing numbers in editable cells (not initial and not correctly filled)
     const isEditable = initialBoard[row][col] === 0 && 
                       board[row][col] !== solution[row][col];
@@ -146,11 +151,20 @@ function NumberPad({ noteMode = false, addNote, removeNote, notes }: NumberPadPr
           const number = i + 1;
           const isComplete = numberCompletionMap[number];
           const hasNote = selectedCellNotes.has(number);
+          const isDigitSelected = selectedDigit === number;
           
           // Hide the button if the number is complete (only in normal mode)
           if (!noteMode && isComplete) {
             return <View key={number} style={styles.hiddenButton} />;
           }
+          
+          // Determine if button should be highlighted
+          const isHighlighted = noteMode 
+            ? hasNote 
+            : isDigitSelected;
+          
+          // Button is enabled if: no cell selected (Digit First) OR cell is editable
+          const isButtonEnabled = !selectedCell || isSelectedCellEditable;
           
           return (
             <TouchableOpacity
@@ -158,20 +172,20 @@ function NumberPad({ noteMode = false, addNote, removeNote, notes }: NumberPadPr
               style={[
                 styles.numberButton, 
                 { 
-                  backgroundColor: noteMode && hasNote
+                  backgroundColor: isHighlighted
                     ? colors.primary
                     : colors.cardBackground,
-                  borderColor: noteMode && hasNote
+                  borderColor: isHighlighted
                     ? colors.primary
                     : colors.borderThin,
-                  borderWidth: noteMode && hasNote ? 2 : 1,
+                  borderWidth: isHighlighted ? 2 : 1,
                   shadowColor: colors.cardShadow,
                 }
               ]}
               onPress={() => handleNumberPress(number)}
-              disabled={!isSelectedCellEditable}
+              disabled={!isButtonEnabled}
               testID={`number-${number}`}
-              accessibilityLabel={noteMode ? `Toggle note ${number}` : `Number ${number}`}
+              accessibilityLabel={noteMode ? `Toggle note ${number}` : isDigitSelected ? `Selected digit ${number}` : `Number ${number}`}
               accessibilityRole="button"
             >
               <Text style={[
@@ -179,10 +193,10 @@ function NumberPad({ noteMode = false, addNote, removeNote, notes }: NumberPadPr
                 { 
                   fontFamily: typography.fontSerif,
                   fontSize: 26,
-                  color: noteMode && hasNote
+                  color: isHighlighted
                     ? (colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF')
                     : colors.textPrimary,
-                  opacity: isSelectedCellEditable ? 1 : 0.3,
+                  opacity: isButtonEnabled ? 1 : 0.3,
                 }
               ]}>
                 {number}

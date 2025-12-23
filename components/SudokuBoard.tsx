@@ -8,6 +8,7 @@ export default function SudokuBoard() {
   const { 
     board, 
     selectedCell, 
+    selectedDigit,
     selectCell, 
     initialBoard, 
     notes, 
@@ -43,6 +44,7 @@ export default function SudokuBoard() {
           // Compute highlighting
           let isHighlighted = false;
           let isSameValue = false;
+          let isSameValueDigit = false;
           
           if (selectedCell) {
              // Same row or column
@@ -54,10 +56,15 @@ export default function SudokuBoard() {
              
              isHighlighted = sameRow || sameCol || sameBox;
              
-             // Same value highlighting
+             // Same value highlighting (Cell First mode)
              if (selectedValue !== 0 && value === selectedValue) {
                  isSameValue = true;
              }
+          }
+          
+          // Digit First mode: highlight all instances of selected digit
+          if (selectedDigit !== null && value === selectedDigit) {
+            isSameValueDigit = true;
           }
 
           const isInitial = initialBoard[rowIndex][colIndex] !== 0;
@@ -75,6 +82,7 @@ export default function SudokuBoard() {
               isSelected={isSelected}
               isHighlighted={isHighlighted}
               isSameValue={isSameValue}
+              isSameValueDigit={isSameValueDigit}
               isInitial={isInitial}
               isCorrectlyFilled={isCorrectlyFilled}
               isWrong={isWrong}
@@ -86,7 +94,7 @@ export default function SudokuBoard() {
         })}
       </View>
     );
-  }, [board, selectedCell, initialBoard, notes, wrongCell, solution, selectedValue, handleCellSelect, handleClearWrongCell]);
+  }, [board, selectedCell, selectedDigit, initialBoard, notes, wrongCell, solution, selectedValue, handleCellSelect, handleClearWrongCell]);
 
   // Memoize the entire board to prevent unnecessary re-renders
   const boardRows = useMemo(() => {

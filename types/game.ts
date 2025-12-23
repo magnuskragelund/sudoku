@@ -22,6 +22,7 @@ export interface GameState {
   solution: number[][];
   initialBoard: number[][];
   selectedCell: { row: number; col: number } | null;
+  selectedDigit: number | null; // Digit First mode: active digit (1-9) or null
   notes: Map<string, Set<number>>;
   wrongCell: { row: number; col: number } | null;
   hintUsed: boolean;
@@ -83,8 +84,11 @@ export interface GameActions {
   pauseGame: () => void;
   resumeGame: () => void;
   selectCell: (row: number, col: number) => void;
+  selectDigit: (digit: number | null) => void;
   placeNumber: (number: number) => void;
+  placeNumberDigitFirst: (row: number, col: number) => void;
   clearCell: () => void;
+  clearCellAt: (row: number, col: number) => void;
   addNote: (number: number) => void;
   removeNote: (number: number) => void;
   newGame: () => void;

@@ -30,8 +30,11 @@ type GameAction =
   | { type: 'PAUSE_GAME'; timeElapsed: number }
   | { type: 'RESUME_GAME' }
   | { type: 'SELECT_CELL'; row: number; col: number }
+  | { type: 'SELECT_DIGIT'; digit: number | null }
   | { type: 'PLACE_NUMBER'; number: number; timeElapsed: number }
+  | { type: 'PLACE_NUMBER_DIGIT_FIRST'; row: number; col: number; timeElapsed: number }
   | { type: 'CLEAR_CELL' }
+  | { type: 'CLEAR_CELL_AT'; row: number; col: number }
   | { type: 'ADD_NOTE'; number: number }
   | { type: 'REMOVE_NOTE'; number: number }
   | { type: 'NEW_GAME' }
@@ -59,6 +62,7 @@ const initialState: GameState = {
   solution: Array(9).fill(null).map(() => Array(9).fill(0)),
   initialBoard: Array(9).fill(null).map(() => Array(9).fill(0)),
   selectedCell: null,
+  selectedDigit: null,
   notes: new Map(),
   wrongCell: null,
   hintUsed: false,
@@ -70,6 +74,100 @@ const initialState: GameState = {
   multiplayerLoser: null,
   gameSessionId: null,
 };
+
+// Helper function to check if a digit is complete (all user-required instances filled)
+function isDigitComplete(
+  board: number[][],
+  initialBoard: number[][],
+  solution: number[][],
+  digit: number
+): boolean {
+  let userRequiredCount = 0;
+  let userFilledCount = 0;
+  
+  for (let row = 0; row < 9; row++) {
+    for (let col = 0; col < 9; col++) {
+      if (solution[row][col] === digit) {
+        // This cell should contain this digit in the solution
+        if (initialBoard[row][col] === 0) {
+          // This cell was empty initially, so user needs to fill it
+          userRequiredCount++;
+          if (board[row][col] === digit) {
+            // User has filled this cell with the correct digit
+            userFilledCount++;
+          }
+        }
+      }
+    }
+  }
+  
+  // Digit is complete if all required user-filled instances are complete
+  return userRequiredCount > 0 && userFilledCount === userRequiredCount;
+}
+
+// Helper function to remove conflicting notes from row/col/box when a number is placed
+function removeConflictingNotes(
+  notes: Map<string, Set<number>>,
+  row: number,
+  col: number,
+  number: number
+): Map<string, Set<number>> {
+  const updatedNotes = new Map(notes);
+  
+  // Remove notes from the same row
+  for (let c = 0; c < 9; c++) {
+    if (c === col) continue; // Skip the cell we're placing in
+    const noteKey = `${row}-${c}`;
+    const cellNotes = updatedNotes.get(noteKey);
+    if (cellNotes && cellNotes.has(number)) {
+      const newCellNotes = new Set(cellNotes);
+      newCellNotes.delete(number);
+      if (newCellNotes.size === 0) {
+        updatedNotes.delete(noteKey);
+      } else {
+        updatedNotes.set(noteKey, newCellNotes);
+      }
+    }
+  }
+  
+  // Remove notes from the same column
+  for (let r = 0; r < 9; r++) {
+    if (r === row) continue; // Skip the cell we're placing in
+    const noteKey = `${r}-${col}`;
+    const cellNotes = updatedNotes.get(noteKey);
+    if (cellNotes && cellNotes.has(number)) {
+      const newCellNotes = new Set(cellNotes);
+      newCellNotes.delete(number);
+      if (newCellNotes.size === 0) {
+        updatedNotes.delete(noteKey);
+      } else {
+        updatedNotes.set(noteKey, newCellNotes);
+      }
+    }
+  }
+  
+  // Remove notes from the same 3x3 box
+  const boxRowStart = Math.floor(row / 3) * 3;
+  const boxColStart = Math.floor(col / 3) * 3;
+  for (let r = boxRowStart; r < boxRowStart + 3; r++) {
+    for (let c = boxColStart; c < boxColStart + 3; c++) {
+      if (r === row && c === col) continue; // Skip the cell we're placing in
+      const noteKey = `${r}-${c}`;
+      const cellNotes = updatedNotes.get(noteKey);
+      if (cellNotes && cellNotes.has(number)) {
+        const newCellNotes = new Set(cellNotes);
+        newCellNotes.delete(number);
+        if (newCellNotes.size === 0) {
+          updatedNotes.delete(noteKey);
+        } else {
+          updatedNotes.set(noteKey, newCellNotes);
+        }
+      }
+    }
+  }
+  
+  return updatedNotes;
+}
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
   return (() => {
@@ -104,6 +202,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         solution: solution.map(row => [...row]),
         initialBoard: puzzle.map(row => [...row]),
         timeElapsed: 0,
+        selectedDigit: null,
         gameSessionId: sessionId,
         hintUsed: false,
         placeUsed: false,
@@ -155,9 +254,21 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       };
 
     case 'SELECT_CELL':
+      // Toggle: if same cell is selected, deselect it
+      const isSameCell = state.selectedCell?.row === action.row && state.selectedCell?.col === action.col;
       return {
         ...state,
-        selectedCell: { row: action.row, col: action.col },
+        selectedCell: isSameCell ? null : { row: action.row, col: action.col },
+        selectedDigit: null, // Clear digit selection when selecting cell (Cell First mode)
+      };
+
+    case 'SELECT_DIGIT':
+      // Toggle: if same digit is selected, deselect it
+      const newDigit = state.selectedDigit === action.digit ? null : action.digit;
+      return {
+        ...state,
+        selectedDigit: newDigit,
+        selectedCell: null, // Clear cell selection when selecting digit (Digit First mode)
       };
 
     case 'PLACE_NUMBER':
@@ -228,10 +339,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           );
         }
 
-        // Clear notes from this cell when a number is placed
+        // Clear notes from this cell and remove conflicting notes from row/col/box
         const noteKey = `${row}-${col}`;
-        const updatedNotes = new Map(state.notes);
+        let updatedNotes = new Map(state.notes);
         updatedNotes.delete(noteKey);
+        updatedNotes = removeConflictingNotes(updatedNotes, row, col, action.number);
 
         return {
           ...state,
@@ -239,7 +351,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           status: finalStatus,
           selectedCell: { row, col }, // Keep cell selected
           timeElapsed: finalTime, // Update time
-          notes: updatedNotes, // Clear notes from this cell
+          notes: updatedNotes, // Clear notes from this cell and conflicting notes
         };
       } else {
         // Wrong number - any wrong guess loses a life
@@ -288,6 +400,144 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         };
       }
 
+    case 'PLACE_NUMBER_DIGIT_FIRST':
+      if (!state.selectedDigit) return state;
+      
+      const { row: digitRow, col: digitCol } = { row: action.row, col: action.col };
+      const digitNumber = state.selectedDigit;
+      
+      // Check if this digit is already complete - if so, deselect it and don't place
+      if (isDigitComplete(state.board, state.initialBoard, state.solution, digitNumber)) {
+        return {
+          ...state,
+          selectedDigit: null, // Deselect completed digit
+        };
+      }
+      
+      // Check if the move is correct (matches the solution)
+      const isDigitCorrect = digitNumber === state.solution[digitRow][digitCol];
+      
+      if (isDigitCorrect) {
+        // Only create new board if the move is correct
+        const newDigitBoard = copyBoard(state.board);
+        newDigitBoard[digitRow][digitCol] = digitNumber;
+        
+        // Check if puzzle is complete
+        const isPuzzleComplete = newDigitBoard.every((row, r) => 
+          row.every((cell, c) => cell === state.solution[r][c])
+        );
+        const finalDigitStatus = isPuzzleComplete ? 'won' : state.status;
+        const finalDigitTime = action.timeElapsed;
+
+        // Save game result if completed
+        if (isPuzzleComplete) {
+          const gameResult: GameResult = {
+            id: Date.now().toString(),
+            difficulty: state.difficulty,
+            lives: state.initialLives,
+            completionTime: finalDigitTime,
+            timestamp: Date.now(),
+            won: true,
+          };
+          saveGameResult(gameResult); // Fire and forget
+          
+          // Track analytics for game completion
+          if (state.gameSessionId) {
+            const mistakesMade = state.initialLives - state.lives;
+            analyticsService.trackGameComplete({
+              sessionId: state.gameSessionId,
+              gameType: state.multiplayer ? 'multiplayer' : 'single_player',
+              difficulty: state.difficulty,
+              lives: state.initialLives,
+              completionTime: finalDigitTime,
+              outcome: 'won',
+              hintUsed: state.hintUsed || state.placeUsed,
+              mistakesMade,
+              playerCount: state.multiplayer?.players.length,
+              isHost: state.multiplayer ? state.multiplayer.hostId === multiplayerService.getPlayerId() : undefined,
+            });
+          }
+          
+          // Broadcast completion in multiplayer mode
+          if (state.multiplayer && multiplayerService.currentChannel) {
+            multiplayerService.currentChannel.send({
+              type: 'broadcast',
+              event: 'player-won',
+              payload: {
+                playerName: multiplayerService.currentPlayerName || 'Player',
+                completionTime: finalDigitTime,
+              },
+            });
+            logger.log('Broadcasting win to other players');
+          }
+          
+          // Trigger review prompt logic (fire and forget)
+          ReviewService.onPuzzleCompleted(!!state.multiplayer).catch(err => 
+            logger.error('GameContext', 'Error checking review prompt', err)
+          );
+        }
+
+        // Clear notes from this cell and remove conflicting notes from row/col/box
+        const digitNoteKey = `${digitRow}-${digitCol}`;
+        let updatedDigitNotes = new Map(state.notes);
+        updatedDigitNotes.delete(digitNoteKey);
+        updatedDigitNotes = removeConflictingNotes(updatedDigitNotes, digitRow, digitCol, digitNumber);
+
+        // Check if this digit is now complete (all instances filled)
+        const digitIsComplete = isDigitComplete(newDigitBoard, state.initialBoard, state.solution, digitNumber);
+
+        return {
+          ...state,
+          board: newDigitBoard,
+          status: finalDigitStatus,
+          selectedDigit: digitIsComplete ? null : digitNumber, // Deselect if complete, otherwise keep selected
+          timeElapsed: finalDigitTime, // Update time
+          notes: updatedDigitNotes, // Clear notes from this cell and conflicting notes
+        };
+      } else {
+        // Wrong number - any wrong guess loses a life
+        const newDigitLives = Math.max(0, state.lives - 1);
+        const finalDigitTime = action.timeElapsed;
+        
+        // Track analytics for game lost
+        if (newDigitLives === 0 && state.gameSessionId) {
+          const mistakesMade = state.initialLives - newDigitLives;
+          analyticsService.trackGameComplete({
+            sessionId: state.gameSessionId,
+            gameType: state.multiplayer ? 'multiplayer' : 'single_player',
+            difficulty: state.difficulty,
+            lives: state.initialLives,
+            completionTime: finalDigitTime,
+            outcome: 'lost',
+            hintUsed: state.hintUsed,
+            mistakesMade,
+            playerCount: state.multiplayer?.players.length,
+            isHost: state.multiplayer ? state.multiplayer.hostId === multiplayerService.getPlayerId() : undefined,
+          });
+          
+          // Broadcast loss in multiplayer mode
+          if (state.multiplayer && multiplayerService.currentChannel) {
+            multiplayerService.currentChannel.send({
+              type: 'broadcast',
+              event: 'player-lost',
+              payload: {
+                playerName: multiplayerService.currentPlayerName || 'Player',
+                timeElapsed: finalDigitTime,
+              },
+            });
+            logger.log('Broadcasting loss to other players');
+          }
+        }
+        
+        return {
+          ...state,
+          lives: newDigitLives,
+          status: newDigitLives === 0 ? 'lost' : state.status,
+          wrongCell: { row: digitRow, col: digitCol },
+          timeElapsed: finalDigitTime, // Update time
+        };
+      }
+
     case 'CLEAR_CELL':
       if (!state.selectedCell) return state;
       
@@ -299,6 +549,24 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         ...state,
         board: clearedBoard,
         selectedCell: null,
+      };
+
+    case 'CLEAR_CELL_AT':
+      // Clear cell at specific position (for long press in digit-first mode)
+      if (state.initialBoard[action.row][action.col] !== 0) return state; // Can't clear initial cells
+      
+      const clearedBoardAt = copyBoard(state.board);
+      clearedBoardAt[action.row][action.col] = 0;
+      
+      // Also clear notes from this cell
+      const clearNoteKey = `${action.row}-${action.col}`;
+      const clearedNotes = new Map(state.notes);
+      clearedNotes.delete(clearNoteKey);
+      
+      return {
+        ...state,
+        board: clearedBoardAt,
+        notes: clearedNotes,
       };
 
     case 'ADD_NOTE':
@@ -362,14 +630,15 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return {
         ...state,
         board: copyBoard(state.initialBoard),
+        selectedCell: null,
+        selectedDigit: null,
+        notes: new Map(),
         hintUsed: false,
         placeUsed: false,
         currentHint: null,
         lives: DIFFICULTY_LIVES[state.difficulty],
         status: 'playing',
         timeElapsed: 0,
-        selectedCell: null,
-        notes: new Map(),
       };
 
     case 'LOSE_LIFE':
@@ -713,8 +982,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       }
     },
     selectCell: (row: number, col: number) => dispatch({ type: 'SELECT_CELL', row, col }),
+    selectDigit: (digit: number | null) => dispatch({ type: 'SELECT_DIGIT', digit }),
     placeNumber: (number: number) => dispatch({ type: 'PLACE_NUMBER', number, timeElapsed: timeElapsedRef.current }),
+    placeNumberDigitFirst: (row: number, col: number) => dispatch({ type: 'PLACE_NUMBER_DIGIT_FIRST', row, col, timeElapsed: timeElapsedRef.current }),
     clearCell: () => dispatch({ type: 'CLEAR_CELL' }),
+    clearCellAt: (row: number, col: number) => dispatch({ type: 'CLEAR_CELL_AT', row, col }),
     addNote: (number: number) => dispatch({ type: 'ADD_NOTE', number }),
     removeNote: (number: number) => dispatch({ type: 'REMOVE_NOTE', number }),
     newGame: () => dispatch({ type: 'NEW_GAME' }),
