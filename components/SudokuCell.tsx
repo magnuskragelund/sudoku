@@ -124,14 +124,14 @@ function SudokuCell({
     const baseStyle = [
       styles.cellText, 
       { 
-        color: isInitial ? colors.textPrimary : colors.textSecondary,
+        color: colors.textPrimary,
         fontFamily: typography.fontSerif,
         fontSize: cellFontSize,
-        fontWeight: isInitial ? '600' : '400',
+        fontWeight: '400',
       }
     ];
     return baseStyle;
-  }, [colors, typography, isInitial, cellFontSize]);
+  }, [colors, typography, cellFontSize]);
   
   const noteTextStyle = React.useMemo(() => ({
     fontFamily: typography.fontBody,
