@@ -26,7 +26,7 @@ export interface TechniqueAnalysis {
 /**
  * Get all candidates (possible numbers) for each empty cell
  */
-function getCandidates(board: number[][]): Map<string, Set<number>> {
+export function getCandidates(board: number[][]): Map<string, Set<number>> {
   const candidates = new Map<string, Set<number>>();
   
   for (let row = 0; row < 9; row++) {

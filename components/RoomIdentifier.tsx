@@ -2,6 +2,7 @@ import { Share2 } from 'lucide-react-native';
 import React from 'react';
 import { Platform, Share, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
+import { generateRoomShareMessage } from '../utils/shareUtils';
 
 interface RoomIdentifierProps {
   roomCode: string;
@@ -15,20 +16,20 @@ export default function RoomIdentifier({ roomCode }: RoomIdentifierProps) {
   const handleShare = async () => {
     if (!roomCode) return;
     
-    const deepLink = `sudokufaceoff://${roomCode}`;
+    const shareMessage = generateRoomShareMessage(roomCode);
     
     try {
       if (Platform.OS === 'web') {
         // On web, copy to clipboard
         if (typeof navigator !== 'undefined' && navigator.clipboard) {
-          await navigator.clipboard.writeText(deepLink);
-          alert('Link copied to clipboard!');
+          await navigator.clipboard.writeText(shareMessage);
+          alert('Room invitation copied to clipboard!');
         }
       } else {
         // On mobile, use native share
         await Share.share({
-          message: `Join my Sudoku game! Use this link to join: ${deepLink}`,
-          title: 'Join Sudoku Game',
+          message: shareMessage,
+          title: 'Join Sudoku Face Off Game',
         });
       }
     } catch (error) {

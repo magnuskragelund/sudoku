@@ -3,12 +3,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
-import { Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { Platform, ScrollView, Share, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Modal from '../components/Modal';
 import ScreenHeader from '../components/ScreenHeader';
 import { useGame } from '../context/GameContext';
 import { useTheme } from '../context/ThemeContext';
+import { generateSimpleRoomShareMessage } from '../utils/shareUtils';
 import { Difficulty } from '../types/game';
 
 export default function MultiplayerScreen() {
@@ -233,21 +234,20 @@ export default function MultiplayerScreen() {
   const handleShareRoomId = async () => {
     if (!channelName.trim()) return;
     
-    const roomId = `SUDOKU-${channelName.toUpperCase()}`;
-    const deepLink = `sudokufaceoff://${channelName}`;
+    const shareMessage = generateSimpleRoomShareMessage(channelName);
     
     try {
       if (Platform.OS === 'web') {
         // On web, copy to clipboard
         if (typeof navigator !== 'undefined' && navigator.clipboard) {
-          await navigator.clipboard.writeText(deepLink);
-          alert('Room link copied to clipboard!');
+          await navigator.clipboard.writeText(shareMessage);
+          alert('Room invitation copied to clipboard!');
         }
       } else {
         // On mobile, use native share
         await Share.share({
-          message: `Join my Sudoku game! Room ID: ${roomId}\nUse this link: ${deepLink}`,
-          title: 'Join Sudoku Game',
+          message: shareMessage,
+          title: 'Join Sudoku Face Off Game',
         });
       }
     } catch (error) {

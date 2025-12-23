@@ -1,7 +1,7 @@
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Clock, Heart, Lightbulb, Moon, Pause, PenSquare, Play, Sun } from 'lucide-react-native';
+import { CheckCircle, Clock, Heart, Lightbulb, Moon, Pause, PenSquare, Play, Sun } from 'lucide-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -23,6 +23,8 @@ export default function GameScreen() {
     initialLives, 
     selectedCell,
     hintUsed,
+    placeUsed,
+    currentHint,
     isLoading,
     multiplayer,
     multiplayerWinner,
@@ -31,7 +33,9 @@ export default function GameScreen() {
     resumeGame,
     newGame,
     startPlaying,
+    usePlace,
     useHint,
+    clearHint,
     exportGame,
     dismissWinnerModal,
     dismissLoserModal,
@@ -219,6 +223,31 @@ export default function GameScreen() {
                 style={[
                   styles.iconButton, 
                   { 
+                    backgroundColor: placeUsed || !selectedCell || status !== 'playing' 
+                      ? colors.buttonBackground 
+                      : colors.primary,
+                    marginRight: spacing.sm,
+                  }
+                ]} 
+                onPress={usePlace}
+                disabled={placeUsed || !selectedCell || status !== 'playing'}
+              >
+                <CheckCircle 
+                  size={14} 
+                  color={
+                    placeUsed 
+                      ? colors.textTertiary 
+                      : selectedCell && status === 'playing' 
+                        ? (colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF')
+                        : colors.textSecondary
+                  } 
+                  strokeWidth={1.5}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[
+                  styles.iconButton, 
+                  { 
                     backgroundColor: hintUsed || !selectedCell || status !== 'playing' 
                       ? colors.buttonBackground 
                       : colors.primary,
@@ -397,6 +426,38 @@ export default function GameScreen() {
                   >
                     {currentMessage}
                   </Animated.Text>
+                </View>
+              </BlurView>
+            </View>
+          )}
+
+          {/* Hint Modal */}
+          {currentHint && (
+            <View style={styles.overlay}>
+              <BlurView intensity={40} tint={colors.overlayTint} style={styles.blurBackground}>
+                <View style={[styles.modalCard, { backgroundColor: colors.modalBackground, borderColor: colors.cardBorder }]}>
+                  <Text style={[styles.modalTitle, { fontFamily: typography.fontSerif, fontSize: typography.text2xl, color: colors.textPrimary, marginBottom: spacing.sm }]}>
+                    💡 Hint: {currentHint.technique.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  </Text>
+                  <Text style={[styles.modalSubtitle, { fontFamily: typography.fontBody, fontSize: typography.textBase, color: colors.textSecondary, marginBottom: spacing.md, lineHeight: typography.textBase * typography.leadingRelaxed }]}>
+                    {currentHint.explanation}
+                  </Text>
+                  <Text style={[styles.hintGuidance, { fontFamily: typography.fontBody, fontSize: typography.textSm, color: colors.textPrimary, marginBottom: spacing.lg, lineHeight: typography.textSm * typography.leadingRelaxed }]}>
+                    {currentHint.guidance}
+                  </Text>
+                  {currentHint.cell && currentHint.value && (
+                    <Text style={[styles.hintCellInfo, { fontFamily: typography.fontBody, fontSize: typography.textSm, color: colors.success, marginBottom: spacing.lg }]}>
+                      ✓ Placed {currentHint.value} at row {currentHint.cell.row + 1}, column {currentHint.cell.col + 1}
+                    </Text>
+                  )}
+                  <TouchableOpacity 
+                    style={[styles.modalButton, { backgroundColor: colors.primary }]} 
+                    onPress={clearHint}
+                  >
+                    <Text style={[styles.modalButtonText, { fontFamily: typography.fontBody, fontSize: typography.textSm, letterSpacing: typography.textSm * typography.trackingNormal, color: colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF' }]}>
+                      GOT IT
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               </BlurView>
             </View>
@@ -713,6 +774,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontStyle: 'italic',
     fontWeight: '400',
+  },
+  hintGuidance: {
+    fontWeight: '400',
+  },
+  hintCellInfo: {
+    fontWeight: '600',
+    textAlign: 'center',
   },
   modalButton: {
     width: '100%',

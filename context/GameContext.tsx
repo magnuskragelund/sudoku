@@ -8,6 +8,7 @@ import { multiplayerService } from '../utils/multiplayerService';
 import { ReviewService } from '../utils/reviewService';
 import { generatePuzzle, generatePuzzleAsync } from '../utils/sudokuGenerator';
 import { copyBoard } from '../utils/sudokuRules';
+import { generateHint } from '../utils/hintGenerator';
 
 
 // --- Game Time Context ---
@@ -38,6 +39,8 @@ type GameAction =
   | { type: 'LOSE_LIFE' }
   | { type: 'CLEAR_WRONG_CELL' }
   | { type: 'USE_HINT' }
+  | { type: 'USE_PLACE' }
+  | { type: 'CLEAR_HINT' }
   | { type: 'LOAD_GAME'; state: SerializableGameState }
   | { type: 'SET_MULTIPLAYER'; game: MultiplayerGame | null }
   | { type: 'LOAD_MULTIPLAYER_GAME'; difficulty: Difficulty; lives: number; board: number[][]; solution: number[][]; initialBoard: number[][] }
@@ -59,6 +62,8 @@ const initialState: GameState = {
   notes: new Map(),
   wrongCell: null,
   hintUsed: false,
+  placeUsed: false,
+  currentHint: null,
   isLoading: false,
   multiplayer: null,
   multiplayerWinner: null,
@@ -100,6 +105,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         initialBoard: puzzle.map(row => [...row]),
         timeElapsed: 0,
         gameSessionId: sessionId,
+        hintUsed: false,
+        placeUsed: false,
+        currentHint: null,
         isLoading: state.isLoading, // Preserve loading state, will be cleared by action
       };
 
@@ -194,7 +202,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
               lives: state.initialLives,
               completionTime: finalTime,
               outcome: 'won',
-              hintUsed: state.hintUsed,
+              hintUsed: state.hintUsed || state.placeUsed, // Track if any help was used
               mistakesMade,
               playerCount: state.multiplayer?.players.length,
               isHost: state.multiplayer ? state.multiplayer.hostId === multiplayerService.getPlayerId() : undefined,
@@ -344,6 +352,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         ...initialState,
         difficulty: state.difficulty,
         timeElapsed: 0,
+        hintUsed: false,
+        placeUsed: false,
+        currentHint: null,
         isLoading: false,
       };
 
@@ -351,6 +362,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return {
         ...state,
         board: copyBoard(state.initialBoard),
+        hintUsed: false,
+        placeUsed: false,
+        currentHint: null,
         lives: DIFFICULTY_LIVES[state.difficulty],
         status: 'playing',
         timeElapsed: 0,
@@ -372,28 +386,75 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         wrongCell: null,
       };
 
-    case 'USE_HINT':
-      if (state.hintUsed || !state.selectedCell || state.status !== 'playing') {
+    case 'CLEAR_HINT':
+      return {
+        ...state,
+        currentHint: null,
+      };
+
+    case 'USE_PLACE':
+      // "Place" feature - just fills in the correct number at selected cell
+      if (state.placeUsed || !state.selectedCell || state.status !== 'playing') {
         return state;
       }
 
-      const hintRow = state.selectedCell.row;
-      const hintCol = state.selectedCell.col;
-      const correctNumber = state.solution[hintRow][hintCol];
+      const placeRow = state.selectedCell.row;
+      const placeCol = state.selectedCell.col;
+      const correctNumber = state.solution[placeRow][placeCol];
       
-      // Only use hint if the cell is empty and not an initial clue
-      if (state.board[hintRow][hintCol] === 0 && state.initialBoard[hintRow][hintCol] === 0) {
+      // Only use place if the cell is empty and not an initial clue
+      if (state.board[placeRow][placeCol] === 0 && state.initialBoard[placeRow][placeCol] === 0) {
         const newBoard = copyBoard(state.board);
-        newBoard[hintRow][hintCol] = correctNumber;
+        newBoard[placeRow][placeCol] = correctNumber;
         
         return {
           ...state,
           board: newBoard,
-          hintUsed: true,
+          placeUsed: true,
         };
       }
-
+      
       return state;
+
+    case 'USE_HINT':
+      if (state.hintUsed || state.status !== 'playing') {
+        return state;
+      }
+
+      // Generate an educational hint that teaches a technique
+      // Prioritize hints related to the selected cell if one is selected
+      const hint = generateHint(state.board, state.selectedCell);
+      
+      if (!hint) {
+        return state;
+      }
+
+      // If hint provides a specific cell and value, fill it in
+      // Otherwise, just show the guidance
+      let newBoard = state.board;
+      if (hint.cell && hint.value) {
+        const hintRow = hint.cell.row;
+        const hintCol = hint.cell.col;
+        
+        // Only fill if cell is empty and not an initial clue
+        if (state.board[hintRow][hintCol] === 0 && state.initialBoard[hintRow][hintCol] === 0) {
+          newBoard = copyBoard(state.board);
+          newBoard[hintRow][hintCol] = hint.value;
+        }
+      }
+      
+      return {
+        ...state,
+        board: newBoard,
+        hintUsed: true,
+        currentHint: {
+          technique: hint.technique,
+          explanation: hint.explanation,
+          guidance: hint.guidance,
+          cell: hint.cell,
+          value: hint.value,
+        },
+      };
 
     case 'SET_MULTIPLAYER':
       return {
@@ -659,7 +720,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     newGame: () => dispatch({ type: 'NEW_GAME' }),
     resetGame: () => dispatch({ type: 'RESET_GAME' }),
     clearWrongCell: () => dispatch({ type: 'CLEAR_WRONG_CELL' }),
+    usePlace: () => dispatch({ type: 'USE_PLACE' }),
     useHint: () => dispatch({ type: 'USE_HINT' }),
+    clearHint: () => dispatch({ type: 'CLEAR_HINT' }),
     loadGame: (loadedState: SerializableGameState) => dispatch({ type: 'LOAD_GAME', state: loadedState }),
     exportGame: () => {
       // Only export if game hasn't started playing or is paused

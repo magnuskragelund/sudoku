@@ -25,6 +25,8 @@ export interface GameState {
   notes: Map<string, Set<number>>;
   wrongCell: { row: number; col: number } | null;
   hintUsed: boolean;
+  placeUsed: boolean;
+  currentHint: { technique: string; explanation: string; guidance: string; cell?: { row: number; col: number }; value?: number } | null;
   isLoading: boolean; // Loading state when initializing a game
   // Multiplayer state
   multiplayer: MultiplayerGame | null;
@@ -88,7 +90,9 @@ export interface GameActions {
   newGame: () => void;
   resetGame: () => void;
   clearWrongCell: () => void;
+  usePlace: () => void;
   useHint: () => void;
+  clearHint: () => void;
   loadGame: (serializedState: SerializableGameState) => void;
   exportGame: () => string | null;
   // Multiplayer actions
