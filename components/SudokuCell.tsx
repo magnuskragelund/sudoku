@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 
 interface SudokuCellProps {
@@ -105,18 +105,33 @@ function SudokuCell({
     return baseStyle;
   }, [isSelected, isSameValue, isHighlighted, row, col, colors]);
 
+  // Calculate responsive font size based on screen width
+  const [cellFontSize, setCellFontSize] = React.useState(() => {
+    const { width } = Dimensions.get('window');
+    // Use larger font size on tablets and large screens (>= 768px width)
+    return width >= 768 ? 36 : 28;
+  });
+
+  // Update font size when screen dimensions change (e.g., rotation)
+  useEffect(() => {
+    const subscription = Dimensions.addEventListener('change', ({ window }) => {
+      setCellFontSize(window.width >= 768 ? 36 : 28);
+    });
+    return () => subscription?.remove();
+  }, []);
+
   const textStyle = React.useMemo(() => {
     const baseStyle = [
       styles.cellText, 
       { 
         color: isInitial ? colors.textPrimary : colors.textSecondary,
         fontFamily: typography.fontSerif,
-        fontSize: 28,
+        fontSize: cellFontSize,
         fontWeight: isInitial ? '600' : '400',
       }
     ];
     return baseStyle;
-  }, [colors, typography, isInitial]);
+  }, [colors, typography, isInitial, cellFontSize]);
   
   const noteTextStyle = React.useMemo(() => ({
     fontFamily: typography.fontBody,
