@@ -6,8 +6,9 @@ import { saveGameResult } from '../utils/highScoreStorage';
 import { logger } from '../utils/logger';
 import { multiplayerService } from '../utils/multiplayerService';
 import { ReviewService } from '../utils/reviewService';
-import { generatePuzzle } from '../utils/sudokuGenerator';
+import { generatePuzzle, generatePuzzleAsync } from '../utils/sudokuGenerator';
 import { copyBoard } from '../utils/sudokuRules';
+
 
 // --- Game Time Context ---
 interface GameTimeContextType {
@@ -22,7 +23,7 @@ export function useGameTime() {
 // --- Game Actions & State ---
 
 type GameAction =
-  | { type: 'START_GAME'; difficulty: Difficulty; lives?: number }
+  | { type: 'START_GAME'; difficulty: Difficulty; lives?: number; puzzle: number[][]; solution: number[][] }
   | { type: 'SET_LOADING'; isLoading: boolean }
   | { type: 'START_PLAYING' }
   | { type: 'PAUSE_GAME'; timeElapsed: number }
@@ -75,8 +76,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       };
 
     case 'START_GAME':
-      // Generate a new puzzle with guaranteed unique solution
-      const { puzzle, solution } = generatePuzzle(action.difficulty);
+      // Puzzle and solution are already generated in the action creator
+      const { puzzle, solution } = action;
       const initialLivesValue = action.lives ?? 5;
       const sessionId = analyticsService.generateSessionId();
       
@@ -609,11 +610,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         await new Promise<void>((resolve) => {
           // Use requestAnimationFrame to ensure loading state is rendered
           requestAnimationFrame(() => {
-            // Use setTimeout to allow the frame to paint
-            setTimeout(() => {
-              dispatch({ type: 'START_GAME', difficulty, lives });
+            // Use setTimeout to allow the frame to paint and let loading messages start
+            setTimeout(async () => {
+              // Generate puzzle asynchronously - this yields control periodically
+              // allowing UI updates (like loading messages) to continue
+              const { puzzle, solution } = await generatePuzzleAsync(difficulty);
+              dispatch({ type: 'START_GAME', difficulty, lives, puzzle, solution });
               resolve();
-            }, 0);
+            }, 100); // Small delay to ensure loading UI is visible
           });
         });
       } finally {

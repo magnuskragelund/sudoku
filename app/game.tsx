@@ -3,12 +3,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Clock, Heart, Lightbulb, Moon, Pause, PenSquare, Play, Sun } from 'lucide-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import NumberPad from '../components/NumberPad';
 import SudokuBoard from '../components/SudokuBoard';
 import { useGame, useGameTime } from '../context/GameContext';
 import { useTheme } from '../context/ThemeContext';
+import { useLoadingMessages } from '../hooks/useLoadingMessages';
 import { getBestTime } from '../utils/highScoreStorage';
 import { multiplayerService } from '../utils/multiplayerService';
 
@@ -45,6 +46,8 @@ export default function GameScreen() {
 
   const [bestTime, setBestTime] = useState<number | null>(null);
   const [noteMode, setNoteMode] = useState<boolean>(false);
+  
+  const { currentMessage, messageOpacity } = useLoadingMessages(difficulty, isLoading);
 
   useEffect(() => {
     if (status === 'won' || status === 'lost') {
@@ -380,7 +383,7 @@ export default function GameScreen() {
               <BlurView intensity={40} tint={colors.overlayTint} style={styles.blurBackground}>
                 <View style={[styles.modalCard, { backgroundColor: colors.modalBackground, borderColor: colors.cardBorder }]}>
                   <ActivityIndicator size="large" color={colors.primary} />
-                  <Text 
+                  <Animated.Text 
                     style={[
                       styles.modalSubtitle,
                       {
@@ -388,11 +391,12 @@ export default function GameScreen() {
                         fontSize: typography.textBase,
                         color: colors.textSecondary,
                         marginTop: spacing.md,
+                        opacity: messageOpacity,
                       }
                     ]}
                   >
-                    Generating puzzle...
-                  </Text>
+                    {currentMessage}
+                  </Animated.Text>
                 </View>
               </BlurView>
             </View>

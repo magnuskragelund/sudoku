@@ -3,7 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Clock } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ConfigCard from '../components/ConfigCard';
 import ContentBox from '../components/ContentBox';
@@ -16,6 +16,7 @@ import SectionLabel from '../components/SectionLabel';
 import StatusRow from '../components/StatusRow';
 import { useGame } from '../context/GameContext';
 import { useTheme } from '../context/ThemeContext';
+import { useLoadingMessages } from '../hooks/useLoadingMessages';
 import { multiplayerService, Player } from '../utils/multiplayerService';
 
 export default function LobbyScreen() {
@@ -39,6 +40,11 @@ export default function LobbyScreen() {
     { label: 'Hard', edition: 'EVENING EDITION', value: 'hard' },
     { label: 'Master', edition: 'WEEKEND EDITION', value: 'master' },
   ];
+
+  const { currentMessage, messageOpacity } = useLoadingMessages(
+    multiplayer?.difficulty || null,
+    isLoading
+  );
 
   // Subscribe once on mount, never re-subscribe
   useEffect(() => {
@@ -321,7 +327,7 @@ export default function LobbyScreen() {
           <BlurView intensity={40} tint={colors.overlayTint} style={styles.blurBackground}>
             <View style={[styles.modalCard, { backgroundColor: colors.modalBackground, borderColor: colors.cardBorder }]}>
               <ActivityIndicator size="large" color={colors.primary} />
-              <Text 
+              <Animated.Text 
                 style={[
                   styles.modalSubtitle,
                   {
@@ -329,11 +335,12 @@ export default function LobbyScreen() {
                     fontSize: typography.textBase,
                     color: colors.textSecondary,
                     marginTop: spacing.md,
+                    opacity: messageOpacity,
                   }
                 ]}
               >
-                Generating puzzle...
-              </Text>
+                {currentMessage}
+              </Animated.Text>
             </View>
           </BlurView>
         </View>

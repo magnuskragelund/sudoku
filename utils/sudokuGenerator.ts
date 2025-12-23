@@ -1,10 +1,12 @@
 /**
  * Sudoku Puzzle Generator
  * Generates Sudoku puzzles with guaranteed unique solutions
+ * Now includes technique-based difficulty rating
  */
 
 import { Difficulty } from '../types/game';
 import { countSolutions, isValid } from './sudokuSolver';
+import { analyzeTechniques, getDifficultyFromTechniques, SolvingTechnique } from './sudokuTechniqueAnalyzer';
 
 // Difficulty mapping: number of clues (filled cells) for each difficulty
 const DIFFICULTY_CLUES = {
@@ -12,6 +14,14 @@ const DIFFICULTY_CLUES = {
   medium: { min: 32, max: 35 },
   hard: { min: 28, max: 31 },
   master: { min: 24, max: 27 }   // Fewer clues = harder
+};
+
+// Expected techniques for each difficulty level
+const DIFFICULTY_TECHNIQUES: Record<Difficulty, SolvingTechnique[]> = {
+  easy: ['naked_single', 'hidden_single'],
+  medium: ['naked_single', 'hidden_single', 'naked_pair', 'hidden_pair'],
+  hard: ['naked_single', 'hidden_single', 'naked_pair', 'hidden_pair', 'x_wing'],
+  master: ['x_wing', 'swordfish', 'xy_wing', 'backtracking']
 };
 
 /**
@@ -117,25 +127,223 @@ function generatePuzzleFromSolution(solution: number[][], difficulty: Difficulty
 }
 
 /**
+ * Yield control to the event loop to allow UI updates
+ * Uses multiple mechanisms to ensure control is actually yielded
+ */
+function yieldControl(): Promise<void> {
+  return new Promise(resolve => {
+    // Use setImmediate if available (Node.js/React Native), otherwise setTimeout
+    if (typeof setImmediate !== 'undefined') {
+      setImmediate(resolve);
+    } else {
+      // Use requestAnimationFrame + setTimeout for maximum compatibility
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          // Double setTimeout to ensure we yield
+          setTimeout(resolve, 0);
+        }, 0);
+      });
+    }
+  });
+}
+
+/**
  * Generate a complete Sudoku puzzle with guaranteed unique solution
+ * Now validates that puzzles require appropriate techniques for their difficulty
  * @param difficulty - The desired difficulty level
  * @returns Object containing the puzzle and its solution
  */
 export function generatePuzzle(difficulty: Difficulty): { puzzle: number[][], solution: number[][] } {
-  // Generate a complete solution
-  const solution = generateCompleteSolution();
+  const maxAttempts = 50; // Limit attempts to prevent infinite loops
+  let attempts = 0;
   
-  // Generate puzzle by removing numbers
-  const puzzle = generatePuzzleFromSolution(solution, difficulty);
-  
-  // Verify the puzzle has a unique solution (safety check)
-  const solutionCount = countSolutions(puzzle, 2);
-  if (solutionCount !== 1) {
-    // If generation failed, try again with a new solution
-    return generatePuzzle(difficulty);
+  while (attempts < maxAttempts) {
+    // Generate a complete solution
+    const solution = generateCompleteSolution();
+    
+    // Generate puzzle by removing numbers
+    const puzzle = generatePuzzleFromSolution(solution, difficulty);
+    
+    // Verify the puzzle has a unique solution (safety check)
+    const solutionCount = countSolutions(puzzle, 2);
+    if (solutionCount !== 1) {
+      attempts++;
+      continue; // Try again
+    }
+    
+    // Analyze techniques required to solve this puzzle
+    const analysis = analyzeTechniques(puzzle);
+    const techniqueDifficulty = getDifficultyFromTechniques(analysis);
+    
+    // Check if puzzle requires appropriate techniques for its difficulty
+    const expectedTechniques = DIFFICULTY_TECHNIQUES[difficulty];
+    const hasRequiredTechnique = expectedTechniques.some(tech => 
+      analysis.techniques.includes(tech) || analysis.maxDifficulty === tech
+    );
+    
+    // For easy/medium, ensure it doesn't require advanced techniques
+    // For hard/master, ensure it requires at least some advanced techniques
+    if (difficulty === 'easy' || difficulty === 'medium') {
+      if (analysis.requiresAdvanced) {
+        attempts++;
+        continue; // Too hard, try again
+      }
+    }
+    
+    if (difficulty === 'hard' || difficulty === 'master') {
+      if (!hasRequiredTechnique && !analysis.requiresAdvanced) {
+        attempts++;
+        continue; // Too easy, try again
+      }
+    }
+    
+    // If we get here, puzzle matches difficulty requirements
+    return { puzzle, solution };
   }
   
+  // If we've exhausted attempts, return a valid puzzle anyway
+  // (better than failing completely)
+  const solution = generateCompleteSolution();
+  const puzzle = generatePuzzleFromSolution(solution, difficulty);
   return { puzzle, solution };
+}
+
+/**
+ * Async version that yields control periodically to allow UI updates
+ * @param difficulty - The desired difficulty level
+ * @returns Promise resolving to object containing the puzzle and its solution
+ */
+export async function generatePuzzleAsync(difficulty: Difficulty): Promise<{ puzzle: number[][], solution: number[][] }> {
+  const maxAttempts = 50; // Limit attempts to prevent infinite loops
+  let attempts = 0;
+  
+  while (attempts < maxAttempts) {
+    // Yield control before starting each attempt
+    await yieldControl();
+    
+    // Generate a complete solution
+    const solution = generateCompleteSolution();
+    
+    // Yield control after generating solution
+    await yieldControl();
+    
+    // Generate puzzle by removing numbers (this is the expensive part)
+    const puzzle = await generatePuzzleFromSolutionAsync(solution, difficulty);
+    
+    // Yield control after generating puzzle
+    await yieldControl();
+    
+    // Verify the puzzle has a unique solution (safety check)
+    const solutionCount = countSolutions(puzzle, 2);
+    if (solutionCount !== 1) {
+      attempts++;
+      continue; // Try again
+    }
+    
+    // Yield control before analysis
+    await yieldControl();
+    
+    // Analyze techniques required to solve this puzzle
+    const analysis = analyzeTechniques(puzzle);
+    const techniqueDifficulty = getDifficultyFromTechniques(analysis);
+    
+    // Check if puzzle requires appropriate techniques for its difficulty
+    const expectedTechniques = DIFFICULTY_TECHNIQUES[difficulty];
+    const hasRequiredTechnique = expectedTechniques.some(tech => 
+      analysis.techniques.includes(tech) || analysis.maxDifficulty === tech
+    );
+    
+    // For easy/medium, ensure it doesn't require advanced techniques
+    // For hard/master, ensure it requires at least some advanced techniques
+    if (difficulty === 'easy' || difficulty === 'medium') {
+      if (analysis.requiresAdvanced) {
+        attempts++;
+        continue; // Too hard, try again
+      }
+    }
+    
+    if (difficulty === 'hard' || difficulty === 'master') {
+      if (!hasRequiredTechnique && !analysis.requiresAdvanced) {
+        attempts++;
+        continue; // Too easy, try again
+      }
+    }
+    
+    // If we get here, puzzle matches difficulty requirements
+    return { puzzle, solution };
+  }
+  
+  // If we've exhausted attempts, return a valid puzzle anyway
+  // (better than failing completely)
+  await yieldControl();
+  const solution = generateCompleteSolution();
+  await yieldControl();
+  const puzzle = await generatePuzzleFromSolutionAsync(solution, difficulty);
+  return { puzzle, solution };
+}
+
+/**
+ * Async version of generatePuzzleFromSolution that yields control periodically
+ */
+async function generatePuzzleFromSolutionAsync(solution: number[][], difficulty: Difficulty): Promise<number[][]> {
+  // Create a copy of the solution
+  const puzzle = solution.map(row => [...row]);
+  
+  // Get target number of clues for this difficulty
+  const { min, max } = DIFFICULTY_CLUES[difficulty];
+  const targetClues = Math.floor(Math.random() * (max - min + 1)) + min;
+  
+  // Create array of all cell positions and shuffle them
+  const positions: [number, number][] = [];
+  for (let row = 0; row < 9; row++) {
+    for (let col = 0; col < 9; col++) {
+      positions.push([row, col]);
+    }
+  }
+  shuffleArray(positions);
+  
+  // Remove numbers one by one, ensuring uniqueness is maintained
+  let cluesRemaining = 81;
+  let attempts = 0;
+  const maxAttempts = 1000; // Prevent infinite loops
+  
+  for (let i = 0; i < positions.length; i++) {
+    const [row, col] = positions[i];
+    
+    if (cluesRemaining <= targetClues) break;
+    if (attempts >= maxAttempts) break;
+    
+    // Yield BEFORE processing each cell to maximize UI update opportunities
+    await yieldControl();
+    
+    // Store the current number
+    const originalNumber = puzzle[row][col];
+    
+    // Remove the number
+    puzzle[row][col] = 0;
+    
+    // Yield again before expensive countSolutions call
+    await yieldControl();
+    
+    // Check if the puzzle still has a unique solution
+    // This is expensive and blocks - we yield before and after
+    const solutionCount = countSolutions(puzzle, 2);
+    
+    // Yield AFTER expensive countSolutions call - CRITICAL for UI updates
+    await yieldControl();
+    
+    if (solutionCount === 1) {
+      // Unique solution maintained, keep the removal
+      cluesRemaining--;
+    } else {
+      // Multiple solutions or no solution, restore the number
+      puzzle[row][col] = originalNumber;
+    }
+    
+    attempts++;
+  }
+  
+  return puzzle;
 }
 
 /**

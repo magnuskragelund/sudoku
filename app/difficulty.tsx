@@ -2,11 +2,12 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenHeader from '../components/ScreenHeader';
 import { useGame } from '../context/GameContext';
 import { useTheme } from '../context/ThemeContext';
+import { useLoadingMessages } from '../hooks/useLoadingMessages';
 import { Difficulty } from '../types/game';
 
 export default function DifficultyScreen() {
@@ -26,17 +27,24 @@ export default function DifficultyScreen() {
     edition: string;
     description: string;
   }[] = [
-    { label: 'Master', value: 'master', edition: 'WEEKEND EDITION', description: 'The ultimate test of skill and patience' },
-    { label: 'Hard', value: 'hard', edition: 'EVENING EDITION', description: 'For seasoned puzzle enthusiasts' },
-    { label: 'Medium', value: 'medium', edition: 'AFTERNOON EDITION', description: 'A balanced challenge for regular players' },
-    { label: 'Easy', value: 'easy', edition: 'MORNING EDITION', description: 'Suitable for newcomers and casual solvers' },
+    { label: 'Master', value: 'master', edition: 'WEEKEND EDITION', description: 'Requires advanced techniques like X-Wing, Swordfish, and XY-Wing' },
+    { label: 'Hard', value: 'hard', edition: 'EVENING EDITION', description: 'May require advanced techniques like X-Wing' },
+    { label: 'Medium', value: 'medium', edition: 'AFTERNOON EDITION', description: 'Uses basic techniques like pairs and singles' },
+    { label: 'Easy', value: 'easy', edition: 'MORNING EDITION', description: 'Uses only basic techniques like singles' },
   ];
 
   const livesOptions = [1, 2, 3, 4, 5];
+  const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | null>(null);
+  
+  const { currentMessage, messageOpacity } = useLoadingMessages(
+    selectedDifficulty, 
+    isStartingGame || isLoading
+  );
 
   const handleStartGame = async (difficulty: Difficulty) => {
     if (isStartingGame || isLoading) return;
     
+    setSelectedDifficulty(difficulty);
     setIsStartingGame(true);
     
     try {
@@ -44,6 +52,7 @@ export default function DifficultyScreen() {
       router.push('/game');
     } finally {
       setIsStartingGame(false);
+      setSelectedDifficulty(null);
     }
   };
 
@@ -204,7 +213,7 @@ export default function DifficultyScreen() {
           <BlurView intensity={40} tint={colors.overlayTint} style={styles.blurBackground}>
             <View style={[styles.loadingCard, { backgroundColor: colors.modalBackground, borderColor: colors.cardBorder }]}>
               <ActivityIndicator size="large" color={colors.primary} />
-              <Text 
+              <Animated.Text 
                 style={[
                   styles.loadingText,
                   {
@@ -212,11 +221,12 @@ export default function DifficultyScreen() {
                     fontSize: typography.textBase,
                     color: colors.textSecondary,
                     marginTop: spacing.md,
+                    opacity: messageOpacity,
                   }
                 ]}
               >
-                Generating puzzle...
-              </Text>
+                {currentMessage}
+              </Animated.Text>
             </View>
           </BlurView>
         </View>
