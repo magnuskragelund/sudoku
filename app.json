@@ -2,7 +2,7 @@
   "expo": {
     "name": "Sudoku Face Off",
     "slug": "sudoku",
-    "version": "1.0.11",
+    "version": "1.0.12",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "sudokufaceoff",
@@ -29,7 +29,7 @@
       "predictiveBackGestureEnabled": false,
       "supportsTablets": true,
       "package": "com.sudokufaceoff.sudoku",
-      "versionCode": 11,
+      "versionCode": 12,
       "permissions": [
         "INTERNET"
       ]
