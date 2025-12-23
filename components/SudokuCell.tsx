@@ -120,8 +120,9 @@ function SudokuCell({
   
   const noteTextStyle = React.useMemo(() => ({
     fontFamily: typography.fontBody,
-    fontSize: 9,
+    fontSize: 12,
     color: colors.textTertiary,
+    fontWeight: '500',
   }), [colors, typography]);
 
   return (
@@ -150,17 +151,40 @@ function SudokuCell({
           <Text style={textStyle}>{value}</Text>
         ) : notes.size > 0 ? (
           <View style={styles.notesContainer}>
-            {Array.from({ length: 9 }, (_, i) => (
-              <Text
-                key={i}
-                style={[
-                  noteTextStyle,
-                  { opacity: notes.has(i + 1) ? 1 : 0 }
-                ]}
-              >
-                {i + 1}
-              </Text>
-            ))}
+            {/* Top row: 1-5 */}
+            <View style={styles.notesRow}>
+              {Array.from({ length: 5 }, (_, i) => {
+                const num = i + 1;
+                return (
+                  <Text
+                    key={num}
+                    style={[
+                      noteTextStyle,
+                      { opacity: notes.has(num) ? 1 : 0 }
+                    ]}
+                  >
+                    {num}
+                  </Text>
+                );
+              })}
+            </View>
+            {/* Bottom row: 6-9 */}
+            <View style={styles.notesRow}>
+              {Array.from({ length: 4 }, (_, i) => {
+                const num = i + 6;
+                return (
+                  <Text
+                    key={num}
+                    style={[
+                      noteTextStyle,
+                      { opacity: notes.has(num) ? 1 : 0 }
+                    ]}
+                  >
+                    {num}
+                  </Text>
+                );
+              })}
+            </View>
           </View>
         ) : null}
       </TouchableOpacity>
@@ -193,13 +217,19 @@ const styles = StyleSheet.create({
     // Dynamic styles applied in component
   },
   notesContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: 'column',
     width: '100%',
     height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 3,
+  },
+  notesRow: {
+    flexDirection: 'row',
+    width: '100%',
     justifyContent: 'space-around',
     alignItems: 'center',
-    padding: 2,
+    flex: 1,
   },
 });
 

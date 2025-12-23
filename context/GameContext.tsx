@@ -219,12 +219,18 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           );
         }
 
+        // Clear notes from this cell when a number is placed
+        const noteKey = `${row}-${col}`;
+        const updatedNotes = new Map(state.notes);
+        updatedNotes.delete(noteKey);
+
         return {
           ...state,
           board: newBoard,
           status: finalStatus,
           selectedCell: { row, col }, // Keep cell selected
           timeElapsed: finalTime, // Update time
+          notes: updatedNotes, // Clear notes from this cell
         };
       } else {
         // Wrong number - any wrong guess loses a life

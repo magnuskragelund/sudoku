@@ -1,7 +1,7 @@
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Clock, Heart, Lightbulb, Moon, Pause, Play, Sun } from 'lucide-react-native';
+import { Clock, Heart, Lightbulb, Moon, Pause, PenSquare, Play, Sun } from 'lucide-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -35,12 +35,16 @@ export default function GameScreen() {
     dismissWinnerModal,
     dismissLoserModal,
     leaveMultiplayerGame,
-    startNewRound
+    startNewRound,
+    addNote,
+    removeNote,
+    notes
   } = useGame();
 
   const { timeElapsed } = useGameTime();
 
   const [bestTime, setBestTime] = useState<number | null>(null);
+  const [noteMode, setNoteMode] = useState<boolean>(false);
 
   useEffect(() => {
     if (status === 'won' || status === 'lost') {
@@ -189,6 +193,29 @@ export default function GameScreen() {
                 style={[
                   styles.iconButton, 
                   { 
+                    backgroundColor: noteMode && status === 'playing'
+                      ? colors.primary
+                      : colors.buttonBackground,
+                    marginRight: spacing.sm
+                  }
+                ]} 
+                onPress={() => setNoteMode(!noteMode)}
+                disabled={status !== 'playing'}
+              >
+                <PenSquare 
+                  size={14} 
+                  color={
+                    noteMode && status === 'playing'
+                      ? (colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF')
+                      : colors.textSecondary
+                  } 
+                  strokeWidth={1.5}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[
+                  styles.iconButton, 
+                  { 
                     backgroundColor: hintUsed || !selectedCell || status !== 'playing' 
                       ? colors.buttonBackground 
                       : colors.primary,
@@ -219,7 +246,12 @@ export default function GameScreen() {
 
           {/* Number Pad */}
           <View style={styles.numberPadContainer}>
-            <NumberPad />
+            <NumberPad 
+              noteMode={noteMode}
+              addNote={addNote}
+              removeNote={removeNote}
+              notes={notes}
+            />
           </View>
 
           {/* Multiplayer Winner Modal */}

@@ -4,41 +4,89 @@ import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native
 import { useGame } from '../context/GameContext';
 import { useTheme } from '../context/ThemeContext';
 
-function NumberPad() {
+interface NumberPadProps {
+  noteMode?: boolean;
+  addNote?: (number: number) => void;
+  removeNote?: (number: number) => void;
+  notes?: Map<string, Set<number>>;
+}
+
+function NumberPad({ noteMode = false, addNote, removeNote, notes }: NumberPadProps) {
   const { placeNumber, selectedCell, initialBoard, board, solution } = useGame();
-  const { colors, typography, spacing } = useTheme();
+  const { colors, typography, spacing, colorScheme } = useTheme();
 
   const handleNumberPress = (number: number) => {
-    if (selectedCell) {
-      const { row, col } = selectedCell;
-      // Only allow placing numbers in editable cells (not initial and not correctly filled)
-      const isEditable = initialBoard[row][col] === 0 && 
-                        board[row][col] !== solution[row][col];
-      if (isEditable) {
-        // Check if the move will be correct before placing - for immediate haptic feedback
-        const isCorrect = number === solution[row][col];
+    if (!selectedCell) return;
+    
+    const { row, col } = selectedCell;
+    
+    // In note mode, toggle notes instead of placing numbers
+    if (noteMode) {
+      // Only allow notes in empty cells (not initial clues)
+      if (initialBoard[row][col] === 0 && board[row][col] === 0) {
+        const noteKey = `${row}-${col}`;
+        const cellNotes = notes?.get(noteKey);
+        const hasNote = cellNotes?.has(number) ?? false;
         
-        // Trigger haptic feedback immediately for correct/wrong moves
-        if (Platform.OS !== 'web') {
-          if (isCorrect) {
+        // Toggle note: remove if exists, add if not
+        if (hasNote && removeNote) {
+          removeNote(number);
+          // Light haptic feedback for note removal
+          if (Platform.OS !== 'web') {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          } else {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          }
+        } else if (!hasNote && addNote) {
+          addNote(number);
+          // Light haptic feedback for note addition
+          if (Platform.OS !== 'web') {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           }
         }
-        
-        // Then place the number
-        placeNumber(number);
       }
+      return;
+    }
+    
+    // Normal mode: place numbers
+    // Only allow placing numbers in editable cells (not initial and not correctly filled)
+    const isEditable = initialBoard[row][col] === 0 && 
+                      board[row][col] !== solution[row][col];
+    if (isEditable) {
+      // Check if the move will be correct before placing - for immediate haptic feedback
+      const isCorrect = number === solution[row][col];
+      
+      // Trigger haptic feedback immediately for correct/wrong moves
+      if (Platform.OS !== 'web') {
+        if (isCorrect) {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        } else {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        }
+      }
+      
+      // Then place the number
+      placeNumber(number);
     }
   };
 
   // Check if cell is editable (not initial clue and not correctly filled)
   const isSelectedCellEditable = React.useMemo(() => {
     if (!selectedCell) return false;
+    // In note mode, allow notes only in empty cells
+    if (noteMode) {
+      return initialBoard[selectedCell.row][selectedCell.col] === 0 &&
+             board[selectedCell.row][selectedCell.col] === 0;
+    }
+    // In normal mode, allow placing numbers in editable cells
     return initialBoard[selectedCell.row][selectedCell.col] === 0 &&
            board[selectedCell.row][selectedCell.col] !== solution[selectedCell.row][selectedCell.col];
-  }, [selectedCell, initialBoard, board, solution]);
+  }, [selectedCell, initialBoard, board, solution, noteMode]);
+  
+  // Check which numbers have notes in the selected cell (for visual feedback)
+  const selectedCellNotes = React.useMemo(() => {
+    if (!selectedCell || !notes) return new Set<number>();
+    const noteKey = `${selectedCell.row}-${selectedCell.col}`;
+    return notes.get(noteKey) || new Set<number>();
+  }, [selectedCell, notes]);
 
   // Check if all cells with a specific number have been filled by the user
   const numberCompletionMap = React.useMemo(() => {
@@ -74,14 +122,33 @@ function NumberPad() {
 
   return (
     <View style={styles.container}>
+      {/* Note mode indicator - floating */}
+      {noteMode && (
+        <View style={styles.noteModeIndicatorWrapper}>
+          <View style={[styles.noteModeIndicator, { backgroundColor: colors.primary }]}>
+            <Text style={[
+              styles.noteModeText,
+              {
+                fontFamily: typography.fontBody,
+                fontSize: typography.textSm,
+                color: colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF',
+              }
+            ]}>
+              NOTE MODE
+            </Text>
+          </View>
+        </View>
+      )}
+      
       {/* Number buttons 1-9 */}
       <View style={styles.numberRow}>
         {Array.from({ length: 9 }, (_, i) => {
           const number = i + 1;
           const isComplete = numberCompletionMap[number];
+          const hasNote = selectedCellNotes.has(number);
           
-          // Hide the button if the number is complete
-          if (isComplete) {
+          // Hide the button if the number is complete (only in normal mode)
+          if (!noteMode && isComplete) {
             return <View key={number} style={styles.hiddenButton} />;
           }
           
@@ -91,16 +158,20 @@ function NumberPad() {
               style={[
                 styles.numberButton, 
                 { 
-                  backgroundColor: colors.cardBackground,
-                  borderColor: colors.borderThin,
-                  borderWidth: 1,
+                  backgroundColor: noteMode && hasNote
+                    ? colors.primary
+                    : colors.cardBackground,
+                  borderColor: noteMode && hasNote
+                    ? colors.primary
+                    : colors.borderThin,
+                  borderWidth: noteMode && hasNote ? 2 : 1,
                   shadowColor: colors.cardShadow,
                 }
               ]}
               onPress={() => handleNumberPress(number)}
               disabled={!isSelectedCellEditable}
               testID={`number-${number}`}
-              accessibilityLabel={`Number ${number}`}
+              accessibilityLabel={noteMode ? `Toggle note ${number}` : `Number ${number}`}
               accessibilityRole="button"
             >
               <Text style={[
@@ -108,7 +179,9 @@ function NumberPad() {
                 { 
                   fontFamily: typography.fontSerif,
                   fontSize: 26,
-                  color: colors.textPrimary,
+                  color: noteMode && hasNote
+                    ? (colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF')
+                    : colors.textPrimary,
                   opacity: isSelectedCellEditable ? 1 : 0.3,
                 }
               ]}>
@@ -126,6 +199,29 @@ const styles = StyleSheet.create({
   container: {
     paddingTop: 16,
     width: '100%',
+    position: 'relative',
+  },
+  noteModeIndicatorWrapper: {
+    position: 'absolute',
+    top: -8,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  noteModeIndicator: {
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  noteModeText: {
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    fontWeight: '600',
   },
   numberRow: {
     flexDirection: 'row',
