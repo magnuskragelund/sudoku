@@ -95,6 +95,7 @@ interface Colors {
   // UI Elements
   buttonBackground: string;
   buttonBackgroundSecondary: string;
+  buttonBackgroundDisabled: string;  // For disabled buttons
   buttonBackgroundDark: string;     // For premium dark buttons
   buttonBackgroundDarkFrom: string; // Gradient start
   buttonBackgroundDarkTo: string;   // Gradient end
@@ -216,8 +217,9 @@ const lightColors: Colors = {
   warning: lightBaseColors.warning,
   
   // UI Elements
-  buttonBackground: '#F9FAFB',
-  buttonBackgroundSecondary: '#F3F4F6',
+    buttonBackground: '#F9FAFB',
+    buttonBackgroundSecondary: '#F3F4F6',
+    buttonBackgroundDisabled: '#F0F0F0',
   buttonBackgroundDark: lightBaseColors.primary, // Same as primary
   buttonBackgroundDarkFrom: lightBaseColors.primary, // Same as primary
   buttonBackgroundDarkTo: lightBaseColors.primaryDark, // Darker variant for gradient
@@ -280,8 +282,9 @@ const darkColors: Colors = {
   warning: darkBaseColors.warning,
   
   // UI Elements
-  buttonBackground: '#2A2A2A',
-  buttonBackgroundSecondary: '#3A3A3A',
+    buttonBackground: '#2A2A2A',
+    buttonBackgroundSecondary: '#3A3A3A',
+    buttonBackgroundDisabled: '#222222',
   buttonBackgroundDark: darkBaseColors.primary, // Same as primary
   buttonBackgroundDarkFrom: darkBaseColors.primary, // Same as primary
   buttonBackgroundDarkTo: darkBaseColors.primaryDark, // Darker variant for gradient

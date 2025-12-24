@@ -4,7 +4,11 @@ import { useGame } from '../context/GameContext';
 import { useTheme } from '../context/ThemeContext';
 import SudokuCell from './SudokuCell';
 
-export default function SudokuBoard() {
+interface SudokuBoardProps {
+  hintMode?: boolean;
+}
+
+export default function SudokuBoard({ hintMode = false }: SudokuBoardProps) {
   const { 
     board, 
     selectedCell, 
@@ -89,12 +93,13 @@ export default function SudokuBoard() {
               notes={cellNotes}
               onSelect={handleCellSelect}
               onClearWrongCell={handleClearWrongCell}
+              hintMode={hintMode}
             />
           );
         })}
       </View>
     );
-  }, [board, selectedCell, selectedDigit, initialBoard, notes, wrongCell, solution, selectedValue, handleCellSelect, handleClearWrongCell]);
+  }, [board, selectedCell, selectedDigit, initialBoard, notes, wrongCell, solution, selectedValue, handleCellSelect, handleClearWrongCell, hintMode]);
 
   // Memoize the entire board to prevent unnecessary re-renders
   const boardRows = useMemo(() => {

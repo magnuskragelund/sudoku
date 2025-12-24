@@ -1,9 +1,9 @@
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { CheckCircle, Clock, Heart, Lightbulb, Moon, Pause, PenSquare, Play, Sun } from 'lucide-react-native';
+import { CheckCircle, Clock, Heart, Lightbulb, Moon, Pause, PenSquare, Play, Sun, X } from 'lucide-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import NumberPad from '../components/NumberPad';
 import SudokuBoard from '../components/SudokuBoard';
@@ -50,6 +50,7 @@ export default function GameScreen() {
 
   const [bestTime, setBestTime] = useState<number | null>(null);
   const [noteMode, setNoteMode] = useState<boolean>(false);
+  const [hintMode, setHintMode] = useState<boolean>(false);
   
   const { currentMessage, messageOpacity } = useLoadingMessages(difficulty, isLoading);
 
@@ -108,6 +109,16 @@ export default function GameScreen() {
     }
   };
 
+  const handleUseHint = () => {
+    useHint();
+    setHintMode(true);
+  };
+
+  const handleExitHintMode = () => {
+    setHintMode(false);
+    clearHint();
+  };
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <LinearGradient
@@ -115,6 +126,98 @@ export default function GameScreen() {
         style={styles.gradient}
       >
         <View style={styles.contentWrapper}>
+          {/* Hint Mode - Show only board and hint */}
+          {hintMode ? (
+            <View style={styles.hintModeContainer}>
+              {/* Exit Hint Mode Button */}
+              <View style={[styles.hintModeHeader, { borderBottomColor: colors.borderThin, borderBottomWidth: 1 }]}>
+                <TouchableOpacity 
+                  onPress={handleExitHintMode}
+                  style={[styles.exitHintModeButton, { backgroundColor: colors.buttonBackground, borderColor: colors.borderThin }]}
+                >
+                  <Text style={[styles.exitHintModeButtonText, { fontFamily: typography.fontBody, fontSize: typography.textSm, letterSpacing: typography.textSm * typography.trackingMedium, color: colors.textPrimary }]}>
+                    EXIT HINT MODE
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Board */}
+              <View style={styles.hintModeBoardContainer}>
+                <SudokuBoard hintMode={true} />
+              </View>
+
+              {/* Hint Panel - Fixed Position */}
+              <View style={[styles.hintModePanel, { backgroundColor: colors.modalBackground, borderTopColor: colors.cardBorder }]}>
+                <ScrollView 
+                  style={styles.hintPanelScrollView}
+                  contentContainerStyle={styles.hintPanelScrollContent}
+                  showsVerticalScrollIndicator={false}
+                  bounces={false}
+                >
+                  {currentHint ? (
+                    <>
+                      <View style={styles.hintPanelHeader}>
+                        <View style={styles.hintPanelTitleRow}>
+                          <Lightbulb size={18} color={colors.textSecondary} strokeWidth={1.5} />
+                          <Text style={[styles.hintPanelTitle, { fontFamily: typography.fontSerif, fontSize: typography.textLg, color: colors.textPrimary, marginLeft: spacing.xs }]}>
+                            {currentHint.technique.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={styles.hintPanelContent}>
+                        <Text style={[styles.hintPanelExplanation, { fontFamily: typography.fontBody, fontSize: typography.textSm, color: colors.textSecondary, marginBottom: spacing.sm, lineHeight: typography.textSm * typography.leadingRelaxed }]}>
+                          {currentHint.explanation}
+                        </Text>
+                        <Text style={[styles.hintPanelGuidance, { fontFamily: typography.fontBody, fontSize: typography.textBase, color: colors.textPrimary, marginBottom: spacing.xs, lineHeight: typography.textBase * typography.leadingRelaxed }]}>
+                          {currentHint.guidance}
+                        </Text>
+                        {currentHint.cell && currentHint.value && (
+                          <Text style={[styles.hintPanelCellInfo, { fontFamily: typography.fontBody, fontSize: typography.textSm, color: colors.textSecondary, fontStyle: 'italic' }]}>
+                            Placed {currentHint.value} at row {currentHint.cell.row + 1}, column {currentHint.cell.col + 1}
+                          </Text>
+                        )}
+                      </View>
+                    </>
+                  ) : (
+                    <View style={styles.hintPanelContent}>
+                      <Text style={[styles.hintPanelExplanation, { fontFamily: typography.fontBody, fontSize: typography.textSm, color: colors.textSecondary, textAlign: 'center', marginBottom: spacing.md }]}>
+                        Select a cell and tap "GET HINT" to see a hint
+                      </Text>
+                    </View>
+                  )}
+                </ScrollView>
+                <View style={[styles.hintModeActions, { borderTopColor: colors.borderThin }]}>
+                  <TouchableOpacity 
+                    onPress={handleUseHint}
+                    style={[
+                      styles.hintModeActionButton, 
+                      { 
+                        backgroundColor: (!selectedCell || status !== 'playing') 
+                          ? colors.buttonBackground 
+                          : colors.primary 
+                      }
+                    ]}
+                    disabled={!selectedCell || status !== 'playing'}
+                  >
+                    <Text style={[
+                      styles.hintModeActionButtonText, 
+                      { 
+                        fontFamily: typography.fontBody, 
+                        fontSize: typography.textSm, 
+                        letterSpacing: typography.textSm * typography.trackingNormal, 
+                        color: (!selectedCell || status !== 'playing')
+                          ? colors.textTertiary
+                          : (colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF')
+                      }
+                    ]}>
+                      {currentHint ? 'GET ANOTHER HINT' : 'GET HINT'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          ) : (
+            <>
           {/* Multiplayer Banner */}
           {multiplayer && (
             <View style={[styles.multiplayerBanner, { backgroundColor: colors.primary }]}>
@@ -186,9 +289,11 @@ export default function GameScreen() {
             </View>
             
             <View style={styles.statsRight}>
+              {/* Pause/Play Button */}
               <TouchableOpacity 
                 style={[styles.iconButton, { backgroundColor: colors.buttonBackground, marginRight: spacing.sm }]} 
                 onPress={handlePauseResume}
+                activeOpacity={0.6}
               >
                 {status === 'playing' ? (
                   <Pause size={14} color={colors.textSecondary} strokeWidth={1.5} />
@@ -196,74 +301,83 @@ export default function GameScreen() {
                   <Play size={14} color={colors.textSecondary} strokeWidth={1.5} />
                 )}
               </TouchableOpacity>
+              
+              {/* Note Mode Button */}
               <TouchableOpacity 
                 style={[
                   styles.iconButton, 
                   { 
-                    backgroundColor: noteMode && status === 'playing'
-                      ? colors.primary
-                      : colors.buttonBackground,
+                    backgroundColor: status !== 'playing'
+                      ? colors.buttonBackgroundDisabled
+                      : noteMode
+                        ? colors.primary
+                        : colors.buttonBackground,
                     marginRight: spacing.sm
                   }
                 ]} 
                 onPress={() => setNoteMode(!noteMode)}
                 disabled={status !== 'playing'}
+                activeOpacity={0.6}
               >
                 <PenSquare 
                   size={14} 
                   color={
-                    noteMode && status === 'playing'
-                      ? (colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF')
-                      : colors.textSecondary
+                    status !== 'playing'
+                      ? colors.textTertiary
+                      : noteMode
+                        ? (colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF')
+                        : colors.textSecondary
                   } 
                   strokeWidth={1.5}
                 />
               </TouchableOpacity>
+              
+              {/* Place Button */}
               <TouchableOpacity 
                 style={[
                   styles.iconButton, 
                   { 
-                    backgroundColor: placeUsed || !selectedCell || status !== 'playing' 
-                      ? colors.buttonBackground 
-                      : colors.primary,
+                    backgroundColor: (placeUsed || !selectedCell || status !== 'playing')
+                      ? colors.buttonBackgroundDisabled
+                      : colors.buttonBackground,
                     marginRight: spacing.sm,
                   }
                 ]} 
                 onPress={usePlace}
                 disabled={placeUsed || !selectedCell || status !== 'playing'}
+                activeOpacity={0.6}
               >
                 <CheckCircle 
                   size={14} 
                   color={
-                    placeUsed 
-                      ? colors.textTertiary 
-                      : selectedCell && status === 'playing' 
-                        ? (colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF')
-                        : colors.textSecondary
+                    (placeUsed || !selectedCell || status !== 'playing')
+                      ? colors.textTertiary
+                      : colors.textSecondary
                   } 
                   strokeWidth={1.5}
                 />
               </TouchableOpacity>
+              
+              {/* Hint Button */}
               <TouchableOpacity 
                 style={[
                   styles.iconButton, 
                   { 
-                    backgroundColor: hintUsed || !selectedCell || status !== 'playing' 
-                      ? colors.buttonBackground 
-                      : colors.primary,
+                    backgroundColor: (!selectedCell || status !== 'playing')
+                      ? colors.buttonBackgroundDisabled
+                      : colors.buttonBackground,
                   }
                 ]} 
-                onPress={useHint}
-                disabled={hintUsed || !selectedCell || status !== 'playing'}
+                onPress={handleUseHint}
+                disabled={!selectedCell || status !== 'playing'}
+                activeOpacity={0.6}
               >
                 <Lightbulb 
                   size={14} 
                   color={
-                    hintUsed 
-                      ? colors.textTertiary 
-                      : selectedCell && status === 'playing' 
-                        ? (colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF')
-                        : colors.textSecondary
+                    (!selectedCell || status !== 'playing')
+                      ? colors.textTertiary
+                      : colors.textSecondary
                   } 
                   strokeWidth={1.5}
                 />
@@ -273,8 +387,39 @@ export default function GameScreen() {
 
           {/* Game Board */}
           <View style={styles.boardContainer}>
-            <SudokuBoard />
+            <SudokuBoard hintMode={false} />
           </View>
+
+          {/* Hint Panel - Non-blocking */}
+          {currentHint && (
+            <View style={[styles.hintPanel, { backgroundColor: colors.modalBackground, borderColor: colors.cardBorder }]}>
+              <View style={styles.hintPanelHeader}>
+                <View style={styles.hintPanelTitleRow}>
+                  <Lightbulb size={18} color={colors.textSecondary} strokeWidth={1.5} />
+                  <Text style={[styles.hintPanelTitle, { fontFamily: typography.fontSerif, fontSize: typography.textLg, color: colors.textPrimary, marginLeft: spacing.xs, flex: 1 }]}>
+                    {currentHint.technique.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  </Text>
+                </View>
+                <TouchableOpacity 
+                  onPress={clearHint}
+                  style={[styles.hintCloseButton, { backgroundColor: colors.buttonBackground }]}
+                >
+                  <X size={14} color={colors.textSecondary} strokeWidth={1.5} />
+                </TouchableOpacity>
+              </View>
+              <Text style={[styles.hintPanelExplanation, { fontFamily: typography.fontBody, fontSize: typography.textSm, color: colors.textSecondary, marginBottom: spacing.sm, lineHeight: typography.textSm * typography.leadingRelaxed }]}>
+                {currentHint.explanation}
+              </Text>
+              <Text style={[styles.hintPanelGuidance, { fontFamily: typography.fontBody, fontSize: typography.textSm, color: colors.textPrimary, marginBottom: spacing.xs, lineHeight: typography.textSm * typography.leadingRelaxed }]}>
+                {currentHint.guidance}
+              </Text>
+              {currentHint.cell && currentHint.value && (
+                <Text style={[styles.hintPanelCellInfo, { fontFamily: typography.fontBody, fontSize: typography.textSm, color: colors.textSecondary, fontStyle: 'italic' }]}>
+                  Placed {currentHint.value} at row {currentHint.cell.row + 1}, column {currentHint.cell.col + 1}
+                </Text>
+              )}
+            </View>
+          )}
 
           {/* Number Pad */}
           <View style={styles.numberPadContainer}>
@@ -431,38 +576,6 @@ export default function GameScreen() {
             </View>
           )}
 
-          {/* Hint Modal */}
-          {currentHint && (
-            <View style={styles.overlay}>
-              <BlurView intensity={40} tint={colors.overlayTint} style={styles.blurBackground}>
-                <View style={[styles.modalCard, { backgroundColor: colors.modalBackground, borderColor: colors.cardBorder }]}>
-                  <Text style={[styles.modalTitle, { fontFamily: typography.fontSerif, fontSize: typography.text2xl, color: colors.textPrimary, marginBottom: spacing.sm }]}>
-                    💡 Hint: {currentHint.technique.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                  </Text>
-                  <Text style={[styles.modalSubtitle, { fontFamily: typography.fontBody, fontSize: typography.textBase, color: colors.textSecondary, marginBottom: spacing.md, lineHeight: typography.textBase * typography.leadingRelaxed }]}>
-                    {currentHint.explanation}
-                  </Text>
-                  <Text style={[styles.hintGuidance, { fontFamily: typography.fontBody, fontSize: typography.textSm, color: colors.textPrimary, marginBottom: spacing.lg, lineHeight: typography.textSm * typography.leadingRelaxed }]}>
-                    {currentHint.guidance}
-                  </Text>
-                  {currentHint.cell && currentHint.value && (
-                    <Text style={[styles.hintCellInfo, { fontFamily: typography.fontBody, fontSize: typography.textSm, color: colors.success, marginBottom: spacing.lg }]}>
-                      ✓ Placed {currentHint.value} at row {currentHint.cell.row + 1}, column {currentHint.cell.col + 1}
-                    </Text>
-                  )}
-                  <TouchableOpacity 
-                    style={[styles.modalButton, { backgroundColor: colors.primary }]} 
-                    onPress={clearHint}
-                  >
-                    <Text style={[styles.modalButtonText, { fontFamily: typography.fontBody, fontSize: typography.textSm, letterSpacing: typography.textSm * typography.trackingNormal, color: colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF' }]}>
-                      GOT IT
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </BlurView>
-            </View>
-          )}
-
           {/* Game Status Overlay */}
           {(status === 'won' || status === 'lost' || (status === 'paused' && !multiplayerWinner && !multiplayerLoser)) && (
             <View style={styles.overlay}>
@@ -602,6 +715,8 @@ export default function GameScreen() {
               </BlurView>
             </View>
           )}
+            </>
+          )}
         </View>
       </LinearGradient>
     </SafeAreaView>
@@ -699,6 +814,113 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 16,
   },
+  hintPanel: {
+    marginHorizontal: 16,
+    marginBottom: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 16,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  hintPanelHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  hintPanelTitle: {
+    flex: 1,
+    fontWeight: '600',
+  },
+  hintCloseButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  hintPanelExplanation: {
+    fontWeight: '400',
+  },
+  hintPanelGuidance: {
+    fontWeight: '400',
+  },
+  hintPanelCellInfo: {
+    fontWeight: '600',
+    marginTop: 4,
+  },
+  hintModeContainer: {
+    flex: 1,
+  },
+  hintModeHeader: {
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  exitHintModeButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    borderWidth: 1,
+    minWidth: 160,
+    alignItems: 'center',
+  },
+  exitHintModeButtonText: {
+    textTransform: 'uppercase',
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  hintModeBoardContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 16,
+    paddingBottom: 280, // Reserve space for fixed hint panel
+  },
+  hintModePanel: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    borderTopWidth: 1,
+    height: 280,
+  },
+  hintPanelScrollView: {
+    flex: 1,
+  },
+  hintPanelScrollContent: {
+    padding: 20,
+    paddingBottom: 12,
+  },
+  hintPanelTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  hintPanelContent: {
+    flex: 1,
+  },
+  hintModeActions: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    paddingTop: 12,
+    borderTopWidth: 1,
+  },
+  hintModeActionButton: {
+    width: '100%',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+  },
+  hintModeActionButtonText: {
+    textTransform: 'uppercase',
+    fontWeight: '600',
+  },
   numberPadContainer: {
     paddingHorizontal: 8,
     paddingBottom: 16,
@@ -774,13 +996,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontStyle: 'italic',
     fontWeight: '400',
-  },
-  hintGuidance: {
-    fontWeight: '400',
-  },
-  hintCellInfo: {
-    fontWeight: '600',
-    textAlign: 'center',
   },
   modalButton: {
     width: '100%',

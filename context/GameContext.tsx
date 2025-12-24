@@ -686,7 +686,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return state;
 
     case 'USE_HINT':
-      if (state.hintUsed || state.status !== 'playing') {
+      // Allow unlimited hints for development
+      if (state.status !== 'playing') {
         return state;
       }
 
@@ -715,7 +716,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return {
         ...state,
         board: newBoard,
-        hintUsed: true,
+        hintUsed: true, // Track usage but don't block (for development)
         currentHint: {
           technique: hint.technique,
           explanation: hint.explanation,

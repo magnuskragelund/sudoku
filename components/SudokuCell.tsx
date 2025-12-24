@@ -17,6 +17,7 @@ interface SudokuCellProps {
   notes: Set<number>;
   onSelect: (row: number, col: number) => void;
   onClearWrongCell: () => void;
+  hintMode?: boolean;
 }
 
 function SudokuCell({ 
@@ -32,7 +33,8 @@ function SudokuCell({
   isWrong,
   notes,
   onSelect,
-  onClearWrongCell
+  onClearWrongCell,
+  hintMode = false
 }: SudokuCellProps) {
   const { colors, typography } = useTheme();
   const { selectedDigit, placeNumberDigitFirst, selectDigit, clearCellAt, initialBoard, board, solution } = useGame();
@@ -149,6 +151,17 @@ function SudokuCell({
 
   return (
     <Animated.View style={cellStyle}>
+      {/* Hint mode: Add a distinct border around selected cell */}
+      {hintMode && isSelected && (
+        <View 
+          style={[
+            styles.hintModeBorder,
+            { 
+              borderColor: colors.primary,
+            }
+          ]} 
+        />
+      )}
       <Animated.View 
         style={[
           styles.errorOverlay, 
@@ -286,6 +299,16 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     opacity: 0.3,
+  },
+  hintModeBorder: {
+    position: 'absolute',
+    top: -2,
+    left: -2,
+    right: -2,
+    bottom: -2,
+    borderWidth: 3,
+    borderRadius: 2,
+    zIndex: 10,
   },
   cellText: {
     // Dynamic styles applied in component
