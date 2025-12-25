@@ -2,9 +2,11 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { CheckCircle, Clock, Heart, Lightbulb, Moon, Pause, PenSquare, Play, Sun, X } from 'lucide-react-native';
-import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Animated, Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import Markdown from 'react-native-markdown-display';
 import NumberPad from '../components/NumberPad';
 import SudokuBoard from '../components/SudokuBoard';
 import { useGame, useGameTime } from '../context/GameContext';
@@ -12,6 +14,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLoadingMessages } from '../hooks/useLoadingMessages';
 import { getBestTime } from '../utils/highScoreStorage';
 import { multiplayerService } from '../utils/multiplayerService';
+import { elaborateHint } from '../utils/openaiService';
 
 export default function GameScreen() {
   const router = useRouter();
@@ -25,6 +28,7 @@ export default function GameScreen() {
     hintUsed,
     placeUsed,
     currentHint,
+    board,
     isLoading,
     multiplayer,
     multiplayerWinner,
@@ -51,6 +55,17 @@ export default function GameScreen() {
   const [bestTime, setBestTime] = useState<number | null>(null);
   const [noteMode, setNoteMode] = useState<boolean>(false);
   const [hintMode, setHintMode] = useState<boolean>(false);
+  const [elaboratedHint, setElaboratedHint] = useState<string | null>(null);
+  const [isElaborating, setIsElaborating] = useState<boolean>(false);
+  const [elaborationError, setElaborationError] = useState<string | null>(null);
+  
+  const bottomSheetRef = useRef<BottomSheet>(null);
+  const windowHeight = Dimensions.get('window').height;
+  const snapPoints = useMemo(() => [
+    Math.round(windowHeight * 0.25), // 25% of screen height - minimized to see more board
+    Math.round(windowHeight * 0.48), // 48% of screen height - initial state with button visible
+    Math.round(windowHeight * 0.50), // 50% of screen height - expanded with elaboration
+  ], [windowHeight]);
   
   const { currentMessage, messageOpacity } = useLoadingMessages(difficulty, isLoading);
 
@@ -59,6 +74,24 @@ export default function GameScreen() {
       loadBestTime();
     }
   }, [status, difficulty, lives]);
+
+  // Ensure sheet opens at correct size when entering hint mode
+  useEffect(() => {
+    if (hintMode && bottomSheetRef.current) {
+      setTimeout(() => {
+        bottomSheetRef.current?.snapToIndex(1); // Start at index 1 (48%)
+      }, 100);
+    }
+  }, [hintMode]);
+
+  // Expand sheet when elaboration is fetched
+  useEffect(() => {
+    if (elaboratedHint && hintMode && bottomSheetRef.current) {
+      setTimeout(() => {
+        bottomSheetRef.current?.snapToIndex(1);
+      }, 100);
+    }
+  }, [elaboratedHint, hintMode]);
 
   const loadBestTime = async () => {
     const best = await getBestTime(difficulty, lives);
@@ -112,11 +145,38 @@ export default function GameScreen() {
   const handleUseHint = () => {
     useHint();
     setHintMode(true);
+    setElaboratedHint(null);
+    setElaborationError(null);
   };
 
   const handleExitHintMode = () => {
     setHintMode(false);
     clearHint();
+    setElaboratedHint(null);
+    setElaborationError(null);
+  };
+
+  const handleElaborateHint = async () => {
+    if (!currentHint || !board) return;
+    
+    setIsElaborating(true);
+    setElaborationError(null);
+    
+    try {
+      const elaboration = await elaborateHint({
+        board,
+        hint: currentHint,
+      });
+      setElaboratedHint(elaboration);
+      // Expand sheet to 50% when elaboration is ready
+      setTimeout(() => {
+        bottomSheetRef.current?.snapToIndex(1);
+      }, 100);
+    } catch (error: any) {
+      setElaborationError(error.message || 'Failed to elaborate hint. Please try again.');
+    } finally {
+      setIsElaborating(false);
+    }
   };
 
   return (
@@ -127,98 +187,219 @@ export default function GameScreen() {
       >
         <View style={styles.contentWrapper}>
           {/* Hint Mode - Show only board and hint */}
-          {hintMode ? (
-            <View style={styles.hintModeContainer}>
-              {/* Exit Hint Mode Button */}
-              <View style={[styles.hintModeHeader, { borderBottomColor: colors.borderThin, borderBottomWidth: 1 }]}>
+          {hintMode && (
+            <View style={[styles.hintModeContainer, { backgroundColor: colors.background }]}>
+              {/* Dark Overlay Background */}
+              <View 
+                style={[
+                  styles.hintModeOverlay, 
+                  { 
+                    backgroundColor: colorScheme === 'dark' ? 'rgba(0, 0, 0, 0.4)' : 'rgba(0, 0, 0, 0.3)',
+                  }
+                ]} 
+              />
+              
+              {/* Exit Hint Mode Button - Compact Icon */}
+              <View style={styles.hintModeExitButtonContainer}>
                 <TouchableOpacity 
                   onPress={handleExitHintMode}
-                  style={[styles.exitHintModeButton, { backgroundColor: colors.buttonBackground, borderColor: colors.borderThin }]}
+                  style={[styles.hintModeExitButton, { backgroundColor: colors.buttonBackground }]}
+                  activeOpacity={0.6}
                 >
-                  <Text style={[styles.exitHintModeButtonText, { fontFamily: typography.fontBody, fontSize: typography.textSm, letterSpacing: typography.textSm * typography.trackingMedium, color: colors.textPrimary }]}>
-                    EXIT HINT MODE
-                  </Text>
+                  <X size={18} color={colors.textSecondary} strokeWidth={1.5} />
                 </TouchableOpacity>
               </View>
 
-              {/* Board */}
+              {/* Board - Scaled and Fixed at Top */}
               <View style={styles.hintModeBoardContainer}>
-                <SudokuBoard hintMode={true} />
-              </View>
-
-              {/* Hint Panel - Fixed Position */}
-              <View style={[styles.hintModePanel, { backgroundColor: colors.modalBackground, borderTopColor: colors.cardBorder }]}>
-                <ScrollView 
-                  style={styles.hintPanelScrollView}
-                  contentContainerStyle={styles.hintPanelScrollContent}
-                  showsVerticalScrollIndicator={false}
-                  bounces={false}
-                >
-                  {currentHint ? (
-                    <>
-                      <View style={styles.hintPanelHeader}>
-                        <View style={styles.hintPanelTitleRow}>
-                          <Lightbulb size={18} color={colors.textSecondary} strokeWidth={1.5} />
-                          <Text style={[styles.hintPanelTitle, { fontFamily: typography.fontSerif, fontSize: typography.textLg, color: colors.textPrimary, marginLeft: spacing.xs }]}>
-                            {currentHint.technique.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                          </Text>
-                        </View>
-                      </View>
-                      <View style={styles.hintPanelContent}>
-                        <Text style={[styles.hintPanelExplanation, { fontFamily: typography.fontBody, fontSize: typography.textSm, color: colors.textSecondary, marginBottom: spacing.sm, lineHeight: typography.textSm * typography.leadingRelaxed }]}>
-                          {currentHint.explanation}
-                        </Text>
-                        <Text style={[styles.hintPanelGuidance, { fontFamily: typography.fontBody, fontSize: typography.textBase, color: colors.textPrimary, marginBottom: spacing.xs, lineHeight: typography.textBase * typography.leadingRelaxed }]}>
-                          {currentHint.guidance}
-                        </Text>
-                        {currentHint.cell && currentHint.value && (
-                          <Text style={[styles.hintPanelCellInfo, { fontFamily: typography.fontBody, fontSize: typography.textSm, color: colors.textSecondary, fontStyle: 'italic' }]}>
-                            Placed {currentHint.value} at row {currentHint.cell.row + 1}, column {currentHint.cell.col + 1}
-                          </Text>
-                        )}
-                      </View>
-                    </>
-                  ) : (
-                    <View style={styles.hintPanelContent}>
-                      <Text style={[styles.hintPanelExplanation, { fontFamily: typography.fontBody, fontSize: typography.textSm, color: colors.textSecondary, textAlign: 'center', marginBottom: spacing.md }]}>
-                        Select a cell and tap "GET HINT" to see a hint
-                      </Text>
-                    </View>
-                  )}
-                </ScrollView>
-                <View style={[styles.hintModeActions, { borderTopColor: colors.borderThin }]}>
-                  <TouchableOpacity 
-                    onPress={handleUseHint}
-                    style={[
-                      styles.hintModeActionButton, 
-                      { 
-                        backgroundColor: (!selectedCell || status !== 'playing') 
-                          ? colors.buttonBackground 
-                          : colors.primary 
-                      }
-                    ]}
-                    disabled={!selectedCell || status !== 'playing'}
-                  >
-                    <Text style={[
-                      styles.hintModeActionButtonText, 
-                      { 
-                        fontFamily: typography.fontBody, 
-                        fontSize: typography.textSm, 
-                        letterSpacing: typography.textSm * typography.trackingNormal, 
-                        color: (!selectedCell || status !== 'playing')
-                          ? colors.textTertiary
-                          : (colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF')
-                      }
-                    ]}>
-                      {currentHint ? 'GET ANOTHER HINT' : 'GET HINT'}
-                    </Text>
-                  </TouchableOpacity>
+                <View style={styles.hintModeBoardScaled}>
+                  <SudokuBoard hintMode={true} currentHint={currentHint} disabled={true} />
                 </View>
               </View>
+
+              {/* Elaboration Loading Overlay */}
+              {isElaborating && (
+                <View style={styles.hintModeLoadingOverlay}>
+                  <BlurView intensity={40} tint={colors.overlayTint} style={styles.hintModeLoadingBlur}>
+                    <View style={[styles.hintModeLoadingCard, { backgroundColor: colors.modalBackground, borderColor: colors.cardBorder }]}>
+                      <ActivityIndicator size="large" color={colors.primary} />
+                      <Text style={[styles.hintModeLoadingText, { fontFamily: typography.fontBody, fontSize: typography.textBase, color: colors.textSecondary, marginTop: spacing.md }]}>
+                        Generating tips for the selected cell
+                      </Text>
+                    </View>
+                  </BlurView>
+                </View>
+              )}
+
+              {/* Bottom Sheet - Draggable */}
+              <BottomSheet
+                ref={bottomSheetRef}
+                index={1}
+                snapPoints={snapPoints}
+                enablePanDownToClose={false}
+                backgroundStyle={{ backgroundColor: colors.modalBackground }}
+                handleIndicatorStyle={{ backgroundColor: colors.borderThin }}
+                animateOnMount={true}
+                enableDynamicSizing={false}
+              >
+                <View style={styles.bottomSheetContent}>
+                  <BottomSheetScrollView 
+                    contentContainerStyle={[
+                      styles.hintPanelScrollContent,
+                      !elaboratedHint && styles.hintPanelScrollContentCompact
+                    ]}
+                    showsVerticalScrollIndicator={false}
+                  >
+                    {currentHint ? (
+                      <>
+                        <View style={styles.hintPanelHeader}>
+                          <View style={styles.hintPanelTitleRow}>
+                            <Lightbulb size={18} color={colors.textSecondary} strokeWidth={1.5} />
+                            <Text style={[styles.hintPanelTitle, { fontFamily: typography.fontSerif, fontSize: typography.textLg, color: colors.textPrimary, marginLeft: spacing.xs }]}>
+                              {currentHint.technique.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            </Text>
+                          </View>
+                        </View>
+                        <View style={styles.hintPanelContent}>
+                          <Text style={[styles.hintPanelExplanation, { fontFamily: typography.fontBody, fontSize: typography.textSm, color: colors.textSecondary, marginBottom: spacing.sm, lineHeight: typography.textSm * typography.leadingRelaxed }]}>
+                            {currentHint.explanation}
+                          </Text>
+                          <Text style={[styles.hintPanelGuidance, { fontFamily: typography.fontBody, fontSize: typography.textBase, color: colors.textPrimary, marginBottom: spacing.xs, lineHeight: typography.textBase * typography.leadingRelaxed }]}>
+                            {currentHint.guidance}
+                          </Text>
+                          {currentHint.cell && currentHint.value && (
+                            <Text style={[styles.hintPanelCellInfo, { fontFamily: typography.fontBody, fontSize: typography.textSm, color: colors.textSecondary, fontStyle: 'italic', marginBottom: elaboratedHint ? spacing.md : spacing.xs }]}>
+                              Placed {currentHint.value} at row {currentHint.cell.row + 1}, column {currentHint.cell.col + 1}
+                            </Text>
+                          )}
+                          {elaboratedHint && (
+                            <View style={[styles.elaboratedHintContainer, { borderTopColor: colors.borderThin, borderTopWidth: 1, paddingTop: spacing.md, marginTop: spacing.sm }]}>
+                              <Text style={[styles.elaboratedHintLabel, { fontFamily: typography.fontBody, fontSize: typography.textXs, color: colors.textLabel, marginBottom: spacing.xs, letterSpacing: typography.textXs * typography.trackingWide }]}>
+                                ELABORATION
+                              </Text>
+                              <Markdown
+                                style={{
+                                  body: {
+                                    fontFamily: typography.fontBody,
+                                    fontSize: typography.textSm,
+                                    color: colors.textPrimary,
+                                    lineHeight: typography.textSm * typography.leadingRelaxed,
+                                  },
+                                  paragraph: {
+                                    marginBottom: spacing.sm,
+                                  },
+                                  list_item: {
+                                    marginBottom: spacing.xs,
+                                  },
+                                  strong: {
+                                    fontWeight: '600',
+                                    color: colors.textPrimary,
+                                  },
+                                  em: {
+                                    fontStyle: 'italic',
+                                  },
+                                  heading1: {
+                                    fontSize: typography.textBase,
+                                    fontWeight: '600',
+                                    marginBottom: spacing.sm,
+                                    marginTop: spacing.sm,
+                                  },
+                                  heading2: {
+                                    fontSize: typography.textSm,
+                                    fontWeight: '600',
+                                    marginBottom: spacing.xs,
+                                    marginTop: spacing.sm,
+                                  },
+                                  code_inline: {
+                                    fontFamily: typography.fontBody,
+                                    backgroundColor: colors.backgroundSecondary,
+                                    paddingHorizontal: 4,
+                                    paddingVertical: 2,
+                                    borderRadius: 4,
+                                  },
+                                }}
+                              >
+                                {elaboratedHint}
+                              </Markdown>
+                            </View>
+                          )}
+                          {elaborationError && (
+                            <View style={[styles.elaborationErrorContainer, { marginTop: spacing.sm }]}>
+                              <Text style={[styles.elaborationErrorText, { fontFamily: typography.fontBody, fontSize: typography.textSm, color: colors.error }]}>
+                                {elaborationError}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      </>
+                    ) : (
+                      <View style={styles.hintPanelContent}>
+                        <Text style={[styles.hintPanelExplanation, { fontFamily: typography.fontBody, fontSize: typography.textSm, color: colors.textSecondary, textAlign: 'center', marginBottom: spacing.md }]}>
+                          Select a cell and tap "GET HINT" to see a hint
+                        </Text>
+                      </View>
+                    )}
+                  </BottomSheetScrollView>
+                  {/* Fixed Actions Section - Always Visible */}
+                  <View style={[styles.hintModeActions, { borderTopColor: colors.borderThin, backgroundColor: colors.modalBackground }]}>
+                    {currentHint && !elaboratedHint && !isElaborating ? (
+                      <TouchableOpacity 
+                        onPress={handleElaborateHint}
+                        style={[
+                          styles.hintModeActionButton, 
+                          { 
+                            backgroundColor: colors.primary 
+                          }
+                        ]}
+                      >
+                        <Text style={[
+                          styles.hintModeActionButtonText, 
+                          { 
+                            fontFamily: typography.fontBody, 
+                            fontSize: typography.textSm, 
+                            letterSpacing: typography.textSm * typography.trackingNormal, 
+                            color: colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF'
+                          }
+                        ]}>
+                          ELABORATE
+                        </Text>
+                      </TouchableOpacity>
+                    ) : !currentHint ? (
+                      <TouchableOpacity 
+                        onPress={handleUseHint}
+                        style={[
+                          styles.hintModeActionButton, 
+                          { 
+                            backgroundColor: (!selectedCell || status !== 'playing') 
+                              ? colors.buttonBackgroundDisabled
+                              : colors.primary 
+                          }
+                        ]}
+                        disabled={!selectedCell || status !== 'playing'}
+                      >
+                        <Text style={[
+                          styles.hintModeActionButtonText, 
+                          { 
+                            fontFamily: typography.fontBody, 
+                            fontSize: typography.textSm, 
+                            letterSpacing: typography.textSm * typography.trackingNormal, 
+                            color: (!selectedCell || status !== 'playing')
+                              ? colors.textTertiary
+                              : (colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF')
+                          }
+                        ]}>
+                          GET HINT
+                        </Text>
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+                </View>
+              </BottomSheet>
             </View>
-          ) : (
+          )}
+          {!hintMode && (
             <>
-          {/* Multiplayer Banner */}
+            {/* Multiplayer Banner */}
           {multiplayer && (
             <View style={[styles.multiplayerBanner, { backgroundColor: colors.primary }]}>
               <View style={styles.multiplayerBannerContent}>
@@ -854,47 +1035,60 @@ const styles = StyleSheet.create({
   },
   hintModeContainer: {
     flex: 1,
+    position: 'relative',
   },
-  hintModeHeader: {
-    paddingHorizontal: 24,
-    paddingVertical: 16,
+  hintModeOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  hintModeExitButtonContainer: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    zIndex: 10,
+  },
+  hintModeExitButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
     alignItems: 'center',
-  },
-  exitHintModeButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    borderWidth: 1,
-    minWidth: 160,
-    alignItems: 'center',
-  },
-  exitHintModeButtonText: {
-    textTransform: 'uppercase',
-    fontWeight: '600',
-    letterSpacing: 0.5,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   hintModeBoardContainer: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'center',
+    paddingTop: 60, // Space for exit button
     paddingHorizontal: 8,
-    paddingVertical: 16,
-    paddingBottom: 280, // Reserve space for fixed hint panel
   },
-  hintModePanel: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    borderTopWidth: 1,
-    height: 280,
+  hintModeBoardScaled: {
+    transform: [{ scale: 0.75 }],
+    width: '100%',
+    maxWidth: 600,
   },
-  hintPanelScrollView: {
+  bottomSheetContent: {
     flex: 1,
   },
   hintPanelScrollContent: {
     padding: 20,
     paddingBottom: 12,
+    paddingTop: 8,
+  },
+  hintPanelScrollContentCompact: {
+    paddingBottom: 4,
+  },
+  hintModeActions: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    paddingTop: 12,
+    borderTopWidth: 1,
   },
   hintPanelTitleRow: {
     flexDirection: 'row',
@@ -903,6 +1097,60 @@ const styles = StyleSheet.create({
   },
   hintPanelContent: {
     flex: 1,
+  },
+  elaboratedHintContainer: {
+    marginTop: 8,
+  },
+  elaboratedHintLabel: {
+    textTransform: 'uppercase',
+    fontWeight: '600',
+  },
+  elaboratedHintText: {
+    fontWeight: '400',
+  },
+  elaborationErrorContainer: {
+    paddingTop: 8,
+  },
+  elaborationErrorText: {
+    fontWeight: '400',
+    fontStyle: 'italic',
+  },
+  hintModeLoadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 100,
+  },
+  hintModeLoadingBlur: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  hintModeLoadingCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 32,
+    marginHorizontal: 24,
+    minWidth: 280,
+    width: '90%',
+    maxWidth: 400,
+    alignItems: 'center',
+    shadowOffset: { width: 0, height: 20 },
+    shadowOpacity: 0.15,
+    shadowRadius: 25,
+    elevation: 15,
+  },
+  hintModeLoadingText: {
+    textAlign: 'center',
+    fontWeight: '400',
   },
   hintModeActions: {
     paddingHorizontal: 20,

@@ -7,6 +7,7 @@ import { useEffect, useRef } from 'react';
 import 'react-native-get-random-values';
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import 'react-native-url-polyfill/auto';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import {
   PlayfairDisplay_400Regular,
   PlayfairDisplay_500Medium,
@@ -109,21 +110,23 @@ export default function RootLayout() {
   }
 
   return (
-    <ErrorBoundary>
-      <SafeAreaProvider>
-        <ThemeProvider>
-          <StatusBarHandler />
-          <GameProvider>
-            <DeepLinkHandler />
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                gestureEnabled: false,
-              }}
-            />
-          </GameProvider>
-        </ThemeProvider>
-      </SafeAreaProvider>
-    </ErrorBoundary>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ErrorBoundary>
+        <SafeAreaProvider>
+          <ThemeProvider>
+            <StatusBarHandler />
+            <GameProvider>
+              <DeepLinkHandler />
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  gestureEnabled: false,
+                }}
+              />
+            </GameProvider>
+          </ThemeProvider>
+        </SafeAreaProvider>
+      </ErrorBoundary>
+    </GestureHandlerRootView>
   );
 }

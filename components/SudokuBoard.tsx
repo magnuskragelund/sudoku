@@ -6,9 +6,17 @@ import SudokuCell from './SudokuCell';
 
 interface SudokuBoardProps {
   hintMode?: boolean;
+  currentHint?: { 
+    technique: string; 
+    explanation: string; 
+    guidance: string; 
+    cell?: { row: number; col: number }; 
+    value?: number 
+  } | null;
+  disabled?: boolean;
 }
 
-export default function SudokuBoard({ hintMode = false }: SudokuBoardProps) {
+export default function SudokuBoard({ hintMode = false, currentHint = null, disabled = false }: SudokuBoardProps) {
   const { 
     board, 
     selectedCell, 
@@ -23,8 +31,9 @@ export default function SudokuBoard({ hintMode = false }: SudokuBoardProps) {
   const { colors } = useTheme();
 
   const handleCellSelect = useCallback((row: number, col: number) => {
+    if (disabled) return; // Disable cell selection in hint mode
     selectCell(row, col);
-  }, [selectCell]);
+  }, [selectCell, disabled]);
 
   const handleClearWrongCell = useCallback(() => {
     clearWrongCell();
@@ -49,6 +58,27 @@ export default function SudokuBoard({ hintMode = false }: SudokuBoardProps) {
           let isHighlighted = false;
           let isSameValue = false;
           let isSameValueDigit = false;
+          let isHintHighlighted = false;
+          let isHintRow = false;
+          let isHintCol = false;
+          
+          // Hint mode highlighting
+          if (hintMode && currentHint) {
+            // Highlight the specific cell mentioned in hint
+            if (currentHint.cell && rowIndex === currentHint.cell.row && colIndex === currentHint.cell.col) {
+              isHintHighlighted = true;
+            }
+            
+            // Highlight row/column mentioned in guidance
+            if (currentHint.cell) {
+              if (rowIndex === currentHint.cell.row) {
+                isHintRow = true;
+              }
+              if (colIndex === currentHint.cell.col) {
+                isHintCol = true;
+              }
+            }
+          }
           
           if (selectedCell) {
              // Same row or column
@@ -94,12 +124,15 @@ export default function SudokuBoard({ hintMode = false }: SudokuBoardProps) {
               onSelect={handleCellSelect}
               onClearWrongCell={handleClearWrongCell}
               hintMode={hintMode}
+              isHintHighlighted={isHintHighlighted}
+              isHintRow={isHintRow}
+              isHintCol={isHintCol}
             />
           );
         })}
       </View>
     );
-  }, [board, selectedCell, selectedDigit, initialBoard, notes, wrongCell, solution, selectedValue, handleCellSelect, handleClearWrongCell, hintMode]);
+  }, [board, selectedCell, selectedDigit, initialBoard, notes, wrongCell, solution, selectedValue, handleCellSelect, handleClearWrongCell, hintMode, currentHint]);
 
   // Memoize the entire board to prevent unnecessary re-renders
   const boardRows = useMemo(() => {

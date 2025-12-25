@@ -18,6 +18,9 @@ interface SudokuCellProps {
   onSelect: (row: number, col: number) => void;
   onClearWrongCell: () => void;
   hintMode?: boolean;
+  isHintHighlighted?: boolean;
+  isHintRow?: boolean;
+  isHintCol?: boolean;
 }
 
 function SudokuCell({ 
@@ -34,7 +37,10 @@ function SudokuCell({
   notes,
   onSelect,
   onClearWrongCell,
-  hintMode = false
+  hintMode = false,
+  isHintHighlighted = false,
+  isHintRow = false,
+  isHintCol = false
 }: SudokuCellProps) {
   const { colors, typography } = useTheme();
   const { selectedDigit, placeNumberDigitFirst, selectDigit, clearCellAt, initialBoard, board, solution } = useGame();
@@ -100,7 +106,13 @@ function SudokuCell({
     if (col === 8) baseStyle.push({ borderRightWidth: 2, borderRightColor: thickColor });
 
     // Background color based on state
-    if (isSelected) {
+    // Hint highlighting takes precedence in hint mode
+    if (hintMode && isHintHighlighted) {
+      baseStyle.push({ backgroundColor: colors.primary });
+    } else if (hintMode && (isHintRow || isHintCol)) {
+      // Highlight row/column mentioned in hint with a subtle color
+      baseStyle.push({ backgroundColor: colors.cellHighlight });
+    } else if (isSelected) {
       baseStyle.push({ backgroundColor: colors.cellSelected });
     } else if (isSameValue) {
       baseStyle.push({ backgroundColor: colors.cellSameValue });
@@ -112,7 +124,7 @@ function SudokuCell({
     }
     
     return baseStyle;
-  }, [isSelected, isSameValue, isSameValueDigit, isHighlighted, row, col, colors]);
+  }, [isSelected, isSameValue, isSameValueDigit, isHighlighted, row, col, colors, hintMode, isHintHighlighted, isHintRow, isHintCol]);
 
   // Calculate responsive font size based on screen width
   const [cellFontSize, setCellFontSize] = React.useState(() => {
@@ -176,7 +188,11 @@ function SudokuCell({
       />
       <TouchableOpacity
         style={styles.cellContent}
+        disabled={hintMode}
         onPress={() => {
+          // Disable interaction in hint mode
+          if (hintMode) return;
+          
           // Digit First mode: If a digit is selected
           if (selectedDigit !== null) {
             // Check if digit is already complete - if so, deselect it
@@ -224,12 +240,14 @@ function SudokuCell({
           onSelect(row, col);
         }}
         onLongPress={() => {
+          // Disable long press in hint mode
+          if (hintMode) return;
           // Long press: clear cell (erase)
           if (!isInitial && value !== 0) {
             clearCellAt(row, col);
           }
         }}
-        activeOpacity={0.7}
+        activeOpacity={hintMode ? 1 : 0.7}
         testID={`cell-${row}-${col}`}
         accessibilityLabel={`Cell row ${row + 1} column ${col + 1}${value !== 0 ? ` value ${value}` : ' empty'}`}
         accessibilityRole="button"
