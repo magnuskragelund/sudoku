@@ -8,11 +8,12 @@
     "scheme": "sudokufaceoff",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "description": "A modern Sudoku puzzle game with real-time multiplayer. Play solo or challenge friends to solve puzzles together. Features multiple difficulty levels, customizable lives, and competitive gameplay.",
+    "description": "A modern Sudoku puzzle game with real-time multiplayer and AI-powered hints that teach you techniques. Play solo or challenge friends to solve puzzles together. Features smart hints that explain logic, visual highlighting, and context-aware explanations.",
     "primaryColor": "#2B7FFF",
     "backgroundColor": "#FFFFFF",
     "ios": {
       "bundleIdentifier": "com.sudokufaceoff.sudoku",
+      "buildNumber": "2",
       "supportsTablet": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
