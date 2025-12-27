@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Dimensions, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { useGame } from '../context/GameContext';
 import { useTheme } from '../context/ThemeContext';
 
@@ -226,6 +227,18 @@ function SudokuCell({
             
             // If cell is empty and editable, place the selected digit
             if (value === 0 && initialBoard[row][col] === 0) {
+              // Check if the move will be correct before placing - for immediate haptic feedback
+              const isCorrect = selectedDigit === solution[row][col];
+              
+              // Trigger haptic feedback immediately for correct/wrong moves
+              if (Platform.OS !== 'web') {
+                if (isCorrect) {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                } else {
+                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+                }
+              }
+              
               placeNumberDigitFirst(row, col);
               return;
             }

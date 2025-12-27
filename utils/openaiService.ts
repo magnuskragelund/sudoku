@@ -17,30 +17,20 @@ interface ElaborateHintParams {
 }
 
 /**
- * Format the board as a readable string for the AI
+ * Format the board as a compact string for the AI (optimized for speed)
  */
 function formatBoard(board: number[][]): string {
-  let output = 'Current Sudoku board state:\n';
-  output += '  1 2 3   4 5 6   7 8 9\n';
-  output += '+-------+-------+-------+\n';
-  
+  let output = 'Board:\n';
   for (let row = 0; row < 9; row++) {
-    let rowStr = `${row + 1}|`;
+    let rowStr = '';
     for (let col = 0; col < 9; col++) {
       const value = board[row][col];
-      rowStr += value === 0 ? ' .' : ` ${value}`;
-      if (col === 2 || col === 5) {
-        rowStr += ' |';
-      }
+      rowStr += value === 0 ? '.' : value.toString();
+      if (col === 2 || col === 5) rowStr += '|';
     }
-    rowStr += ' |\n';
-    output += rowStr;
-    if (row === 2 || row === 5) {
-      output += '+-------+-------+-------+\n';
-    }
+    output += rowStr + '\n';
+    if (row === 2 || row === 5) output += '---+---+---\n';
   }
-  output += '+-------+-------+-------+\n';
-  
   return output;
 }
 
@@ -59,26 +49,16 @@ export async function elaborateHint(params: ElaborateHintParams): Promise<string
   const hint = params.hint;
   
   const cellInfo = hint.cell && hint.value 
-    ? `The hint suggests placing ${hint.value} at row ${hint.cell.row + 1}, column ${hint.cell.col + 1}.`
-    : 'The hint provides guidance but does not specify a particular cell to fill.';
+    ? `Place ${hint.value} at r${hint.cell.row + 1}c${hint.cell.col + 1}.`
+    : '';
 
-  const prompt = `You are a Sudoku tutor providing a detailed explanation of a solving technique. The student is working on a specific puzzle and has received a hint.
-
-${boardString}
-
-The hint they received is:
+  const prompt = `${boardString}
 Technique: ${hint.technique.replace('_', ' ')}
-Explanation: ${hint.explanation}
-Guidance: ${hint.guidance}
+${hint.explanation}
+${hint.guidance}
 ${cellInfo}
 
-Provide a detailed explanation of this hint specifically for this puzzle state. Start by acknowledging that this explanation is tailored to the current board state shown above. Then explain:
-1. Why this technique applies to this specific puzzle configuration
-2. What specific cells, rows, columns, or boxes to examine in the board above
-3. Step-by-step reasoning using the actual board state
-4. How this connects to other solving strategies visible in this puzzle
-
-Write in a direct, instructional tone. Do not use conversational phrases like "Absolutely", "Let's break it down", "Here's how", or similar chat-like language. Start directly with the explanation, making it clear this is specific to the puzzle state shown.`;
+Explain this technique for this board. Be direct and specific.`;
 
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -88,19 +68,21 @@ Write in a direct, instructional tone. Do not use conversational phrases like "A
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
+        // Using gpt-4o-mini for best speed/quality balance
+        // For even faster responses, consider 'gpt-3.5-turbo' (faster but lower quality)
         model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',
-            content: 'You are a Sudoku tutor providing direct, instructional explanations. Write in a clear, educational tone without conversational phrases. Focus on explaining techniques specific to the puzzle state provided.',
+            content: 'Sudoku tutor. Direct explanations. No conversational phrases.',
           },
           {
             role: 'user',
             content: prompt,
           },
         ],
-        temperature: 0.7,
-        max_tokens: 800,
+        temperature: 0.5,
+        max_tokens: 600,
       }),
     });
 

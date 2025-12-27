@@ -111,15 +111,18 @@ export default function GameScreen() {
   }, [lives, colors]);
 
   const handleNewGame = async () => {
-    if (status === 'playing') {
-      pauseGame();
-    } else {
-      if (multiplayer) {
-        try { await leaveMultiplayerGame?.(); } catch {}
-      }
-      newGame();
-      router.push('/');
+    if (multiplayer) {
+      try { await leaveMultiplayerGame?.(); } catch {}
     }
+    newGame();
+    router.push('/');
+  };
+
+  const handleExitToMenu = async () => {
+    if (multiplayer) {
+      try { await leaveMultiplayerGame?.(); } catch {}
+    }
+    router.push('/');
   };
 
   const handlePauseResume = () => {
@@ -261,35 +264,35 @@ export default function GameScreen() {
                           </View>
                         </View>
                         <View style={styles.hintPanelContent}>
-                          <Text style={[styles.hintPanelExplanation, { fontFamily: typography.fontBody, fontSize: typography.textSm, color: colors.textSecondary, marginBottom: spacing.sm, lineHeight: typography.textSm * typography.leadingRelaxed }]}>
+                          <Text style={[styles.hintPanelExplanation, { fontFamily: typography.fontBody, fontSize: typography.textBase, color: colors.textSecondary, marginBottom: spacing.md, lineHeight: typography.textBase * typography.leadingRelaxed }]}>
                             {currentHint.explanation}
                           </Text>
-                          <Text style={[styles.hintPanelGuidance, { fontFamily: typography.fontBody, fontSize: typography.textBase, color: colors.textPrimary, marginBottom: spacing.xs, lineHeight: typography.textBase * typography.leadingRelaxed }]}>
+                          <Text style={[styles.hintPanelGuidance, { fontFamily: typography.fontBody, fontSize: typography.textBase, color: colors.textPrimary, marginBottom: spacing.md, lineHeight: typography.textBase * typography.leadingRelaxed }]}>
                             {currentHint.guidance}
                           </Text>
                           {currentHint.cell && currentHint.value && (
-                            <Text style={[styles.hintPanelCellInfo, { fontFamily: typography.fontBody, fontSize: typography.textSm, color: colors.textSecondary, fontStyle: 'italic', marginBottom: elaboratedHint ? spacing.md : spacing.xs }]}>
+                            <Text style={[styles.hintPanelCellInfo, { fontFamily: typography.fontBody, fontSize: typography.textSm, color: colors.textSecondary, fontStyle: 'italic', marginBottom: elaboratedHint ? spacing.lg : spacing.md }]}>
                               Placed {currentHint.value} at row {currentHint.cell.row + 1}, column {currentHint.cell.col + 1}
                             </Text>
                           )}
                           {elaboratedHint && (
-                            <View style={[styles.elaboratedHintContainer, { borderTopColor: colors.borderThin, borderTopWidth: 1, paddingTop: spacing.md, marginTop: spacing.sm }]}>
-                              <Text style={[styles.elaboratedHintLabel, { fontFamily: typography.fontBody, fontSize: typography.textXs, color: colors.textLabel, marginBottom: spacing.xs, letterSpacing: typography.textXs * typography.trackingWide }]}>
+                            <View style={[styles.elaboratedHintContainer, { borderTopColor: colors.borderThin, borderTopWidth: 1, paddingTop: spacing.lg, marginTop: spacing.lg }]}>
+                              <Text style={[styles.elaboratedHintLabel, { fontFamily: typography.fontBody, fontSize: typography.textXs, color: colors.textLabel, marginBottom: spacing.sm, letterSpacing: typography.textXs * typography.trackingWide }]}>
                                 ELABORATION
                               </Text>
                               <Markdown
                                 style={{
                                   body: {
                                     fontFamily: typography.fontBody,
-                                    fontSize: typography.textSm,
+                                    fontSize: typography.textBase,
                                     color: colors.textPrimary,
-                                    lineHeight: typography.textSm * typography.leadingRelaxed,
+                                    lineHeight: typography.textBase * typography.leadingRelaxed,
                                   },
                                   paragraph: {
-                                    marginBottom: spacing.sm,
+                                    marginBottom: spacing.md,
                                   },
                                   list_item: {
-                                    marginBottom: spacing.xs,
+                                    marginBottom: spacing.sm,
                                   },
                                   strong: {
                                     fontWeight: '600',
@@ -299,16 +302,16 @@ export default function GameScreen() {
                                     fontStyle: 'italic',
                                   },
                                   heading1: {
+                                    fontSize: typography.textLg,
+                                    fontWeight: '600',
+                                    marginBottom: spacing.md,
+                                    marginTop: spacing.lg,
+                                  },
+                                  heading2: {
                                     fontSize: typography.textBase,
                                     fontWeight: '600',
                                     marginBottom: spacing.sm,
-                                    marginTop: spacing.sm,
-                                  },
-                                  heading2: {
-                                    fontSize: typography.textSm,
-                                    fontWeight: '600',
-                                    marginBottom: spacing.xs,
-                                    marginTop: spacing.sm,
+                                    marginTop: spacing.md,
                                   },
                                   code_inline: {
                                     fontFamily: typography.fontBody,
@@ -334,7 +337,7 @@ export default function GameScreen() {
                       </>
                     ) : (
                       <View style={styles.hintPanelContent}>
-                        <Text style={[styles.hintPanelExplanation, { fontFamily: typography.fontBody, fontSize: typography.textSm, color: colors.textSecondary, textAlign: 'center', marginBottom: spacing.md }]}>
+                        <Text style={[styles.hintPanelExplanation, { fontFamily: typography.fontBody, fontSize: typography.textBase, color: colors.textSecondary, textAlign: 'center', marginBottom: spacing.md, lineHeight: typography.textBase * typography.leadingRelaxed }]}>
                           Select a cell and tap "GET HINT" to see a hint
                         </Text>
                       </View>
@@ -418,12 +421,6 @@ export default function GameScreen() {
                   NEW ROUND
                 </Text>
               </TouchableOpacity>
-            ) : !multiplayer ? (
-              <TouchableOpacity onPress={handleNewGame} style={styles.headerButton}>
-                <Text style={[styles.headerButtonText, { fontFamily: typography.fontBody, fontSize: typography.textSm, letterSpacing: typography.textSm * typography.trackingMedium, color: colors.textSecondary }]}>
-                  {status === 'playing' ? 'PAUSE' : 'NEW GAME'}
-                </Text>
-              </TouchableOpacity>
             ) : (
               <View style={styles.headerButton} />
             )}
@@ -439,14 +436,26 @@ export default function GameScreen() {
             
             <View style={styles.headerRight}>
               <TouchableOpacity 
-                onPress={toggleTheme} 
+                onPress={toggleTheme}
                 style={[styles.iconButton, { backgroundColor: colors.buttonBackground }]}
-                activeOpacity={0.7}
+                activeOpacity={0.6}
+                accessibilityLabel={
+                  theme === 'dark' 
+                    ? 'Switch to light mode' 
+                    : theme === 'light' 
+                    ? 'Switch to dark mode' 
+                    : colorScheme === 'dark'
+                    ? 'Switch to light mode'
+                    : 'Switch to dark mode'
+                }
+                accessibilityRole="button"
+                accessibilityHint="Changes the app's color theme"
               >
-                {colorScheme === 'dark' ? (
-                  <Moon size={16} color={colors.textSecondary} strokeWidth={1.5} />
+                {/* Show icon for what you'll switch TO, not current state */}
+                {(theme === 'dark' || (theme === 'system' && colorScheme === 'dark')) ? (
+                  <Sun size={20} color={colors.textSecondary} strokeWidth={2} />
                 ) : (
-                  <Sun size={16} color={colors.textSecondary} strokeWidth={1.5} />
+                  <Moon size={20} color={colors.textSecondary} strokeWidth={2} />
                 )}
               </TouchableOpacity>
             </View>
@@ -588,10 +597,10 @@ export default function GameScreen() {
                   <X size={14} color={colors.textSecondary} strokeWidth={1.5} />
                 </TouchableOpacity>
               </View>
-              <Text style={[styles.hintPanelExplanation, { fontFamily: typography.fontBody, fontSize: typography.textSm, color: colors.textSecondary, marginBottom: spacing.sm, lineHeight: typography.textSm * typography.leadingRelaxed }]}>
+              <Text style={[styles.hintPanelExplanation, { fontFamily: typography.fontBody, fontSize: typography.textBase, color: colors.textSecondary, marginBottom: spacing.md, lineHeight: typography.textBase * typography.leadingRelaxed }]}>
                 {currentHint.explanation}
               </Text>
-              <Text style={[styles.hintPanelGuidance, { fontFamily: typography.fontBody, fontSize: typography.textSm, color: colors.textPrimary, marginBottom: spacing.xs, lineHeight: typography.textSm * typography.leadingRelaxed }]}>
+              <Text style={[styles.hintPanelGuidance, { fontFamily: typography.fontBody, fontSize: typography.textBase, color: colors.textPrimary, marginBottom: spacing.md, lineHeight: typography.textBase * typography.leadingRelaxed }]}>
                 {currentHint.guidance}
               </Text>
               {currentHint.cell && currentHint.value && (
@@ -882,12 +891,22 @@ export default function GameScreen() {
                           {multiplayer ? 'RESUME FOR ALL' : 'RESUME'}
                         </Text>
                       </TouchableOpacity>
+                      {!multiplayer && (
+                        <TouchableOpacity 
+                          style={[styles.modalButtonSecondary, { backgroundColor: colors.buttonBackground, marginBottom: spacing.sm }]} 
+                          onPress={handleNewGame}
+                        >
+                          <Text style={[styles.modalButtonSecondaryText, { fontFamily: typography.fontBody, fontSize: typography.textSm, letterSpacing: typography.textSm * typography.trackingNormal, color: colors.textSecondary }]}>
+                            NEW GAME
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                       <TouchableOpacity 
                         style={[styles.modalButtonSecondary, { backgroundColor: colors.buttonBackground }]} 
-                        onPress={handleNewGame}
+                        onPress={handleExitToMenu}
                       >
                         <Text style={[styles.modalButtonSecondaryText, { fontFamily: typography.fontBody, fontSize: typography.textSm, letterSpacing: typography.textSm * typography.trackingNormal, color: colors.textSecondary }]}>
-                          {multiplayer ? 'LEAVE GAME' : 'END GAME'}
+                          {multiplayer ? 'LEAVE GAME' : 'EXIT TO MENU'}
                         </Text>
                       </TouchableOpacity>
                     </>
@@ -960,9 +979,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   iconButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 4,
+    width: 44,
+    height: 44,
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1000,7 +1019,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderRadius: 12,
     borderWidth: 1,
-    padding: 16,
+    padding: 20,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -1010,7 +1029,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 16,
   },
   hintPanelTitle: {
     flex: 1,
@@ -1031,7 +1050,7 @@ const styles = StyleSheet.create({
   },
   hintPanelCellInfo: {
     fontWeight: '600',
-    marginTop: 4,
+    marginTop: 8,
   },
   hintModeContainer: {
     flex: 1,
@@ -1077,9 +1096,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   hintPanelScrollContent: {
-    padding: 20,
-    paddingBottom: 12,
-    paddingTop: 8,
+    padding: 24,
+    paddingBottom: 16,
+    paddingTop: 16,
   },
   hintPanelScrollContentCompact: {
     paddingBottom: 4,
@@ -1093,13 +1112,13 @@ const styles = StyleSheet.create({
   hintPanelTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   hintPanelContent: {
     flex: 1,
   },
   elaboratedHintContainer: {
-    marginTop: 8,
+    marginTop: 16,
   },
   elaboratedHintLabel: {
     textTransform: 'uppercase',
