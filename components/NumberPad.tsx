@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import React from 'react';
-import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Platform, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useGame } from '../context/GameContext';
 import { useTheme } from '../context/ThemeContext';
 
@@ -14,6 +14,8 @@ interface NumberPadProps {
 function NumberPad({ noteMode = false, addNote, removeNote, notes }: NumberPadProps) {
   const { placeNumber, selectDigit, selectedCell, selectedDigit, initialBoard, board, solution } = useGame();
   const { colors, typography, spacing, colorScheme } = useTheme();
+  const { width } = useWindowDimensions();
+  const isLargeScreen = width >= 768;
 
   const handleNumberPress = (number: number) => {
     // Digit First mode: If no cell is selected, select the digit
@@ -170,7 +172,8 @@ function NumberPad({ noteMode = false, addNote, removeNote, notes }: NumberPadPr
             <TouchableOpacity
               key={number}
               style={[
-                styles.numberButton, 
+                styles.numberButton,
+                isLargeScreen && styles.numberButtonLarge,
                 { 
                   backgroundColor: isHighlighted
                     ? colors.primary
@@ -192,11 +195,12 @@ function NumberPad({ noteMode = false, addNote, removeNote, notes }: NumberPadPr
                 styles.numberText,
                 { 
                   fontFamily: typography.fontSerif,
-                  fontSize: 26,
+                  fontSize: isLargeScreen ? 32 : 26,
                   color: isHighlighted
                     ? (colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF')
                     : colors.textPrimary,
                   opacity: isButtonEnabled ? 1 : 0.3,
+                  lineHeight: isLargeScreen ? 32 : 26,
                 }
               ]}>
                 {number}
@@ -256,6 +260,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 4,
     elevation: 2,
+  },
+  numberButtonLarge: {
+    height: 56,
+    marginHorizontal: 4,
   },
   hiddenButton: {
     flex: 1,
