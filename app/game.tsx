@@ -3,12 +3,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { CheckCircle, Clock, Heart, Lightbulb, Moon, Pause, PenSquare, Play, Sun, X } from 'lucide-react-native';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Animated, Dimensions, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import Markdown from 'react-native-markdown-display';
 import NumberPad from '../components/NumberPad';
 import SudokuBoard from '../components/SudokuBoard';
+import WebReturnBanner from '../components/WebReturnBanner';
 import { useGame, useGameTime } from '../context/GameContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLoadingMessages } from '../hooks/useLoadingMessages';
@@ -32,6 +33,7 @@ export default function GameScreen() {
     placeUsed,
     currentHint,
     board,
+    initialBoard,
     isLoading,
     multiplayer,
     multiplayerWinner,
@@ -70,6 +72,20 @@ export default function GameScreen() {
   ], [windowHeight]);
   
   const { currentMessage, messageOpacity } = useLoadingMessages(difficulty, isLoading);
+
+  // Check if game state is broken (empty board after refresh) and redirect to home
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      const isBoardEmpty = board.every(row => row.every(cell => cell === 0));
+      const isInitialBoardEmpty = initialBoard.every(row => row.every(cell => cell === 0));
+      
+      // If both board and initialBoard are empty, we're in a broken state (page refresh)
+      // Redirect to home unless we're actively loading a game or in multiplayer
+      if (isBoardEmpty && isInitialBoardEmpty && !isLoading && !multiplayer) {
+        router.replace('/');
+      }
+    }
+  }, [board, initialBoard, status, isLoading, multiplayer, router]);
 
   useEffect(() => {
     if (status === 'won' || status === 'lost') {
@@ -190,6 +206,189 @@ export default function GameScreen() {
         colors={[colors.backgroundGradientFrom, colors.backgroundGradientTo]}
         style={styles.gradient}
       >
+        <WebReturnBanner />
+
+        {/* Multiplayer Banner - Full Width */}
+        {!hintMode && multiplayer && (
+          <View style={[styles.multiplayerBanner, { backgroundColor: colors.primary }]}>
+            <View style={styles.multiplayerBannerContent}>
+              <Text style={[styles.multiplayerText, { fontFamily: typography.fontBody, fontSize: typography.textSm, letterSpacing: typography.textSm * typography.trackingNormal, color: colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF' }]}>
+                {isHost ? "YOU'RE HOSTING:" : "YOU'VE JOINED:"} {multiplayer.channelName}
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* Header - Full Width */}
+        {!hintMode && (
+          <View style={[styles.header, { borderBottomColor: colors.borderThin, borderBottomWidth: 1, backgroundColor: colors.background }]}>
+            <View style={[styles.headerContent, isLargeScreen && styles.headerContentLarge]}>
+              {multiplayer && isHost ? (
+                <TouchableOpacity onPress={startNewRound} style={styles.headerButton}>
+                  <Text style={[styles.headerButtonText, { fontFamily: typography.fontBody, fontSize: typography.textSm, letterSpacing: typography.textSm * typography.trackingMedium, color: colors.textSecondary }]}>
+                    NEW ROUND
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <View style={styles.headerButton} />
+              )}
+              
+              <View style={styles.headerCenter}>
+                <Text style={[styles.headerLabel, { fontFamily: typography.fontBody, fontSize: typography.textXs, letterSpacing: typography.textXs * typography.trackingWide, color: colors.textLabel, marginBottom: spacing.xs }]}>
+                  TODAY'S PUZZLE
+                </Text>
+                <Text style={[styles.headerTitle, { fontFamily: typography.fontSerif, fontSize: typography.text2xl, color: colors.textPrimary, textTransform: 'capitalize' }]}>
+                  {difficulty}
+                </Text>
+              </View>
+              
+              <View style={styles.headerRight}>
+                <TouchableOpacity 
+                  onPress={toggleTheme}
+                  style={[styles.iconButton, { backgroundColor: colors.buttonBackground }]}
+                  activeOpacity={0.6}
+                  accessibilityLabel={
+                    theme === 'dark' 
+                      ? 'Switch to light mode' 
+                      : theme === 'light' 
+                      ? 'Switch to dark mode' 
+                      : colorScheme === 'dark'
+                      ? 'Switch to light mode'
+                      : 'Switch to dark mode'
+                  }
+                  accessibilityRole="button"
+                  accessibilityHint="Changes the app's color theme"
+                >
+                  {/* Show icon for what you'll switch TO, not current state */}
+                  {(theme === 'dark' || (theme === 'system' && colorScheme === 'dark')) ? (
+                    <Sun size={20} color={colors.textSecondary} strokeWidth={2} />
+                  ) : (
+                    <Moon size={20} color={colors.textSecondary} strokeWidth={2} />
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* Stats Bar - Full Width */}
+        {!hintMode && (
+          <View style={[styles.statsBar, { borderBottomColor: colors.borderThin, borderBottomWidth: 1, backgroundColor: colors.backgroundSecondary }]}>
+            <View style={[styles.statsBarContent, isLargeScreen && styles.statsBarContentLarge]}>
+              <View style={styles.statsLeft}>
+                <View style={styles.statItem}>
+                  <Clock size={14} color={colors.textSecondary} strokeWidth={1.5} />
+                  <Text style={[styles.statText, { fontFamily: typography.fontBody, fontSize: typography.textSm, color: colors.textSecondary, marginLeft: spacing.xs }]}>
+                    {formatTime(timeElapsed)}
+                  </Text>
+                </View>
+                <View style={[styles.statItem, { marginLeft: spacing.lg }]}>
+                  <Heart size={14} color={heartColor} fill={heartColor} strokeWidth={1.5} />
+                  <Text style={[styles.statText, { fontFamily: typography.fontSerif, fontSize: typography.textSm, color: heartColor, marginLeft: spacing.xs, fontWeight: '600' }]}>
+                    {lives}
+                  </Text>
+                </View>
+              </View>
+              
+              <View style={styles.statsRight}>
+                {/* Pause/Play Button */}
+                <TouchableOpacity 
+                  style={[styles.iconButton, { backgroundColor: colors.buttonBackground, marginRight: spacing.sm }]} 
+                  onPress={handlePauseResume}
+                  activeOpacity={0.6}
+                >
+                  {status === 'playing' ? (
+                    <Pause size={14} color={colors.textSecondary} strokeWidth={1.5} />
+                  ) : (
+                    <Play size={14} color={colors.textSecondary} strokeWidth={1.5} />
+                  )}
+                </TouchableOpacity>
+                
+                {/* Note Mode Button */}
+                <TouchableOpacity 
+                  style={[
+                    styles.iconButton, 
+                    { 
+                      backgroundColor: status !== 'playing'
+                        ? colors.buttonBackgroundDisabled
+                        : noteMode
+                          ? colors.primary
+                          : colors.buttonBackground,
+                    marginRight: spacing.sm
+                  }
+                  ]} 
+                  onPress={() => setNoteMode(!noteMode)}
+                  disabled={status !== 'playing'}
+                  activeOpacity={0.6}
+                >
+                  <PenSquare 
+                    size={14} 
+                    color={
+                      status !== 'playing'
+                        ? colors.textTertiary
+                        : noteMode
+                          ? (colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF')
+                          : colors.textSecondary
+                    } 
+                    strokeWidth={1.5}
+                  />
+                </TouchableOpacity>
+                
+                {/* Place Button */}
+                <TouchableOpacity 
+                  style={[
+                    styles.iconButton, 
+                    { 
+                      backgroundColor: (placeUsed || !selectedCell || status !== 'playing')
+                        ? colors.buttonBackgroundDisabled
+                        : colors.buttonBackground,
+                    marginRight: spacing.sm,
+                  }
+                  ]} 
+                  onPress={usePlace}
+                  disabled={placeUsed || !selectedCell || status !== 'playing'}
+                  activeOpacity={0.6}
+                >
+                  <CheckCircle 
+                    size={14} 
+                    color={
+                      (placeUsed || !selectedCell || status !== 'playing')
+                        ? colors.textTertiary
+                        : colors.textSecondary
+                    } 
+                    strokeWidth={1.5}
+                  />
+                </TouchableOpacity>
+                
+                {/* Hint Button */}
+                <TouchableOpacity 
+                  style={[
+                    styles.iconButton, 
+                    { 
+                      backgroundColor: (!selectedCell || status !== 'playing')
+                        ? colors.buttonBackgroundDisabled
+                        : colors.buttonBackground,
+                  }
+                  ]} 
+                  onPress={handleUseHint}
+                  disabled={!selectedCell || status !== 'playing'}
+                  activeOpacity={0.6}
+                >
+                  <Lightbulb 
+                    size={14} 
+                    color={
+                      (!selectedCell || status !== 'playing')
+                        ? colors.textTertiary
+                        : colors.textSecondary
+                    } 
+                    strokeWidth={1.5}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        )}
+
         <View style={[styles.contentWrapper, isLargeScreen && styles.contentWrapperLarge]}>
           {/* Hint Mode - Show only board and hint */}
           {hintMode && (
@@ -591,178 +790,6 @@ export default function GameScreen() {
           )}
           {!hintMode && (
             <>
-            {/* Multiplayer Banner */}
-          {multiplayer && (
-            <View style={[styles.multiplayerBanner, { backgroundColor: colors.primary }]}>
-              <View style={styles.multiplayerBannerContent}>
-                <Text style={[styles.multiplayerText, { fontFamily: typography.fontBody, fontSize: typography.textSm, letterSpacing: typography.textSm * typography.trackingNormal, color: colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF' }]}>
-                  {isHost ? "YOU'RE HOSTING:" : "YOU'VE JOINED:"} {multiplayer.channelName}
-                </Text>
-              </View>
-            </View>
-          )}
-
-          {/* Header */}
-          <View style={[styles.header, { borderBottomColor: colors.borderThin, borderBottomWidth: 1 }]}>
-            {multiplayer && isHost ? (
-              <TouchableOpacity onPress={startNewRound} style={styles.headerButton}>
-                <Text style={[styles.headerButtonText, { fontFamily: typography.fontBody, fontSize: typography.textSm, letterSpacing: typography.textSm * typography.trackingMedium, color: colors.textSecondary }]}>
-                  NEW ROUND
-                </Text>
-              </TouchableOpacity>
-            ) : (
-              <View style={styles.headerButton} />
-            )}
-            
-            <View style={styles.headerCenter}>
-              <Text style={[styles.headerLabel, { fontFamily: typography.fontBody, fontSize: typography.textXs, letterSpacing: typography.textXs * typography.trackingWide, color: colors.textLabel, marginBottom: spacing.xs }]}>
-                TODAY'S PUZZLE
-              </Text>
-              <Text style={[styles.headerTitle, { fontFamily: typography.fontSerif, fontSize: typography.text2xl, color: colors.textPrimary, textTransform: 'capitalize' }]}>
-                {difficulty}
-              </Text>
-            </View>
-            
-            <View style={styles.headerRight}>
-              <TouchableOpacity 
-                onPress={toggleTheme}
-                style={[styles.iconButton, { backgroundColor: colors.buttonBackground }]}
-                activeOpacity={0.6}
-                accessibilityLabel={
-                  theme === 'dark' 
-                    ? 'Switch to light mode' 
-                    : theme === 'light' 
-                    ? 'Switch to dark mode' 
-                    : colorScheme === 'dark'
-                    ? 'Switch to light mode'
-                    : 'Switch to dark mode'
-                }
-                accessibilityRole="button"
-                accessibilityHint="Changes the app's color theme"
-              >
-                {/* Show icon for what you'll switch TO, not current state */}
-                {(theme === 'dark' || (theme === 'system' && colorScheme === 'dark')) ? (
-                  <Sun size={20} color={colors.textSecondary} strokeWidth={2} />
-                ) : (
-                  <Moon size={20} color={colors.textSecondary} strokeWidth={2} />
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Stats Bar */}
-          <View style={[styles.statsBar, { borderBottomColor: colors.borderThin, borderBottomWidth: 1, backgroundColor: colors.backgroundSecondary }]}>
-            <View style={styles.statsLeft}>
-              <View style={styles.statItem}>
-                <Clock size={14} color={colors.textSecondary} strokeWidth={1.5} />
-                <Text style={[styles.statText, { fontFamily: typography.fontBody, fontSize: typography.textSm, color: colors.textSecondary, marginLeft: spacing.xs }]}>
-                  {formatTime(timeElapsed)}
-                </Text>
-              </View>
-              <View style={[styles.statItem, { marginLeft: spacing.lg }]}>
-                <Heart size={14} color={heartColor} fill={heartColor} strokeWidth={1.5} />
-                <Text style={[styles.statText, { fontFamily: typography.fontSerif, fontSize: typography.textSm, color: heartColor, marginLeft: spacing.xs, fontWeight: '600' }]}>
-                  {lives}
-                </Text>
-              </View>
-            </View>
-            
-            <View style={styles.statsRight}>
-              {/* Pause/Play Button */}
-              <TouchableOpacity 
-                style={[styles.iconButton, { backgroundColor: colors.buttonBackground, marginRight: spacing.sm }]} 
-                onPress={handlePauseResume}
-                activeOpacity={0.6}
-              >
-                {status === 'playing' ? (
-                  <Pause size={14} color={colors.textSecondary} strokeWidth={1.5} />
-                ) : (
-                  <Play size={14} color={colors.textSecondary} strokeWidth={1.5} />
-                )}
-              </TouchableOpacity>
-              
-              {/* Note Mode Button */}
-              <TouchableOpacity 
-                style={[
-                  styles.iconButton, 
-                  { 
-                    backgroundColor: status !== 'playing'
-                      ? colors.buttonBackgroundDisabled
-                      : noteMode
-                        ? colors.primary
-                        : colors.buttonBackground,
-                    marginRight: spacing.sm
-                  }
-                ]} 
-                onPress={() => setNoteMode(!noteMode)}
-                disabled={status !== 'playing'}
-                activeOpacity={0.6}
-              >
-                <PenSquare 
-                  size={14} 
-                  color={
-                    status !== 'playing'
-                      ? colors.textTertiary
-                      : noteMode
-                        ? (colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF')
-                        : colors.textSecondary
-                  } 
-                  strokeWidth={1.5}
-                />
-              </TouchableOpacity>
-              
-              {/* Place Button */}
-              <TouchableOpacity 
-                style={[
-                  styles.iconButton, 
-                  { 
-                    backgroundColor: (placeUsed || !selectedCell || status !== 'playing')
-                      ? colors.buttonBackgroundDisabled
-                      : colors.buttonBackground,
-                    marginRight: spacing.sm,
-                  }
-                ]} 
-                onPress={usePlace}
-                disabled={placeUsed || !selectedCell || status !== 'playing'}
-                activeOpacity={0.6}
-              >
-                <CheckCircle 
-                  size={14} 
-                  color={
-                    (placeUsed || !selectedCell || status !== 'playing')
-                      ? colors.textTertiary
-                      : colors.textSecondary
-                  } 
-                  strokeWidth={1.5}
-                />
-              </TouchableOpacity>
-              
-              {/* Hint Button */}
-              <TouchableOpacity 
-                style={[
-                  styles.iconButton, 
-                  { 
-                    backgroundColor: (!selectedCell || status !== 'playing')
-                      ? colors.buttonBackgroundDisabled
-                      : colors.buttonBackground,
-                  }
-                ]} 
-                onPress={handleUseHint}
-                disabled={!selectedCell || status !== 'playing'}
-                activeOpacity={0.6}
-              >
-                <Lightbulb 
-                  size={14} 
-                  color={
-                    (!selectedCell || status !== 'playing')
-                      ? colors.textTertiary
-                      : colors.textSecondary
-                  } 
-                  strokeWidth={1.5}
-                />
-              </TouchableOpacity>
-            </View>
-          </View>
 
           {/* Game Board and Hint Panel Container */}
           {isLargeScreen ? (
@@ -1219,6 +1246,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
     alignItems: 'center',
+    width: '100%',
   },
   multiplayerBannerContent: {
     flexDirection: 'row',
@@ -1229,11 +1257,21 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   header: {
+    width: '100%',
+    borderBottomWidth: 1,
+  },
+  headerContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 16,
+    width: '100%',
+    maxWidth: 600,
+    alignSelf: 'center',
+  },
+  headerContentLarge: {
+    maxWidth: 1200,
   },
   headerButton: {
     paddingVertical: 8,
@@ -1265,11 +1303,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statsBar: {
+    width: '100%',
+    borderBottomWidth: 1,
+  },
+  statsBarContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 12,
+    width: '100%',
+    maxWidth: 600,
+    alignSelf: 'center',
+  },
+  statsBarContentLarge: {
+    maxWidth: 1200,
   },
   statsLeft: {
     flexDirection: 'row',

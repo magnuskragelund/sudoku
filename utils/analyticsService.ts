@@ -1,4 +1,5 @@
 import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 import { Difficulty } from '../types/game';
 import { logger } from './logger';
 import { supabase } from './supabaseClient';
@@ -23,9 +24,23 @@ export interface GameAnalyticsEvent {
 
 class AnalyticsService {
   private appVersion: string;
+  private isDevelopment: boolean;
 
   constructor() {
     this.appVersion = Constants.expoConfig?.version || 'unknown';
+    
+    // Check if we're in development/local environment
+    // For web: check if running on localhost
+    // For native: check __DEV__ flag
+    if (Platform.OS === 'web') {
+      const isLocalhost = typeof window !== 'undefined' && 
+        (window.location.hostname === 'localhost' || 
+         window.location.hostname === '127.0.0.1' ||
+         window.location.hostname === '');
+      this.isDevelopment = isLocalhost || __DEV__;
+    } else {
+      this.isDevelopment = __DEV__ || false;
+    }
   }
 
   /**
@@ -40,6 +55,12 @@ class AnalyticsService {
    * This is a fire-and-forget operation that won't block gameplay
    */
   private async trackEvent(event: GameAnalyticsEvent): Promise<void> {
+    // Skip analytics in development/local environment
+    if (this.isDevelopment) {
+      logger.log('Analytics skipped (development mode):', event.eventType, event.gameType);
+      return;
+    }
+
     try {
       const { error } = await supabase.from('game_analytics').insert({
         session_id: event.sessionId,
