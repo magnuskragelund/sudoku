@@ -5,6 +5,7 @@ import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenHeader from '../components/ScreenHeader';
+import WebReturnBanner from '../components/WebReturnBanner';
 import { useTheme } from '../context/ThemeContext';
 
 export default function MultiplayerSelectScreen() {
@@ -35,6 +36,7 @@ export default function MultiplayerSelectScreen() {
         colors={[colors.backgroundGradientFrom, colors.backgroundGradientTo]}
         style={styles.gradient}
       >
+        <WebReturnBanner />
         <ScrollView 
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}

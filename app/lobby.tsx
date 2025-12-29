@@ -14,6 +14,7 @@ import ParticipantCard from '../components/ParticipantCard';
 import RoomIdentifier from '../components/RoomIdentifier';
 import SectionLabel from '../components/SectionLabel';
 import StatusRow from '../components/StatusRow';
+import WebReturnBanner from '../components/WebReturnBanner';
 import { useGame } from '../context/GameContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLoadingMessages } from '../hooks/useLoadingMessages';
@@ -118,6 +119,7 @@ export default function LobbyScreen() {
         colors={[colors.backgroundGradientFrom, colors.backgroundGradientTo]}
         style={styles.gradient}
       >
+        <WebReturnBanner />
         <ScrollView 
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}

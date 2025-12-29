@@ -7,6 +7,7 @@ import { Platform, ScrollView, Share, StyleSheet, Text, TextInput, TouchableOpac
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Modal from '../components/Modal';
 import ScreenHeader from '../components/ScreenHeader';
+import WebReturnBanner from '../components/WebReturnBanner';
 import { useGame } from '../context/GameContext';
 import { useTheme } from '../context/ThemeContext';
 import { generateSimpleRoomShareMessage } from '../utils/shareUtils';
@@ -261,6 +262,7 @@ export default function MultiplayerScreen() {
         colors={[colors.backgroundGradientFrom, colors.backgroundGradientTo]}
         style={styles.gradient}
       >
+        <WebReturnBanner />
         <ScrollView 
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}

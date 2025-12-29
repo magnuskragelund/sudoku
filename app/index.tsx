@@ -4,6 +4,7 @@ import { Moon, Palette, Sun, Trophy, User, Users } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import WebReturnBanner from '../components/WebReturnBanner';
 import { useTheme } from '../context/ThemeContext';
 
 export default function WelcomeScreen() {
@@ -28,6 +29,7 @@ export default function WelcomeScreen() {
         colors={[colors.backgroundGradientFrom, colors.backgroundGradientTo]}
         style={styles.gradient}
       >
+        <WebReturnBanner />
         <ScrollView 
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}

@@ -6,6 +6,7 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensio
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Modal from '../components/Modal';
 import ScreenHeader from '../components/ScreenHeader';
+import WebReturnBanner from '../components/WebReturnBanner';
 import { useTheme } from '../context/ThemeContext';
 import { Difficulty, GameResult } from '../types/game';
 import { clearHighScores, formatDate, formatTime, getHighScores } from '../utils/highScoreStorage';
@@ -96,6 +97,7 @@ export default function HighScoresScreen() {
         colors={[colors.backgroundGradientFrom, colors.backgroundGradientTo]}
         style={styles.gradient}
       >
+        <WebReturnBanner />
         <View style={[styles.contentWrapper, { maxWidth: maxContentWidth }]}>
           <ScreenHeader
             label="LEADERBOARD"
