@@ -51,6 +51,21 @@ class AnalyticsService {
   }
 
   /**
+   * Get the current platform as a string
+   */
+  private getPlatform(): 'web' | 'ios' | 'android' {
+    if (Platform.OS === 'web') {
+      return 'web';
+    } else if (Platform.OS === 'ios') {
+      return 'ios';
+    } else if (Platform.OS === 'android') {
+      return 'android';
+    }
+    // Fallback to web for unknown platforms
+    return 'web';
+  }
+
+  /**
    * Track a game event (start, complete, or abandon)
    * This is a fire-and-forget operation that won't block gameplay
    */
@@ -75,6 +90,7 @@ class AnalyticsService {
         player_count: event.playerCount,
         is_host: event.isHost,
         app_version: this.appVersion,
+        platform: this.getPlatform(),
       });
 
       if (error) {
