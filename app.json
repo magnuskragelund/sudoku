@@ -2,7 +2,7 @@
   "expo": {
     "name": "Sudoku Face Off",
     "slug": "sudoku",
-    "version": "1.0.14",
+    "version": "1.0.15",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "sudokufaceoff",
@@ -13,7 +13,7 @@
     "backgroundColor": "#FFFFFF",
     "ios": {
       "bundleIdentifier": "com.sudokufaceoff.sudoku",
-      "buildNumber": "4",
+      "buildNumber": "5",
       "supportsTablet": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
@@ -30,7 +30,7 @@
       "predictiveBackGestureEnabled": false,
       "supportsTablets": true,
       "package": "com.sudokufaceoff.sudoku",
-      "versionCode": 14,
+      "versionCode": 15,
       "permissions": [
         "INTERNET"
       ]

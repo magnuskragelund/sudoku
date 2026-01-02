@@ -206,7 +206,9 @@ function NumberPad({ noteMode = false, addNote, removeNote, notes }: NumberPadPr
                     ? (colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF')
                     : colors.textPrimary,
                   opacity: isButtonEnabled ? 1 : 0.3,
-                  lineHeight: isLargeScreen ? 32 : 26,
+                  includeFontPadding: false,
+                  textAlignVertical: 'center',
+                  marginTop: isLargeScreen ? 2 : 1,
                 }
               ]}>
                 {number}
@@ -279,7 +281,6 @@ const styles = StyleSheet.create({
   numberText: {
     fontWeight: '400',
     textAlign: 'center',
-    lineHeight: 26,
   },
 });
 
