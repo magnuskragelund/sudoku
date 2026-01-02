@@ -18,17 +18,14 @@ function NumberPad({ noteMode = false, addNote, removeNote, notes }: NumberPadPr
   const isLargeScreen = width >= 768;
 
   const handleNumberPress = (number: number) => {
-    // Digit First mode: If no cell is selected, select the digit
-    if (!selectedCell) {
-      // Toggle: if same digit is selected, deselect it
-      selectDigit(selectedDigit === number ? null : number);
-      return;
-    }
-    
-    const { row, col } = selectedCell;
-    
-    // In note mode, toggle notes instead of placing numbers
+    // In note mode, require a selected cell to add notes
     if (noteMode) {
+      if (!selectedCell) {
+        // In note mode, you need a cell selected to add notes
+        return;
+      }
+      
+      const { row, col } = selectedCell;
       // Only allow notes in empty cells (not initial clues)
       if (initialBoard[row][col] === 0 && board[row][col] === 0) {
         const noteKey = `${row}-${col}`;
@@ -52,6 +49,15 @@ function NumberPad({ noteMode = false, addNote, removeNote, notes }: NumberPadPr
       }
       return;
     }
+    
+    // Digit First mode: If no cell is selected, select the digit
+    if (!selectedCell) {
+      // Toggle: if same digit is selected, deselect it
+      selectDigit(selectedDigit === number ? null : number);
+      return;
+    }
+    
+    const { row, col } = selectedCell;
     
     // Cell First mode: place numbers in selected cell
     // Only allow placing numbers in editable cells (not initial and not correctly filled)
@@ -194,7 +200,7 @@ function NumberPad({ noteMode = false, addNote, removeNote, notes }: NumberPadPr
               <Text style={[
                 styles.numberText,
                 { 
-                  fontFamily: typography.fontSerif,
+                  fontFamily: typography.fontBody,
                   fontSize: isLargeScreen ? 32 : 26,
                   color: isHighlighted
                     ? (colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF')

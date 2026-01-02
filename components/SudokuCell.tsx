@@ -147,7 +147,7 @@ function SudokuCell({
       styles.cellText, 
       { 
         color: colors.textPrimary,
-        fontFamily: typography.fontSerif,
+        fontFamily: typography.fontBody,
         fontSize: cellFontSize,
         fontWeight: '400',
       }

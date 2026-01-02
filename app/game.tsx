@@ -29,6 +29,7 @@ export default function GameScreen() {
     lives,
     initialLives, 
     selectedCell,
+    selectedDigit,
     hintUsed,
     placeUsed,
     currentHint,
@@ -52,7 +53,8 @@ export default function GameScreen() {
     startNewRound,
     addNote,
     removeNote,
-    notes
+    notes,
+    selectDigit
   } = useGame();
 
   const { timeElapsed } = useGameTime();
@@ -317,7 +319,14 @@ export default function GameScreen() {
                     marginRight: spacing.sm
                   }
                   ]} 
-                  onPress={() => setNoteMode(!noteMode)}
+                  onPress={() => {
+                    const newNoteMode = !noteMode;
+                    setNoteMode(newNoteMode);
+                    // Clear digit selection when entering note mode to prevent mode confusion
+                    if (newNoteMode && selectedDigit !== null) {
+                      selectDigit(null);
+                    }
+                  }}
                   disabled={status !== 'playing'}
                   activeOpacity={0.6}
                 >

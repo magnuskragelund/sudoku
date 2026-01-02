@@ -205,7 +205,7 @@ const lightColors: Colors = {
   
   // Cell colors
   cellSelected: '#BEDBFF',
-  cellHighlight: '#F9FAFB',
+  cellHighlight: '#F0F2F5',
   cellSameValue: '#BEDBFF',
   cellInitial: '#E0E7F1',
   cellCorrect: '#E8F5E9',
@@ -270,7 +270,7 @@ const darkColors: Colors = {
   
   // Cell colors
   cellSelected: '#2A3A4A',
-  cellHighlight: '#1A1A1A',
+  cellHighlight: '#252525',
   cellSameValue: '#2A3A4A',
   cellInitial: '#2D3748',
   cellCorrect: '#1F4529',
