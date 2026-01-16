@@ -3,7 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Clock } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Animated, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ConfigCard from '../components/ConfigCard';
 import ContentBox from '../components/ContentBox';
@@ -27,11 +27,12 @@ export default function LobbyScreen() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [playerCount, setPlayerCount] = useState(0);
   const [showErrorModal, setShowErrorModal] = useState(false);
+  const [isGameStarting, setIsGameStarting] = useState(false);
   const { width } = useWindowDimensions();
-  
+
   // Responsive max width: 600px for phones, 1000px for tablets/web
   const maxContentWidth = width >= 768 ? 1000 : 600;
-  
+
   // Max players for this game (up to 10 players)
   const maxPlayers = 10;
 
@@ -44,7 +45,7 @@ export default function LobbyScreen() {
 
   const { currentMessage, messageOpacity } = useLoadingMessages(
     multiplayer?.difficulty || null,
-    isLoading
+    isLoading || isGameStarting
   );
 
   // Subscribe once on mount, never re-subscribe
@@ -55,8 +56,16 @@ export default function LobbyScreen() {
       setPlayerCount(updatedPlayers.length);
     });
 
+    // Subscribe to game started event (for guests to show loading)
+    const unsubscribeGameStarted = multiplayerService.subscribeToGameState((status) => {
+      if (status === 'playing') {
+        setIsGameStarting(true);
+      }
+    });
+
     // Subscribe to game board shared events to auto-navigate when game starts
     const unsubscribeGameBoard = multiplayerService.subscribeToGameBoard(() => {
+      setIsGameStarting(false);
       // Use replace instead of push to unmount lobby and clean up its subscriptions
       // This prevents duplicate game board loading when host starts new rounds
       setTimeout(() => {
@@ -68,6 +77,9 @@ export default function LobbyScreen() {
     return () => {
       if (typeof unsubscribe === 'function') {
         unsubscribe();
+      }
+      if (typeof unsubscribeGameStarted === 'function') {
+        unsubscribeGameStarted();
       }
       if (typeof unsubscribeGameBoard === 'function') {
         unsubscribeGameBoard();
@@ -88,7 +100,7 @@ export default function LobbyScreen() {
     try {
       // Start the game - this will generate puzzle and broadcast it
       await startMultiplayerGame?.();
-      
+
       // Wait a moment for the game to load, then navigate
       setTimeout(() => {
         router.push('/game');
@@ -120,7 +132,7 @@ export default function LobbyScreen() {
         style={styles.gradient}
       >
         <WebReturnBanner />
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
@@ -130,12 +142,12 @@ export default function LobbyScreen() {
             width < 400 && styles.contentWrapperMobile
           ]}>
             {/* Header */}
-            <TouchableOpacity 
-              onPress={handleLeave} 
+            <TouchableOpacity
+              onPress={handleLeave}
               style={[styles.backButton, { marginBottom: spacing.lg }]}
             >
               <ChevronLeft size={16} color={colors.textSecondary} strokeWidth={1.5} />
-              <Text 
+              <Text
                 style={[
                   styles.backButtonText,
                   {
@@ -151,8 +163,8 @@ export default function LobbyScreen() {
               </Text>
             </TouchableOpacity>
 
-            <View style={[styles.masthead, { marginBottom: spacing.xl2 }]}>
-              <Text 
+            <View style={[styles.masthead, { marginBottom: spacing.xl }]}>
+              <Text
                 style={[
                   styles.label,
                   {
@@ -160,32 +172,32 @@ export default function LobbyScreen() {
                     fontSize: typography.textXs,
                     letterSpacing: typography.textXs * typography.trackingWide,
                     color: colors.textLabel,
-                    marginBottom: spacing.sm,
+                    marginBottom: spacing.xs,
                   }
                 ]}
               >
                 COMPETITION ROOM
               </Text>
-              
-              <Text 
+
+              <Text
                 style={[
                   styles.title,
                   {
                     fontFamily: typography.fontSerif,
-                    fontSize: typography.text5xl * 1.5,
-                    letterSpacing: (typography.text5xl * 1.5) * typography.trackingTight,
-                    lineHeight: (typography.text5xl * 1.5) * typography.leadingTight,
+                    fontSize: width < 400 ? typography.text5xl * 0.8 : typography.text5xl * 1.5,
+                    letterSpacing: (width < 400 ? typography.text5xl * 0.8 : typography.text5xl * 1.5) * typography.trackingTight,
+                    lineHeight: (width < 400 ? typography.text5xl * 0.8 : typography.text5xl * 1.5) * typography.leadingTight,
                     color: colors.textPrimary,
-                    marginBottom: spacing.md,
+                    marginBottom: spacing.sm,
                   }
                 ]}
               >
                 Multiplayer Lobby
               </Text>
-              
-              <View style={[styles.titleUnderline, { backgroundColor: colors.divider, marginBottom: spacing.md }]} />
-              
-              <Text 
+
+              <View style={[styles.titleUnderline, { backgroundColor: colors.divider, marginBottom: spacing.sm }]} />
+
+              <Text
                 style={[
                   styles.statusText,
                   {
@@ -203,19 +215,19 @@ export default function LobbyScreen() {
             {/* Main Content Box - All content in one box */}
             <ContentBox style={{ marginBottom: spacing.xl2 }}>
               {/* Room Identifier Section - Dark Background */}
-              <ContentSection 
-                isDark 
-                style={{ backgroundColor: colors.primary }}
+              <ContentSection
+                isDark
+                style={{ backgroundColor: colors.primary, paddingVertical: width < 400 ? 16 : 24 }}
               >
-                <SectionLabel>ROOM IDENTIFIER</SectionLabel>
+                <SectionLabel style={{ marginBottom: spacing.sm }}>ROOM IDENTIFIER</SectionLabel>
                 <RoomIdentifier roomCode={multiplayer?.channelName || ''} />
               </ContentSection>
 
               <Divider />
 
               {/* Match Configuration Section */}
-              <ContentSection>
-                <SectionLabel>MATCH CONFIGURATION</SectionLabel>
+              <ContentSection style={{ paddingVertical: width < 400 ? 16 : 24 }}>
+                <SectionLabel style={{ marginBottom: spacing.sm }}>MATCH CONFIGURATION</SectionLabel>
                 <View style={[
                   styles.configContainer,
                   width < 400 && styles.configContainerMobile,
@@ -223,7 +235,7 @@ export default function LobbyScreen() {
                   <ConfigCard
                     label="DIFFICULTY"
                     value={getDifficultyInfo().label}
-                    subtext={getDifficultyInfo().edition}
+                    subtext={width < 400 ? undefined : getDifficultyInfo().edition}
                     isLeft
                   />
                   <ConfigCard
@@ -243,13 +255,13 @@ export default function LobbyScreen() {
                 <SectionLabel style={{ marginBottom: spacing.md }}>
                   PARTICIPANTS ({playerCount}/{maxPlayers})
                 </SectionLabel>
-                
+
                 {/* All Players */}
                 {players.map((player, index) => {
                   const isCurrentPlayer = player.id === multiplayerService.getPlayerId();
                   const isLast = index === players.length - 1;
                   const isFirst = index === 0;
-                  
+
                   return (
                     <ParticipantCard
                       key={player.id}
@@ -268,7 +280,7 @@ export default function LobbyScreen() {
               {isHost && (
                 <>
                   <ContentSection>
-                    <StatusRow 
+                    <StatusRow
                       icon={Clock}
                       text={`${playerCount} PLAYER${playerCount !== 1 ? 'S' : ''} CONNECTED`}
                     />
@@ -290,7 +302,7 @@ export default function LobbyScreen() {
                       disabled={playerCount < 2}
                       activeOpacity={0.7}
                     >
-                      <Text 
+                      <Text
                         style={[
                           styles.startButtonText,
                           {
@@ -311,7 +323,7 @@ export default function LobbyScreen() {
               {/* Guest Section */}
               {!isHost && (
                 <ContentSection>
-                  <StatusRow 
+                  <StatusRow
                     icon={Clock}
                     text="WAITING FOR HOST TO START THE GAME"
                   />
@@ -321,15 +333,15 @@ export default function LobbyScreen() {
           </View>
         </ScrollView>
       </LinearGradient>
-      
-      
+
+
       {/* Loading Overlay */}
-      {isLoading && (
+      {(isLoading || isGameStarting) && (
         <View style={styles.overlay}>
           <BlurView intensity={40} tint={colors.overlayTint} style={styles.blurBackground}>
             <View style={[styles.modalCard, { backgroundColor: colors.modalBackground, borderColor: colors.cardBorder }]}>
               <ActivityIndicator size="large" color={colors.primary} />
-              <Animated.Text 
+              <Animated.Text
                 style={[
                   styles.modalSubtitle,
                   {

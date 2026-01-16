@@ -65,6 +65,7 @@ export default function GameScreen() {
   const [elaboratedHint, setElaboratedHint] = useState<string | null>(null);
   const [isElaborating, setIsElaborating] = useState<boolean>(false);
   const [elaborationError, setElaborationError] = useState<string | null>(null);
+  const [isNewRoundStarting, setIsNewRoundStarting] = useState<boolean>(false);
   
   const bottomSheetRef = useRef<BottomSheet>(null);
   const snapPoints = useMemo(() => [
@@ -73,7 +74,7 @@ export default function GameScreen() {
     Math.round(windowHeight * 0.50), // 50% of screen height - expanded with elaboration
   ], [windowHeight]);
   
-  const { currentMessage, messageOpacity } = useLoadingMessages(difficulty, isLoading);
+  const { currentMessage, messageOpacity } = useLoadingMessages(difficulty, isLoading || isNewRoundStarting);
 
   // Check if game state is broken (empty board after refresh) and redirect to home
   useEffect(() => {
@@ -94,6 +95,40 @@ export default function GameScreen() {
       loadBestTime();
     }
   }, [status, difficulty, lives]);
+
+  // Subscribe to new round starting event (for guests to show loading)
+  useEffect(() => {
+    if (!multiplayer || !multiplayerService.currentChannel) return;
+
+    const channel = multiplayerService.currentChannel;
+    
+    const handleNewRoundStarting = () => {
+      setIsNewRoundStarting(true);
+    };
+
+    // Subscribe to new-round-starting event
+    if (channel && typeof channel.on === 'function') {
+      channel.on('broadcast', { event: 'new-round-starting' }, handleNewRoundStarting);
+    }
+
+    return () => {
+      if (channel && typeof channel.off === 'function') {
+        try {
+          channel.off('broadcast', { event: 'new-round-starting' }, handleNewRoundStarting);
+        } catch (error) {
+          // Ignore cleanup errors
+        }
+      }
+    };
+  }, [multiplayer]);
+
+  // Reset new round starting state when game board is loaded
+  useEffect(() => {
+    if (isNewRoundStarting && board.some(row => row.some(cell => cell !== 0))) {
+      // Board has been loaded (not empty anymore)
+      setIsNewRoundStarting(false);
+    }
+  }, [board, isNewRoundStarting]);
 
   // Ensure sheet opens at correct size when entering hint mode
   useEffect(() => {
@@ -912,17 +947,6 @@ export default function GameScreen() {
                       Time: {formatTime(multiplayerWinner.completionTime)}
                     </Text>
                   </View>
-                  <TouchableOpacity 
-                    style={[styles.modalButton, { backgroundColor: colors.primary, marginBottom: spacing.sm }]} 
-                    onPress={() => {
-                      dismissWinnerModal?.();
-                      resumeGame();
-                    }}
-                  >
-                    <Text style={[styles.modalButtonText, { fontFamily: typography.fontBody, fontSize: typography.textSm, letterSpacing: typography.textSm * typography.trackingNormal, color: colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF' }]}>
-                      CONTINUE PLAYING
-                    </Text>
-                  </TouchableOpacity>
                   {multiplayer && isHost && (
                     <TouchableOpacity 
                       style={[styles.modalButton, { backgroundColor: colors.primary, marginBottom: spacing.sm }]}
@@ -972,17 +996,6 @@ export default function GameScreen() {
                       Time: {formatTime(multiplayerLoser.timeElapsed)}
                     </Text>
                   </View>
-                  <TouchableOpacity 
-                    style={[styles.modalButton, { backgroundColor: colors.primary, marginBottom: spacing.sm }]} 
-                    onPress={() => {
-                      dismissLoserModal?.();
-                      resumeGame();
-                    }}
-                  >
-                    <Text style={[styles.modalButtonText, { fontFamily: typography.fontBody, fontSize: typography.textSm, letterSpacing: typography.textSm * typography.trackingNormal, color: colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF' }]}>
-                      CONTINUE PLAYING
-                    </Text>
-                  </TouchableOpacity>
                   {multiplayer && isHost && (
                     <TouchableOpacity 
                       style={[styles.modalButton, { backgroundColor: colors.primary, marginBottom: spacing.sm }]}
@@ -1014,7 +1027,7 @@ export default function GameScreen() {
           )}
 
           {/* Loading Overlay */}
-          {isLoading && (
+          {(isLoading || isNewRoundStarting) && (
             <View style={styles.overlay}>
               <BlurView intensity={40} tint={colors.overlayTint} style={styles.blurBackground}>
                 <View style={[styles.modalCard, { backgroundColor: colors.modalBackground, borderColor: colors.cardBorder }]}>

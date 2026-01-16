@@ -1115,10 +1115,20 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
+        // Set loading state for host
+        dispatch({ type: 'SET_LOADING', isLoading: true });
+
         // Dismiss winner modal if present
         if (state.multiplayerWinner) {
           dispatch({ type: 'DISMISS_WINNER_MODAL' });
         }
+
+        // Broadcast that a new round is starting (for guests to show loading)
+        await multiplayerService.currentChannel?.send({
+          type: 'broadcast',
+          event: 'new-round-starting',
+          payload: {},
+        });
 
         // Generate new puzzle using session difficulty/lives
         const { puzzle, solution } = generatePuzzle(state.multiplayer.difficulty);
@@ -1148,6 +1158,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       } catch (error) {
         logger.error('Failed to start new round:', error);
         throw error;
+      } finally {
+        dispatch({ type: 'SET_LOADING', isLoading: false });
       }
     },
     dismissWinnerModal: () => {
