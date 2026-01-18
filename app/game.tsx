@@ -1,12 +1,12 @@
+import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { CheckCircle, Clock, Heart, Lightbulb, Moon, Pause, PenSquare, Play, Sun, X } from 'lucide-react-native';
+import { Clock, Heart, Lightbulb, Moon, Pause, PenSquare, Play, Sun, X } from 'lucide-react-native';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Dimensions, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import { ActivityIndicator, Animated, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import Markdown from 'react-native-markdown-display';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import NumberPad from '../components/NumberPad';
 import SudokuBoard from '../components/SudokuBoard';
 import WebReturnBanner from '../components/WebReturnBanner';
@@ -21,13 +21,14 @@ export default function GameScreen() {
   const router = useRouter();
   const { theme, setTheme, colors, typography, spacing, colorScheme } = useTheme();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const isLargeScreen = windowWidth >= 768; // Tablet and desktop breakpoint
   const isExtraWideScreen = windowWidth >= 1200; // Extra wide desktop breakpoint
-  const { 
-    difficulty, 
-    status, 
+  const {
+    difficulty,
+    status,
     lives,
-    initialLives, 
+    initialLives,
     selectedCell,
     selectedDigit,
     hintUsed,
@@ -66,14 +67,14 @@ export default function GameScreen() {
   const [isElaborating, setIsElaborating] = useState<boolean>(false);
   const [elaborationError, setElaborationError] = useState<string | null>(null);
   const [isNewRoundStarting, setIsNewRoundStarting] = useState<boolean>(false);
-  
+
   const bottomSheetRef = useRef<BottomSheet>(null);
   const snapPoints = useMemo(() => [
     Math.round(windowHeight * 0.25), // 25% of screen height - minimized to see more board
     Math.round(windowHeight * 0.48), // 48% of screen height - initial state with button visible
     Math.round(windowHeight * 0.50), // 50% of screen height - expanded with elaboration
   ], [windowHeight]);
-  
+
   const { currentMessage, messageOpacity } = useLoadingMessages(difficulty, isLoading || isNewRoundStarting);
 
   // Check if game state is broken (empty board after refresh) and redirect to home
@@ -81,7 +82,7 @@ export default function GameScreen() {
     if (Platform.OS === 'web') {
       const isBoardEmpty = board.every(row => row.every(cell => cell === 0));
       const isInitialBoardEmpty = initialBoard.every(row => row.every(cell => cell === 0));
-      
+
       // If both board and initialBoard are empty, we're in a broken state (page refresh)
       // Redirect to home unless we're actively loading a game or in multiplayer
       if (isBoardEmpty && isInitialBoardEmpty && !isLoading && !multiplayer) {
@@ -101,7 +102,7 @@ export default function GameScreen() {
     if (!multiplayer || !multiplayerService.currentChannel) return;
 
     const channel = multiplayerService.currentChannel;
-    
+
     const handleNewRoundStarting = () => {
       setIsNewRoundStarting(true);
     };
@@ -167,7 +168,7 @@ export default function GameScreen() {
 
   const handleNewGame = async () => {
     if (multiplayer) {
-      try { await leaveMultiplayerGame?.(); } catch {}
+      try { await leaveMultiplayerGame?.(); } catch { }
     }
     newGame();
     router.push('/');
@@ -175,7 +176,7 @@ export default function GameScreen() {
 
   const handleExitToMenu = async () => {
     if (multiplayer) {
-      try { await leaveMultiplayerGame?.(); } catch {}
+      try { await leaveMultiplayerGame?.(); } catch { }
     }
     router.push('/');
   };
@@ -216,10 +217,10 @@ export default function GameScreen() {
 
   const handleElaborateHint = async () => {
     if (!currentHint || !board) return;
-    
+
     setIsElaborating(true);
     setElaborationError(null);
-    
+
     try {
       const elaboration = await elaborateHint({
         board,
@@ -238,7 +239,7 @@ export default function GameScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <LinearGradient
         colors={[colors.backgroundGradientFrom, colors.backgroundGradientTo]}
         style={styles.gradient}
@@ -269,7 +270,7 @@ export default function GameScreen() {
               ) : (
                 <View style={styles.headerButton} />
               )}
-              
+
               <View style={styles.headerCenter}>
                 <Text style={[styles.headerLabel, { fontFamily: typography.fontBody, fontSize: typography.textXs, letterSpacing: typography.textXs * typography.trackingWide, color: colors.textLabel, marginBottom: spacing.xs }]}>
                   TODAY'S PUZZLE
@@ -278,20 +279,20 @@ export default function GameScreen() {
                   {difficulty}
                 </Text>
               </View>
-              
+
               <View style={styles.headerRight}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   onPress={toggleTheme}
                   style={[styles.iconButton, { backgroundColor: colors.buttonBackground }]}
                   activeOpacity={0.6}
                   accessibilityLabel={
-                    theme === 'dark' 
-                      ? 'Switch to light mode' 
-                      : theme === 'light' 
-                      ? 'Switch to dark mode' 
-                      : colorScheme === 'dark'
+                    theme === 'dark'
                       ? 'Switch to light mode'
-                      : 'Switch to dark mode'
+                      : theme === 'light'
+                        ? 'Switch to dark mode'
+                        : colorScheme === 'dark'
+                          ? 'Switch to light mode'
+                          : 'Switch to dark mode'
                   }
                   accessibilityRole="button"
                   accessibilityHint="Changes the app's color theme"
@@ -326,11 +327,11 @@ export default function GameScreen() {
                   </Text>
                 </View>
               </View>
-              
+
               <View style={styles.statsRight}>
                 {/* Pause/Play Button */}
-                <TouchableOpacity 
-                  style={[styles.iconButton, { backgroundColor: colors.buttonBackground, marginRight: spacing.sm }]} 
+                <TouchableOpacity
+                  style={[styles.iconButton, { backgroundColor: colors.buttonBackground, marginRight: spacing.sm }]}
                   onPress={handlePauseResume}
                   activeOpacity={0.6}
                 >
@@ -340,20 +341,20 @@ export default function GameScreen() {
                     <Play size={14} color={colors.textSecondary} strokeWidth={1.5} />
                   )}
                 </TouchableOpacity>
-                
+
                 {/* Note Mode Button */}
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[
-                    styles.iconButton, 
-                    { 
+                    styles.iconButton,
+                    {
                       backgroundColor: status !== 'playing'
                         ? colors.buttonBackgroundDisabled
                         : noteMode
                           ? colors.primary
                           : colors.buttonBackground,
-                    marginRight: spacing.sm
-                  }
-                  ]} 
+                      marginRight: spacing.sm
+                    }
+                  ]}
                   onPress={() => {
                     const newNoteMode = !noteMode;
                     setNoteMode(newNoteMode);
@@ -365,66 +366,40 @@ export default function GameScreen() {
                   disabled={status !== 'playing'}
                   activeOpacity={0.6}
                 >
-                  <PenSquare 
-                    size={14} 
+                  <PenSquare
+                    size={14}
                     color={
                       status !== 'playing'
                         ? colors.textTertiary
                         : noteMode
                           ? (colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF')
                           : colors.textSecondary
-                    } 
+                    }
                     strokeWidth={1.5}
                   />
                 </TouchableOpacity>
-                
-                {/* Place Button */}
-                <TouchableOpacity 
-                  style={[
-                    styles.iconButton, 
-                    { 
-                      backgroundColor: (placeUsed || !selectedCell || status !== 'playing')
-                        ? colors.buttonBackgroundDisabled
-                        : colors.buttonBackground,
-                    marginRight: spacing.sm,
-                  }
-                  ]} 
-                  onPress={usePlace}
-                  disabled={placeUsed || !selectedCell || status !== 'playing'}
-                  activeOpacity={0.6}
-                >
-                  <CheckCircle 
-                    size={14} 
-                    color={
-                      (placeUsed || !selectedCell || status !== 'playing')
-                        ? colors.textTertiary
-                        : colors.textSecondary
-                    } 
-                    strokeWidth={1.5}
-                  />
-                </TouchableOpacity>
-                
+
                 {/* Hint Button */}
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[
-                    styles.iconButton, 
-                    { 
+                    styles.iconButton,
+                    {
                       backgroundColor: (!selectedCell || status !== 'playing')
                         ? colors.buttonBackgroundDisabled
                         : colors.buttonBackground,
-                  }
-                  ]} 
+                    }
+                  ]}
                   onPress={handleUseHint}
                   disabled={!selectedCell || status !== 'playing'}
                   activeOpacity={0.6}
                 >
-                  <Lightbulb 
-                    size={14} 
+                  <Lightbulb
+                    size={14}
                     color={
                       (!selectedCell || status !== 'playing')
                         ? colors.textTertiary
                         : colors.textSecondary
-                    } 
+                    }
                     strokeWidth={1.5}
                   />
                 </TouchableOpacity>
@@ -442,7 +417,7 @@ export default function GameScreen() {
                 <View style={[styles.hintModeContainerLarge, { backgroundColor: colors.background }]}>
                   {/* Exit Hint Mode Button */}
                   <View style={styles.hintModeExitButtonContainerLarge}>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       onPress={handleExitHintMode}
                       style={[styles.hintModeExitButton, { backgroundColor: colors.buttonBackground }]}
                       activeOpacity={0.6}
@@ -468,7 +443,7 @@ export default function GameScreen() {
                         </Text>
                       </View>
                     ) : (
-                      <ScrollView 
+                      <ScrollView
                         style={[styles.hintModePanelLarge, { backgroundColor: colors.modalBackground, borderColor: colors.cardBorder }]}
                         contentContainerStyle={styles.hintModePanelContentLarge}
                         showsVerticalScrollIndicator={false}
@@ -557,21 +532,21 @@ export default function GameScreen() {
                             {/* Action Button */}
                             <View style={[styles.hintModeActionsLarge, { borderTopColor: colors.borderThin }]}>
                               {!elaboratedHint && (
-                                <TouchableOpacity 
+                                <TouchableOpacity
                                   onPress={handleElaborateHint}
                                   style={[
-                                    styles.hintModeActionButton, 
-                                    { 
-                                      backgroundColor: colors.primary 
+                                    styles.hintModeActionButton,
+                                    {
+                                      backgroundColor: colors.primary
                                     }
                                   ]}
                                 >
                                   <Text style={[
-                                    styles.hintModeActionButtonText, 
-                                    { 
-                                      fontFamily: typography.fontBody, 
-                                      fontSize: typography.textSm, 
-                                      letterSpacing: typography.textSm * typography.trackingNormal, 
+                                    styles.hintModeActionButtonText,
+                                    {
+                                      fontFamily: typography.fontBody,
+                                      fontSize: typography.textSm,
+                                      letterSpacing: typography.textSm * typography.trackingNormal,
                                       color: colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF'
                                     }
                                   ]}>
@@ -586,12 +561,12 @@ export default function GameScreen() {
                             <Text style={[styles.hintPanelExplanation, { fontFamily: typography.fontBody, fontSize: typography.textBase, color: colors.textSecondary, textAlign: 'center', marginBottom: spacing.md, lineHeight: typography.textBase * typography.leadingRelaxed }]}>
                               Select a cell and tap "GET HINT" to see a hint
                             </Text>
-                            <TouchableOpacity 
+                            <TouchableOpacity
                               onPress={handleUseHint}
                               style={[
-                                styles.hintModeActionButton, 
-                                { 
-                                  backgroundColor: (!selectedCell || status !== 'playing') 
+                                styles.hintModeActionButton,
+                                {
+                                  backgroundColor: (!selectedCell || status !== 'playing')
                                     ? colors.buttonBackgroundDisabled
                                     : colors.primary,
                                   marginTop: spacing.md,
@@ -600,11 +575,11 @@ export default function GameScreen() {
                               disabled={!selectedCell || status !== 'playing'}
                             >
                               <Text style={[
-                                styles.hintModeActionButtonText, 
-                                { 
-                                  fontFamily: typography.fontBody, 
-                                  fontSize: typography.textSm, 
-                                  letterSpacing: typography.textSm * typography.trackingNormal, 
+                                styles.hintModeActionButtonText,
+                                {
+                                  fontFamily: typography.fontBody,
+                                  fontSize: typography.textSm,
+                                  letterSpacing: typography.textSm * typography.trackingNormal,
                                   color: (!selectedCell || status !== 'playing')
                                     ? colors.textTertiary
                                     : (colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF')
@@ -623,18 +598,18 @@ export default function GameScreen() {
                 /* Small Screen Layout: Bottom sheet overlay (original behavior) */
                 <View style={[styles.hintModeContainer, { backgroundColor: colors.background }]}>
                   {/* Dark Overlay Background */}
-                  <View 
+                  <View
                     style={[
-                      styles.hintModeOverlay, 
-                      { 
+                      styles.hintModeOverlay,
+                      {
                         backgroundColor: colorScheme === 'dark' ? 'rgba(0, 0, 0, 0.4)' : 'rgba(0, 0, 0, 0.3)',
                       }
-                    ]} 
+                    ]}
                   />
-                  
+
                   {/* Exit Hint Mode Button - Compact Icon */}
                   <View style={styles.hintModeExitButtonContainer}>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       onPress={handleExitHintMode}
                       style={[styles.hintModeExitButton, { backgroundColor: colors.buttonBackground }]}
                       activeOpacity={0.6}
@@ -676,7 +651,7 @@ export default function GameScreen() {
                     enableDynamicSizing={false}
                   >
                     <View style={styles.bottomSheetContent}>
-                      <BottomSheetScrollView 
+                      <BottomSheetScrollView
                         contentContainerStyle={[
                           styles.hintPanelScrollContent,
                           !elaboratedHint && styles.hintPanelScrollContentCompact
@@ -776,21 +751,21 @@ export default function GameScreen() {
                       {/* Fixed Actions Section - Always Visible */}
                       <View style={[styles.hintModeActions, { borderTopColor: colors.borderThin, backgroundColor: colors.modalBackground }]}>
                         {currentHint && !elaboratedHint && !isElaborating ? (
-                          <TouchableOpacity 
+                          <TouchableOpacity
                             onPress={handleElaborateHint}
                             style={[
-                              styles.hintModeActionButton, 
-                              { 
-                                backgroundColor: colors.primary 
+                              styles.hintModeActionButton,
+                              {
+                                backgroundColor: colors.primary
                               }
                             ]}
                           >
                             <Text style={[
-                              styles.hintModeActionButtonText, 
-                              { 
-                                fontFamily: typography.fontBody, 
-                                fontSize: typography.textSm, 
-                                letterSpacing: typography.textSm * typography.trackingNormal, 
+                              styles.hintModeActionButtonText,
+                              {
+                                fontFamily: typography.fontBody,
+                                fontSize: typography.textSm,
+                                letterSpacing: typography.textSm * typography.trackingNormal,
                                 color: colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF'
                               }
                             ]}>
@@ -798,24 +773,24 @@ export default function GameScreen() {
                             </Text>
                           </TouchableOpacity>
                         ) : !currentHint ? (
-                          <TouchableOpacity 
+                          <TouchableOpacity
                             onPress={handleUseHint}
                             style={[
-                              styles.hintModeActionButton, 
-                              { 
-                                backgroundColor: (!selectedCell || status !== 'playing') 
+                              styles.hintModeActionButton,
+                              {
+                                backgroundColor: (!selectedCell || status !== 'playing')
                                   ? colors.buttonBackgroundDisabled
-                                  : colors.primary 
+                                  : colors.primary
                               }
                             ]}
                             disabled={!selectedCell || status !== 'playing'}
                           >
                             <Text style={[
-                              styles.hintModeActionButtonText, 
-                              { 
-                                fontFamily: typography.fontBody, 
-                                fontSize: typography.textSm, 
-                                letterSpacing: typography.textSm * typography.trackingNormal, 
+                              styles.hintModeActionButtonText,
+                              {
+                                fontFamily: typography.fontBody,
+                                fontSize: typography.textSm,
+                                letterSpacing: typography.textSm * typography.trackingNormal,
                                 color: (!selectedCell || status !== 'playing')
                                   ? colors.textTertiary
                                   : (colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF')
@@ -835,297 +810,125 @@ export default function GameScreen() {
           {!hintMode && (
             <>
 
-          {/* Game Board and Hint Panel Container */}
-          {isLargeScreen ? (
-            <View style={styles.gameLayoutLarge}>
-              {/* Center: Board */}
-              <View style={styles.boardSectionLarge}>
-                <View style={styles.boardContainerLarge}>
-                  <SudokuBoard hintMode={false} />
-                </View>
-              </View>
-              
-              {/* Right Side: Hint Panel */}
-              {currentHint && (
-                <View style={styles.controlsSectionLarge}>
-                  <View style={[styles.hintPanelLarge, { backgroundColor: colors.modalBackground, borderColor: colors.cardBorder }]}>
-                    <View style={styles.hintPanelHeader}>
-                      <View style={styles.hintPanelTitleRow}>
-                        <Lightbulb size={18} color={colors.textSecondary} strokeWidth={1.5} />
-                        <Text style={[styles.hintPanelTitle, { fontFamily: typography.fontSerif, fontSize: typography.textLg, color: colors.textPrimary, marginLeft: spacing.xs, flex: 1 }]}>
-                          {currentHint.technique.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                        </Text>
-                      </View>
-                      <TouchableOpacity 
-                        onPress={clearHint}
-                        style={[styles.hintCloseButton, { backgroundColor: colors.buttonBackground }]}
-                      >
-                        <X size={14} color={colors.textSecondary} strokeWidth={1.5} />
-                      </TouchableOpacity>
+              {/* Game Board and Hint Panel Container */}
+              {isLargeScreen ? (
+                <View style={styles.gameLayoutLarge}>
+                  {/* Center: Board */}
+                  <View style={styles.boardSectionLarge}>
+                    <View style={styles.boardContainerLarge}>
+                      <SudokuBoard hintMode={false} />
                     </View>
-                    <Text style={[styles.hintPanelExplanation, { fontFamily: typography.fontBody, fontSize: typography.textBase, color: colors.textSecondary, marginBottom: spacing.md, lineHeight: typography.textBase * typography.leadingRelaxed }]}>
-                      {currentHint.explanation}
-                    </Text>
-                    <Text style={[styles.hintPanelGuidance, { fontFamily: typography.fontBody, fontSize: typography.textBase, color: colors.textPrimary, marginBottom: spacing.md, lineHeight: typography.textBase * typography.leadingRelaxed }]}>
-                      {currentHint.guidance}
-                    </Text>
-                    {currentHint.cell && currentHint.value && (
-                      <Text style={[styles.hintPanelCellInfo, { fontFamily: typography.fontBody, fontSize: typography.textSm, color: colors.textSecondary, fontStyle: 'italic' }]}>
-                        Placed {currentHint.value} at row {currentHint.cell.row + 1}, column {currentHint.cell.col + 1}
-                      </Text>
-                    )}
                   </View>
-                </View>
-              )}
-            </View>
-          ) : (
-            <>
-              {/* Game Board */}
-              <View style={styles.boardContainer}>
-                <SudokuBoard hintMode={false} />
-              </View>
 
-              {/* Hint Panel - Non-blocking */}
-              {currentHint && (
-                <View style={[styles.hintPanel, { backgroundColor: colors.modalBackground, borderColor: colors.cardBorder }]}>
-                  <View style={styles.hintPanelHeader}>
-                    <View style={styles.hintPanelTitleRow}>
-                      <Lightbulb size={18} color={colors.textSecondary} strokeWidth={1.5} />
-                      <Text style={[styles.hintPanelTitle, { fontFamily: typography.fontSerif, fontSize: typography.textLg, color: colors.textPrimary, marginLeft: spacing.xs, flex: 1 }]}>
-                        {currentHint.technique.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                      </Text>
-                    </View>
-                    <TouchableOpacity 
-                      onPress={clearHint}
-                      style={[styles.hintCloseButton, { backgroundColor: colors.buttonBackground }]}
-                    >
-                      <X size={14} color={colors.textSecondary} strokeWidth={1.5} />
-                    </TouchableOpacity>
-                  </View>
-                  <Text style={[styles.hintPanelExplanation, { fontFamily: typography.fontBody, fontSize: typography.textBase, color: colors.textSecondary, marginBottom: spacing.md, lineHeight: typography.textBase * typography.leadingRelaxed }]}>
-                    {currentHint.explanation}
-                  </Text>
-                  <Text style={[styles.hintPanelGuidance, { fontFamily: typography.fontBody, fontSize: typography.textBase, color: colors.textPrimary, marginBottom: spacing.md, lineHeight: typography.textBase * typography.leadingRelaxed }]}>
-                    {currentHint.guidance}
-                  </Text>
-                  {currentHint.cell && currentHint.value && (
-                    <Text style={[styles.hintPanelCellInfo, { fontFamily: typography.fontBody, fontSize: typography.textSm, color: colors.textSecondary, fontStyle: 'italic' }]}>
-                      Placed {currentHint.value} at row {currentHint.cell.row + 1}, column {currentHint.cell.col + 1}
-                    </Text>
-                  )}
-                </View>
-              )}
-            </>
-          )}
-
-          {/* Number Pad - Always at bottom for all screen sizes */}
-          <View style={[styles.numberPadContainer, isLargeScreen && styles.numberPadContainerLarge]}>
-            <NumberPad 
-              noteMode={noteMode}
-              addNote={addNote}
-              removeNote={removeNote}
-              notes={notes}
-            />
-          </View>
-
-          {/* Multiplayer Winner Modal */}
-          {multiplayerWinner && (
-            <View style={styles.overlay}>
-              <BlurView intensity={40} tint={colors.overlayTint} style={styles.blurBackground}>
-                <View style={[styles.modalCard, { backgroundColor: colors.modalBackground, borderColor: colors.cardBorder }]}>
-                  <Text style={[styles.modalTitle, { fontFamily: typography.fontSerif, fontSize: typography.text3xl, color: colors.textPrimary, marginBottom: spacing.sm }]}>
-                    Someone Won! 🎉
-                  </Text>
-                  <Text style={[styles.modalSubtitle, { fontFamily: typography.fontBody, fontSize: typography.textBase, color: colors.textSecondary, marginBottom: spacing.lg }]}>
-                    A connected player has completed the puzzle
-                  </Text>
-                  <View style={[styles.winnerInfo, { backgroundColor: colors.backgroundSecondary, borderColor: colors.cardBorder, marginBottom: spacing.lg }]}>
-                    <Text style={[styles.winnerName, { fontFamily: typography.fontSerif, fontSize: typography.textXl, color: colors.primary, marginBottom: spacing.xs }]}>
-                      {multiplayerWinner.playerName}
-                    </Text>
-                    <Text style={[styles.winnerTime, { fontFamily: typography.fontBody, fontSize: typography.textBase, color: colors.textPrimary }]}>
-                      Time: {formatTime(multiplayerWinner.completionTime)}
-                    </Text>
-                  </View>
-                  {multiplayer && isHost && (
-                    <TouchableOpacity 
-                      style={[styles.modalButton, { backgroundColor: colors.primary, marginBottom: spacing.sm }]}
-                      onPress={async () => {
-                        try { await startNewRound?.(); } catch {}
-                      }}
-                    >
-                      <Text style={[styles.modalButtonText, { fontFamily: typography.fontBody, fontSize: typography.textSm, letterSpacing: typography.textSm * typography.trackingNormal, color: colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF' }]}>
-                        START NEW ROUND
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                  {multiplayer && !isHost && (
-                    <Text style={[styles.hostHintText, { fontFamily: typography.fontBody, fontSize: typography.textSm, color: colors.textTertiary, marginBottom: spacing.sm }]}>
-                      The host can start a new round for everyone
-                    </Text>
-                  )}
-                  <TouchableOpacity 
-                    style={[styles.modalButtonSecondary, { backgroundColor: colors.buttonBackground }]} 
-                    onPress={handleNewGame}
-                  >
-                    <Text style={[styles.modalButtonSecondaryText, { fontFamily: typography.fontBody, fontSize: typography.textSm, letterSpacing: typography.textSm * typography.trackingNormal, color: colors.textSecondary }]}>
-                      LEAVE GAME
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </BlurView>
-            </View>
-          )}
-
-          {/* Multiplayer Loser Modal */}
-          {multiplayerLoser && (
-            <View style={styles.overlay}>
-              <BlurView intensity={40} tint={colors.overlayTint} style={styles.blurBackground}>
-                <View style={[styles.modalCard, { backgroundColor: colors.modalBackground, borderColor: colors.cardBorder }]}>
-                  <Text style={[styles.modalTitle, { fontFamily: typography.fontSerif, fontSize: typography.text3xl, color: colors.textPrimary, marginBottom: spacing.sm }]}>
-                    Player Lost 😔
-                  </Text>
-                  <Text style={[styles.modalSubtitle, { fontFamily: typography.fontBody, fontSize: typography.textBase, color: colors.textSecondary, marginBottom: spacing.lg }]}>
-                    A connected player has run out of lives
-                  </Text>
-                  <View style={[styles.winnerInfo, { backgroundColor: colors.backgroundSecondary, borderColor: colors.cardBorder, marginBottom: spacing.lg }]}>
-                    <Text style={[styles.winnerName, { fontFamily: typography.fontSerif, fontSize: typography.textXl, color: colors.error, marginBottom: spacing.xs }]}>
-                      {multiplayerLoser.playerName}
-                    </Text>
-                    <Text style={[styles.winnerTime, { fontFamily: typography.fontBody, fontSize: typography.textBase, color: colors.textPrimary }]}>
-                      Time: {formatTime(multiplayerLoser.timeElapsed)}
-                    </Text>
-                  </View>
-                  {multiplayer && isHost && (
-                    <TouchableOpacity 
-                      style={[styles.modalButton, { backgroundColor: colors.primary, marginBottom: spacing.sm }]}
-                      onPress={async () => {
-                        try { await startNewRound?.(); } catch {}
-                      }}
-                    >
-                      <Text style={[styles.modalButtonText, { fontFamily: typography.fontBody, fontSize: typography.textSm, letterSpacing: typography.textSm * typography.trackingNormal, color: colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF' }]}>
-                        START NEW ROUND
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                  {multiplayer && !isHost && (
-                    <Text style={[styles.hostHintText, { fontFamily: typography.fontBody, fontSize: typography.textSm, color: colors.textTertiary, marginBottom: spacing.sm }]}>
-                      The host can start a new round for everyone
-                    </Text>
-                  )}
-                  <TouchableOpacity 
-                    style={[styles.modalButtonSecondary, { backgroundColor: colors.buttonBackground }]} 
-                    onPress={handleNewGame}
-                  >
-                    <Text style={[styles.modalButtonSecondaryText, { fontFamily: typography.fontBody, fontSize: typography.textSm, letterSpacing: typography.textSm * typography.trackingNormal, color: colors.textSecondary }]}>
-                      LEAVE GAME
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </BlurView>
-            </View>
-          )}
-
-          {/* Loading Overlay */}
-          {(isLoading || isNewRoundStarting) && (
-            <View style={styles.overlay}>
-              <BlurView intensity={40} tint={colors.overlayTint} style={styles.blurBackground}>
-                <View style={[styles.modalCard, { backgroundColor: colors.modalBackground, borderColor: colors.cardBorder }]}>
-                  <ActivityIndicator size="large" color={colors.primary} />
-                  <Animated.Text 
-                    style={[
-                      styles.modalSubtitle,
-                      {
-                        fontFamily: typography.fontBody,
-                        fontSize: typography.textBase,
-                        color: colors.textSecondary,
-                        marginTop: spacing.md,
-                        opacity: messageOpacity,
-                      }
-                    ]}
-                  >
-                    {currentMessage}
-                  </Animated.Text>
-                </View>
-              </BlurView>
-            </View>
-          )}
-
-          {/* Game Status Overlay */}
-          {(status === 'won' || status === 'lost' || (status === 'paused' && !multiplayerWinner && !multiplayerLoser)) && (
-            <View style={styles.overlay}>
-              <BlurView intensity={40} tint={colors.overlayTint} style={styles.blurBackground}>
-                <View style={[styles.modalCard, { backgroundColor: colors.modalBackground, borderColor: colors.cardBorder }]}>
-                  {status === 'won' && (
-                    <>
-                      <Text style={[styles.modalTitle, { fontFamily: typography.fontSerif, fontSize: typography.text3xl, color: colors.textPrimary, marginBottom: spacing.sm }]}>
-                        Congratulations!
-                      </Text>
-                      <Text style={[styles.modalSubtitle, { fontFamily: typography.fontBody, fontSize: typography.textBase, color: colors.textSecondary, marginBottom: spacing.md }]}>
-                        You solved the puzzle
-                      </Text>
-                      <Text style={[styles.timeDisplay, { fontFamily: typography.fontSerif, fontSize: typography.textXl, color: colors.textPrimary, marginBottom: spacing.sm }]}>
-                        Time: {formatTime(timeElapsed)}
-                      </Text>
-                      {bestTime !== null && timeElapsed < bestTime && (
-                        <Text style={[styles.newRecord, { fontFamily: typography.fontBody, fontSize: typography.textBase, color: colors.success, marginBottom: spacing.sm }]}>
-                          🎉 New Record!
+                  {/* Right Side: Hint Panel */}
+                  {currentHint && (
+                    <View style={styles.controlsSectionLarge}>
+                      <View style={[styles.hintPanelLarge, { backgroundColor: colors.modalBackground, borderColor: colors.cardBorder }]}>
+                        <View style={styles.hintPanelHeader}>
+                          <View style={styles.hintPanelTitleRow}>
+                            <Lightbulb size={18} color={colors.textSecondary} strokeWidth={1.5} />
+                            <Text style={[styles.hintPanelTitle, { fontFamily: typography.fontSerif, fontSize: typography.textLg, color: colors.textPrimary, marginLeft: spacing.xs, flex: 1 }]}>
+                              {currentHint.technique.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            </Text>
+                          </View>
+                          <TouchableOpacity
+                            onPress={clearHint}
+                            style={[styles.hintCloseButton, { backgroundColor: colors.buttonBackground }]}
+                          >
+                            <X size={14} color={colors.textSecondary} strokeWidth={1.5} />
+                          </TouchableOpacity>
+                        </View>
+                        <Text style={[styles.hintPanelExplanation, { fontFamily: typography.fontBody, fontSize: typography.textBase, color: colors.textSecondary, marginBottom: spacing.md, lineHeight: typography.textBase * typography.leadingRelaxed }]}>
+                          {currentHint.explanation}
                         </Text>
-                      )}
-                      {bestTime !== null && (
-                        <Text style={[styles.bestTime, { fontFamily: typography.fontBody, fontSize: typography.textSm, color: colors.textTertiary, marginBottom: spacing.lg }]}>
-                          Best: {formatTime(bestTime)}
+                        <Text style={[styles.hintPanelGuidance, { fontFamily: typography.fontBody, fontSize: typography.textBase, color: colors.textPrimary, marginBottom: spacing.md, lineHeight: typography.textBase * typography.leadingRelaxed }]}>
+                          {currentHint.guidance}
                         </Text>
-                      )}
-                      {multiplayer && isHost && (
-                        <TouchableOpacity 
-                          style={[styles.modalButton, { backgroundColor: colors.primary, marginBottom: spacing.sm }]}
-                          onPress={async () => {
-                            try { await startNewRound?.(); } catch {}
-                          }}
-                        >
-                          <Text style={[styles.modalButtonText, { fontFamily: typography.fontBody, fontSize: typography.textSm, letterSpacing: typography.textSm * typography.trackingNormal, color: colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF' }]}>
-                            START NEW ROUND
+                        {currentHint.cell && currentHint.value && (
+                          <Text style={[styles.hintPanelCellInfo, { fontFamily: typography.fontBody, fontSize: typography.textSm, color: colors.textSecondary, fontStyle: 'italic' }]}>
+                            Placed {currentHint.value} at row {currentHint.cell.row + 1}, column {currentHint.cell.col + 1}
                           </Text>
-                        </TouchableOpacity>
-                      )}
-                      {multiplayer && !isHost && (
-                        <Text style={[styles.hostHintText, { fontFamily: typography.fontBody, fontSize: typography.textSm, color: colors.textTertiary, marginBottom: spacing.sm }]}>
-                          Wait here for the host to start a new round
-                        </Text>
-                      )}
-                      <TouchableOpacity 
-                        style={[multiplayer ? styles.modalButtonSecondary : styles.modalButton, { backgroundColor: multiplayer ? colors.buttonBackground : colors.primary }]} 
-                        onPress={handleNewGame}
-                      >
-                        <Text style={[
-                          multiplayer ? styles.modalButtonSecondaryText : styles.modalButtonText, 
-                          { 
-                            fontFamily: typography.fontBody, 
-                            fontSize: typography.textSm, 
-                            letterSpacing: typography.textSm * typography.trackingNormal, 
-                            color: multiplayer ? colors.textSecondary : (colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF')
-                          }
-                        ]}>
-                          {multiplayer ? 'LEAVE GAME' : 'NEW GAME'}
-                        </Text>
-                      </TouchableOpacity>
-                    </>
+                        )}
+                      </View>
+                    </View>
                   )}
-                  
-                  {status === 'lost' && (
-                    <>
+                </View>
+              ) : (
+                <>
+                  {/* Game Board */}
+                  <View style={styles.boardContainer}>
+                    <SudokuBoard hintMode={false} />
+                  </View>
+
+                  {/* Hint Panel - Non-blocking */}
+                  {currentHint && (
+                    <View style={[styles.hintPanel, { backgroundColor: colors.modalBackground, borderColor: colors.cardBorder }]}>
+                      <View style={styles.hintPanelHeader}>
+                        <View style={styles.hintPanelTitleRow}>
+                          <Lightbulb size={18} color={colors.textSecondary} strokeWidth={1.5} />
+                          <Text style={[styles.hintPanelTitle, { fontFamily: typography.fontSerif, fontSize: typography.textLg, color: colors.textPrimary, marginLeft: spacing.xs, flex: 1 }]}>
+                            {currentHint.technique.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          </Text>
+                        </View>
+                        <TouchableOpacity
+                          onPress={clearHint}
+                          style={[styles.hintCloseButton, { backgroundColor: colors.buttonBackground }]}
+                        >
+                          <X size={14} color={colors.textSecondary} strokeWidth={1.5} />
+                        </TouchableOpacity>
+                      </View>
+                      <Text style={[styles.hintPanelExplanation, { fontFamily: typography.fontBody, fontSize: typography.textBase, color: colors.textSecondary, marginBottom: spacing.md, lineHeight: typography.textBase * typography.leadingRelaxed }]}>
+                        {currentHint.explanation}
+                      </Text>
+                      <Text style={[styles.hintPanelGuidance, { fontFamily: typography.fontBody, fontSize: typography.textBase, color: colors.textPrimary, marginBottom: spacing.md, lineHeight: typography.textBase * typography.leadingRelaxed }]}>
+                        {currentHint.guidance}
+                      </Text>
+                      {currentHint.cell && currentHint.value && (
+                        <Text style={[styles.hintPanelCellInfo, { fontFamily: typography.fontBody, fontSize: typography.textSm, color: colors.textSecondary, fontStyle: 'italic' }]}>
+                          Placed {currentHint.value} at row {currentHint.cell.row + 1}, column {currentHint.cell.col + 1}
+                        </Text>
+                      )}
+                    </View>
+                  )}
+                </>
+              )}
+
+              {/* Number Pad - Always at bottom for all screen sizes */}
+              <View style={[styles.numberPadContainer, isLargeScreen && styles.numberPadContainerLarge]}>
+                <NumberPad
+                  noteMode={noteMode}
+                  addNote={addNote}
+                  removeNote={removeNote}
+                  notes={notes}
+                  placeUsed={placeUsed}
+                  usePlace={usePlace}
+                />
+              </View>
+
+              {/* Multiplayer Winner Modal */}
+              {multiplayerWinner && (
+                <View style={styles.overlay}>
+                  <BlurView intensity={40} tint={colors.overlayTint} style={styles.blurBackground}>
+                    <View style={[styles.modalCard, { backgroundColor: colors.modalBackground, borderColor: colors.cardBorder }]}>
                       <Text style={[styles.modalTitle, { fontFamily: typography.fontSerif, fontSize: typography.text3xl, color: colors.textPrimary, marginBottom: spacing.sm }]}>
-                        Game Over
+                        Someone Won! 🎉
                       </Text>
                       <Text style={[styles.modalSubtitle, { fontFamily: typography.fontBody, fontSize: typography.textBase, color: colors.textSecondary, marginBottom: spacing.lg }]}>
-                        You ran out of lives!
+                        A connected player has completed the puzzle
                       </Text>
+                      <View style={[styles.winnerInfo, { backgroundColor: colors.backgroundSecondary, borderColor: colors.cardBorder, marginBottom: spacing.lg }]}>
+                        <Text style={[styles.winnerName, { fontFamily: typography.fontSerif, fontSize: typography.textXl, color: colors.primary, marginBottom: spacing.xs }]}>
+                          {multiplayerWinner.playerName}
+                        </Text>
+                        <Text style={[styles.winnerTime, { fontFamily: typography.fontBody, fontSize: typography.textBase, color: colors.textPrimary }]}>
+                          Time: {formatTime(multiplayerWinner.completionTime)}
+                        </Text>
+                      </View>
                       {multiplayer && isHost && (
-                        <TouchableOpacity 
+                        <TouchableOpacity
                           style={[styles.modalButton, { backgroundColor: colors.primary, marginBottom: spacing.sm }]}
                           onPress={async () => {
-                            try { await startNewRound?.(); } catch {}
+                            try { await startNewRound?.(); } catch { }
                           }}
                         >
                           <Text style={[styles.modalButtonText, { fontFamily: typography.fontBody, fontSize: typography.textSm, letterSpacing: typography.textSm * typography.trackingNormal, color: colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF' }]}>
@@ -1135,76 +938,250 @@ export default function GameScreen() {
                       )}
                       {multiplayer && !isHost && (
                         <Text style={[styles.hostHintText, { fontFamily: typography.fontBody, fontSize: typography.textSm, color: colors.textTertiary, marginBottom: spacing.sm }]}>
-                          Wait here for the host to start a new round
+                          The host can start a new round for everyone
                         </Text>
                       )}
-                      <TouchableOpacity 
-                        style={[multiplayer ? styles.modalButtonSecondary : styles.modalButton, { backgroundColor: multiplayer ? colors.buttonBackground : colors.primary }]} 
-                        onPress={async () => {
-                          if (multiplayer) {
-                            await leaveMultiplayerGame?.();
-                          }
-                          newGame();
-                          router.push('/');
-                        }}
+                      <TouchableOpacity
+                        style={[styles.modalButtonSecondary, { backgroundColor: colors.buttonBackground }]}
+                        onPress={handleNewGame}
                       >
-                        <Text style={[
-                          multiplayer ? styles.modalButtonSecondaryText : styles.modalButtonText, 
-                          { 
-                            fontFamily: typography.fontBody, 
-                            fontSize: typography.textSm, 
-                            letterSpacing: typography.textSm * typography.trackingNormal, 
-                            color: multiplayer ? colors.textSecondary : (colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF')
-                          }
-                        ]}>
-                          {multiplayer ? 'LEAVE GAME' : 'TRY AGAIN'}
+                        <Text style={[styles.modalButtonSecondaryText, { fontFamily: typography.fontBody, fontSize: typography.textSm, letterSpacing: typography.textSm * typography.trackingNormal, color: colors.textSecondary }]}>
+                          LEAVE GAME
                         </Text>
                       </TouchableOpacity>
-                    </>
-                  )}
-                  
-                  {status === 'paused' && (
-                    <>
-                      <Text style={[styles.modalTitle, { fontFamily: typography.fontSerif, fontSize: typography.text3xl, color: colors.textPrimary, marginBottom: spacing.lg }]}>
-                        Paused
+                    </View>
+                  </BlurView>
+                </View>
+              )}
+
+              {/* Multiplayer Loser Modal */}
+              {multiplayerLoser && (
+                <View style={styles.overlay}>
+                  <BlurView intensity={40} tint={colors.overlayTint} style={styles.blurBackground}>
+                    <View style={[styles.modalCard, { backgroundColor: colors.modalBackground, borderColor: colors.cardBorder }]}>
+                      <Text style={[styles.modalTitle, { fontFamily: typography.fontSerif, fontSize: typography.text3xl, color: colors.textPrimary, marginBottom: spacing.sm }]}>
+                        Player Lost 😔
                       </Text>
-                      <TouchableOpacity 
-                        style={[styles.modalButton, { backgroundColor: colors.primary, marginBottom: spacing.sm }]} 
-                        onPress={resumeGame}
-                      >
-                        <Text style={[styles.modalButtonText, { fontFamily: typography.fontBody, fontSize: typography.textSm, letterSpacing: typography.textSm * typography.trackingNormal, color: colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF' }]}>
-                          {multiplayer ? 'RESUME FOR ALL' : 'RESUME'}
+                      <Text style={[styles.modalSubtitle, { fontFamily: typography.fontBody, fontSize: typography.textBase, color: colors.textSecondary, marginBottom: spacing.lg }]}>
+                        A connected player has run out of lives
+                      </Text>
+                      <View style={[styles.winnerInfo, { backgroundColor: colors.backgroundSecondary, borderColor: colors.cardBorder, marginBottom: spacing.lg }]}>
+                        <Text style={[styles.winnerName, { fontFamily: typography.fontSerif, fontSize: typography.textXl, color: colors.error, marginBottom: spacing.xs }]}>
+                          {multiplayerLoser.playerName}
                         </Text>
-                      </TouchableOpacity>
-                      {!multiplayer && (
-                        <TouchableOpacity 
-                          style={[styles.modalButtonSecondary, { backgroundColor: colors.buttonBackground, marginBottom: spacing.sm }]} 
-                          onPress={handleNewGame}
+                        <Text style={[styles.winnerTime, { fontFamily: typography.fontBody, fontSize: typography.textBase, color: colors.textPrimary }]}>
+                          Time: {formatTime(multiplayerLoser.timeElapsed)}
+                        </Text>
+                      </View>
+                      {multiplayer && isHost && (
+                        <TouchableOpacity
+                          style={[styles.modalButton, { backgroundColor: colors.primary, marginBottom: spacing.sm }]}
+                          onPress={async () => {
+                            try { await startNewRound?.(); } catch { }
+                          }}
                         >
-                          <Text style={[styles.modalButtonSecondaryText, { fontFamily: typography.fontBody, fontSize: typography.textSm, letterSpacing: typography.textSm * typography.trackingNormal, color: colors.textSecondary }]}>
-                            NEW GAME
+                          <Text style={[styles.modalButtonText, { fontFamily: typography.fontBody, fontSize: typography.textSm, letterSpacing: typography.textSm * typography.trackingNormal, color: colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF' }]}>
+                            START NEW ROUND
                           </Text>
                         </TouchableOpacity>
                       )}
-                      <TouchableOpacity 
-                        style={[styles.modalButtonSecondary, { backgroundColor: colors.buttonBackground }]} 
-                        onPress={handleExitToMenu}
+                      {multiplayer && !isHost && (
+                        <Text style={[styles.hostHintText, { fontFamily: typography.fontBody, fontSize: typography.textSm, color: colors.textTertiary, marginBottom: spacing.sm }]}>
+                          The host can start a new round for everyone
+                        </Text>
+                      )}
+                      <TouchableOpacity
+                        style={[styles.modalButtonSecondary, { backgroundColor: colors.buttonBackground }]}
+                        onPress={handleNewGame}
                       >
                         <Text style={[styles.modalButtonSecondaryText, { fontFamily: typography.fontBody, fontSize: typography.textSm, letterSpacing: typography.textSm * typography.trackingNormal, color: colors.textSecondary }]}>
-                          {multiplayer ? 'LEAVE GAME' : 'EXIT TO MENU'}
+                          LEAVE GAME
                         </Text>
                       </TouchableOpacity>
-                    </>
-                  )}
+                    </View>
+                  </BlurView>
                 </View>
-              </BlurView>
-            </View>
-          )}
+              )}
+
+              {/* Loading Overlay */}
+              {(isLoading || isNewRoundStarting) && (
+                <View style={styles.overlay}>
+                  <BlurView intensity={40} tint={colors.overlayTint} style={styles.blurBackground}>
+                    <View style={[styles.modalCard, { backgroundColor: colors.modalBackground, borderColor: colors.cardBorder }]}>
+                      <ActivityIndicator size="large" color={colors.primary} />
+                      <Animated.Text
+                        style={[
+                          styles.modalSubtitle,
+                          {
+                            fontFamily: typography.fontBody,
+                            fontSize: typography.textBase,
+                            color: colors.textSecondary,
+                            marginTop: spacing.md,
+                            opacity: messageOpacity,
+                          }
+                        ]}
+                      >
+                        {currentMessage}
+                      </Animated.Text>
+                    </View>
+                  </BlurView>
+                </View>
+              )}
+
+              {/* Game Status Overlay */}
+              {(status === 'won' || status === 'lost' || (status === 'paused' && !multiplayerWinner && !multiplayerLoser)) && (
+                <View style={styles.overlay}>
+                  <BlurView intensity={40} tint={colors.overlayTint} style={styles.blurBackground}>
+                    <View style={[styles.modalCard, { backgroundColor: colors.modalBackground, borderColor: colors.cardBorder }]}>
+                      {status === 'won' && (
+                        <>
+                          <Text style={[styles.modalTitle, { fontFamily: typography.fontSerif, fontSize: typography.text3xl, color: colors.textPrimary, marginBottom: spacing.sm }]}>
+                            Congratulations!
+                          </Text>
+                          <Text style={[styles.modalSubtitle, { fontFamily: typography.fontBody, fontSize: typography.textBase, color: colors.textSecondary, marginBottom: spacing.md }]}>
+                            You solved the puzzle
+                          </Text>
+                          <Text style={[styles.timeDisplay, { fontFamily: typography.fontSerif, fontSize: typography.textXl, color: colors.textPrimary, marginBottom: spacing.sm }]}>
+                            Time: {formatTime(timeElapsed)}
+                          </Text>
+                          {bestTime !== null && timeElapsed < bestTime && (
+                            <Text style={[styles.newRecord, { fontFamily: typography.fontBody, fontSize: typography.textBase, color: colors.success, marginBottom: spacing.sm }]}>
+                              🎉 New Record!
+                            </Text>
+                          )}
+                          {bestTime !== null && (
+                            <Text style={[styles.bestTime, { fontFamily: typography.fontBody, fontSize: typography.textSm, color: colors.textTertiary, marginBottom: spacing.lg }]}>
+                              Best: {formatTime(bestTime)}
+                            </Text>
+                          )}
+                          {multiplayer && isHost && (
+                            <TouchableOpacity
+                              style={[styles.modalButton, { backgroundColor: colors.primary, marginBottom: spacing.sm }]}
+                              onPress={async () => {
+                                try { await startNewRound?.(); } catch { }
+                              }}
+                            >
+                              <Text style={[styles.modalButtonText, { fontFamily: typography.fontBody, fontSize: typography.textSm, letterSpacing: typography.textSm * typography.trackingNormal, color: colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF' }]}>
+                                START NEW ROUND
+                              </Text>
+                            </TouchableOpacity>
+                          )}
+                          {multiplayer && !isHost && (
+                            <Text style={[styles.hostHintText, { fontFamily: typography.fontBody, fontSize: typography.textSm, color: colors.textTertiary, marginBottom: spacing.sm }]}>
+                              Wait here for the host to start a new round
+                            </Text>
+                          )}
+                          <TouchableOpacity
+                            style={[multiplayer ? styles.modalButtonSecondary : styles.modalButton, { backgroundColor: multiplayer ? colors.buttonBackground : colors.primary }]}
+                            onPress={handleNewGame}
+                          >
+                            <Text style={[
+                              multiplayer ? styles.modalButtonSecondaryText : styles.modalButtonText,
+                              {
+                                fontFamily: typography.fontBody,
+                                fontSize: typography.textSm,
+                                letterSpacing: typography.textSm * typography.trackingNormal,
+                                color: multiplayer ? colors.textSecondary : (colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF')
+                              }
+                            ]}>
+                              {multiplayer ? 'LEAVE GAME' : 'NEW GAME'}
+                            </Text>
+                          </TouchableOpacity>
+                        </>
+                      )}
+
+                      {status === 'lost' && (
+                        <>
+                          <Text style={[styles.modalTitle, { fontFamily: typography.fontSerif, fontSize: typography.text3xl, color: colors.textPrimary, marginBottom: spacing.sm }]}>
+                            Game Over
+                          </Text>
+                          <Text style={[styles.modalSubtitle, { fontFamily: typography.fontBody, fontSize: typography.textBase, color: colors.textSecondary, marginBottom: spacing.lg }]}>
+                            You ran out of lives!
+                          </Text>
+                          {multiplayer && isHost && (
+                            <TouchableOpacity
+                              style={[styles.modalButton, { backgroundColor: colors.primary, marginBottom: spacing.sm }]}
+                              onPress={async () => {
+                                try { await startNewRound?.(); } catch { }
+                              }}
+                            >
+                              <Text style={[styles.modalButtonText, { fontFamily: typography.fontBody, fontSize: typography.textSm, letterSpacing: typography.textSm * typography.trackingNormal, color: colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF' }]}>
+                                START NEW ROUND
+                              </Text>
+                            </TouchableOpacity>
+                          )}
+                          {multiplayer && !isHost && (
+                            <Text style={[styles.hostHintText, { fontFamily: typography.fontBody, fontSize: typography.textSm, color: colors.textTertiary, marginBottom: spacing.sm }]}>
+                              Wait here for the host to start a new round
+                            </Text>
+                          )}
+                          <TouchableOpacity
+                            style={[multiplayer ? styles.modalButtonSecondary : styles.modalButton, { backgroundColor: multiplayer ? colors.buttonBackground : colors.primary }]}
+                            onPress={async () => {
+                              if (multiplayer) {
+                                await leaveMultiplayerGame?.();
+                              }
+                              newGame();
+                              router.push('/');
+                            }}
+                          >
+                            <Text style={[
+                              multiplayer ? styles.modalButtonSecondaryText : styles.modalButtonText,
+                              {
+                                fontFamily: typography.fontBody,
+                                fontSize: typography.textSm,
+                                letterSpacing: typography.textSm * typography.trackingNormal,
+                                color: multiplayer ? colors.textSecondary : (colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF')
+                              }
+                            ]}>
+                              {multiplayer ? 'LEAVE GAME' : 'TRY AGAIN'}
+                            </Text>
+                          </TouchableOpacity>
+                        </>
+                      )}
+
+                      {status === 'paused' && (
+                        <>
+                          <Text style={[styles.modalTitle, { fontFamily: typography.fontSerif, fontSize: typography.text3xl, color: colors.textPrimary, marginBottom: spacing.lg }]}>
+                            Paused
+                          </Text>
+                          <TouchableOpacity
+                            style={[styles.modalButton, { backgroundColor: colors.primary, marginBottom: spacing.sm }]}
+                            onPress={resumeGame}
+                          >
+                            <Text style={[styles.modalButtonText, { fontFamily: typography.fontBody, fontSize: typography.textSm, letterSpacing: typography.textSm * typography.trackingNormal, color: colorScheme === 'dark' ? colors.textPrimary : '#FFFFFF' }]}>
+                              {multiplayer ? 'RESUME FOR ALL' : 'RESUME'}
+                            </Text>
+                          </TouchableOpacity>
+                          {!multiplayer && (
+                            <TouchableOpacity
+                              style={[styles.modalButtonSecondary, { backgroundColor: colors.buttonBackground, marginBottom: spacing.sm }]}
+                              onPress={handleNewGame}
+                            >
+                              <Text style={[styles.modalButtonSecondaryText, { fontFamily: typography.fontBody, fontSize: typography.textSm, letterSpacing: typography.textSm * typography.trackingNormal, color: colors.textSecondary }]}>
+                                NEW GAME
+                              </Text>
+                            </TouchableOpacity>
+                          )}
+                          <TouchableOpacity
+                            style={[styles.modalButtonSecondary, { backgroundColor: colors.buttonBackground }]}
+                            onPress={handleExitToMenu}
+                          >
+                            <Text style={[styles.modalButtonSecondaryText, { fontFamily: typography.fontBody, fontSize: typography.textSm, letterSpacing: typography.textSm * typography.trackingNormal, color: colors.textSecondary }]}>
+                              {multiplayer ? 'LEAVE GAME' : 'EXIT TO MENU'}
+                            </Text>
+                          </TouchableOpacity>
+                        </>
+                      )}
+                    </View>
+                  </BlurView>
+                </View>
+              )}
             </>
           )}
         </View>
       </LinearGradient>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -1608,7 +1585,7 @@ const styles = StyleSheet.create({
   },
   numberPadContainer: {
     paddingHorizontal: 8,
-    paddingBottom: 16,
+    paddingBottom: 48,
     width: '100%',
     alignSelf: 'center',
   },
