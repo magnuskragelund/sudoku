@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { ChevronLeft, Clock } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Animated, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ConfigCard from '../components/ConfigCard';
 import ContentBox from '../components/ContentBox';
 import ContentSection from '../components/ContentSection';
@@ -29,6 +29,7 @@ export default function LobbyScreen() {
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [isGameStarting, setIsGameStarting] = useState(false);
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
 
   // Responsive max width: 600px for phones, 1000px for tablets/web
   const maxContentWidth = width >= 768 ? 1000 : 600;
@@ -126,7 +127,7 @@ export default function LobbyScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <LinearGradient
         colors={[colors.backgroundGradientFrom, colors.backgroundGradientTo]}
         style={styles.gradient}
@@ -371,7 +372,7 @@ export default function LobbyScreen() {
         }}
         onClose={() => setShowErrorModal(false)}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 

@@ -4,41 +4,42 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import { Platform, ScrollView, Share, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Modal from '../components/Modal';
 import ScreenHeader from '../components/ScreenHeader';
 import WebReturnBanner from '../components/WebReturnBanner';
 import { useGame } from '../context/GameContext';
 import { useTheme } from '../context/ThemeContext';
-import { generateSimpleRoomShareMessage } from '../utils/shareUtils';
 import { Difficulty } from '../types/game';
+import { generateSimpleRoomShareMessage } from '../utils/shareUtils';
 
 export default function MultiplayerScreen() {
   const router = useRouter();
   const { colors, typography, spacing, colorScheme } = useTheme();
   const { createMultiplayerGame, joinMultiplayerGame } = useGame();
   const { width } = useWindowDimensions();
-  
+  const insets = useSafeAreaInsets();
+
   // Responsive max width: 600px for phones, 1000px for tablets/web
   const maxContentWidth = width >= 768 ? 1000 : 600;
-  
+
   // Get deep link params and mode
   const params = useLocalSearchParams();
   const joinGameParam = params.joinGame as string | undefined;
   const modeParam = params.mode as 'create' | 'join' | undefined;
-  
+
   const [activeTab, setActiveTab] = useState<'create' | 'join'>(modeParam || 'create');
-  
+
   // Create form state
   const [channelName, setChannelName] = useState('');
   const [playerName, setPlayerName] = useState('');
   const [difficulty, setDifficulty] = useState<Difficulty>('medium');
   const [lives, setLives] = useState(5);
-  
+
   // Join form state
   const [joinChannelName, setJoinChannelName] = useState('');
   const [joinPlayerName, setJoinPlayerName] = useState('');
-  
+
   // Modal state
   const [errorModal, setErrorModal] = useState<{ title: string; message: string } | null>(null);
 
@@ -57,18 +58,18 @@ export default function MultiplayerScreen() {
 
   const prefStorage = Platform.OS === 'web'
     ? {
-        getItem: async (key: string) => {
-          if (typeof window !== 'undefined' && window.localStorage) {
-            return window.localStorage.getItem(key);
-          }
-          return null;
-        },
-        setItem: async (key: string, value: string) => {
-          if (typeof window !== 'undefined' && window.localStorage) {
-            window.localStorage.setItem(key, value);
-          }
-        },
-      }
+      getItem: async (key: string) => {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          return window.localStorage.getItem(key);
+        }
+        return null;
+      },
+      setItem: async (key: string, value: string) => {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          window.localStorage.setItem(key, value);
+        }
+      },
+    }
     : AsyncStorage;
 
   useEffect(() => {
@@ -110,7 +111,7 @@ export default function MultiplayerScreen() {
     if (joinGameParam) {
       setActiveTab('join');
       setJoinChannelName(joinGameParam);
-      
+
       // Auto-join if we have a saved player name
       const autoJoin = async () => {
         try {
@@ -124,7 +125,7 @@ export default function MultiplayerScreen() {
                 router.replace('/lobby');
               } catch (error: any) {
                 const errorMessage = error?.message || '';
-                
+
                 if (errorMessage.includes('Game is full')) {
                   setErrorModal({ title: 'Game Full', message: 'This game has reached the maximum number of players (10). Please try another game.' });
                 } else if (errorMessage.includes('not found') || errorMessage.includes('already started')) {
@@ -139,7 +140,7 @@ export default function MultiplayerScreen() {
           // Failed to load player name - show join form
         }
       };
-      
+
       autoJoin();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -154,14 +155,13 @@ export default function MultiplayerScreen() {
     }
   };
 
-  // Auto-suggest a short hyphenated game name like "monkey-glass"
+  // Auto-suggest a short hyphenated game name like "grid-clue"
   const WORDS: string[] = [
-    'apple','bear','blue','boat','book','cake','cat','rain','cloud','coin',
-    'cool','crow','deer','ball','dust','easy','fire','fish','frog','gift',
-    'gold','goat','hand','hawk','heat','hill','ice','iron','jazz','kite',
-    'leaf','lime','lion','luna','mint','saint','moon','mouse','nest','ant',
-    'pearl','pink','pond','rain','rock','seed','ship','snow','star','tree',
-    'tide','wolf','wood','hat'
+    'grid', 'cell', 'row', 'col', 'box', 'clue', 'hint', 'note', 'mark', 'digit',
+    'value', 'nine', 'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven',
+    'eight', 'solve', 'logic', 'rule', 'valid', 'check', 'cross', 'wing', 'fish', 'xwing',
+    'sword', 'naked', 'hidden', 'pair', 'triple', 'quad', 'block', 'line', 'puzzle', 'game',
+    'play', 'win', 'easy', 'hard', 'expert', 'master', 'skill', 'brain', 'think', 'smart'
   ];
 
   function generateGameName(): string {
@@ -190,16 +190,16 @@ export default function MultiplayerScreen() {
       setErrorModal({ title: 'Validation Error', message: 'Please enter your name' });
       return;
     }
-    
+
     // Auto-generate game name if not set
     const gameName = channelName.trim() || generateGameName();
-    
+
     try {
       await createMultiplayerGame?.(gameName, playerName.trim(), difficulty, lives);
-      
+
       // Wait a bit for state to be set
       await new Promise(resolve => setTimeout(resolve, 300));
-      
+
       router.push('/lobby');
     } catch (error) {
       setErrorModal({ title: 'Error', message: 'Failed to create game. Please try again.' });
@@ -211,17 +211,17 @@ export default function MultiplayerScreen() {
       setErrorModal({ title: 'Validation Error', message: 'Please enter both game name and your name' });
       return;
     }
-    
+
     try {
       await joinMultiplayerGame?.(joinChannelName.trim(), joinPlayerName.trim());
-      
+
       // Wait a bit for state to be set
       await new Promise(resolve => setTimeout(resolve, 300));
-      
+
       router.push('/lobby');
     } catch (error: any) {
       const errorMessage = error?.message || '';
-      
+
       if (errorMessage.includes('Game is full')) {
         setErrorModal({ title: 'Game Full', message: 'This game has reached the maximum number of players (10). Please try another game.' });
       } else if (errorMessage.includes('not found') || errorMessage.includes('already started')) {
@@ -234,9 +234,9 @@ export default function MultiplayerScreen() {
 
   const handleShareRoomId = async () => {
     if (!channelName.trim()) return;
-    
+
     const shareMessage = generateSimpleRoomShareMessage(channelName);
-    
+
     try {
       if (Platform.OS === 'web') {
         // On web, copy to clipboard
@@ -257,13 +257,13 @@ export default function MultiplayerScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <LinearGradient
         colors={[colors.backgroundGradientFrom, colors.backgroundGradientTo]}
         style={styles.gradient}
       >
         <WebReturnBanner />
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
@@ -271,12 +271,12 @@ export default function MultiplayerScreen() {
             {activeTab === 'create' ? (
               <>
                 {/* Custom Header */}
-                <TouchableOpacity 
-                  onPress={() => router.back()} 
+                <TouchableOpacity
+                  onPress={() => router.back()}
                   style={[styles.backButton, { marginBottom: spacing.lg }]}
                 >
                   <ChevronLeft size={16} color={colors.textSecondary} strokeWidth={1.5} />
-                  <Text 
+                  <Text
                     style={[
                       styles.backButtonText,
                       {
@@ -292,8 +292,8 @@ export default function MultiplayerScreen() {
                   </Text>
                 </TouchableOpacity>
 
-                <View style={[styles.masthead, { marginBottom: spacing.xl2 }]}>
-                  <Text 
+                <View style={[styles.masthead, { marginBottom: spacing.xl }]}>
+                  <Text
                     style={[
                       styles.subtitleLabel,
                       {
@@ -301,32 +301,32 @@ export default function MultiplayerScreen() {
                         fontSize: typography.textSm,
                         letterSpacing: typography.textSm * typography.trackingNormal,
                         color: colors.textLabel,
-                        marginBottom: spacing.sm,
+                        marginBottom: spacing.xs,
                       }
                     ]}
                   >
                     Host a Challenge
                   </Text>
-                  
-                  <Text 
+
+                  <Text
                     style={[
                       styles.mainTitle,
                       {
                         fontFamily: typography.fontSerif,
-                        fontSize: typography.text5xl * 1.5,
-                        letterSpacing: (typography.text5xl * 1.5) * typography.trackingTight,
-                        lineHeight: (typography.text5xl * 1.5) * typography.leadingTight,
+                        fontSize: width < 400 ? typography.text5xl * 0.8 : typography.text5xl * 1.5,
+                        letterSpacing: (width < 400 ? typography.text5xl * 0.8 : typography.text5xl * 1.5) * typography.trackingTight,
+                        lineHeight: (width < 400 ? typography.text5xl * 0.8 : typography.text5xl * 1.5) * typography.leadingTight,
                         color: colors.textPrimary,
-                        marginBottom: spacing.md,
+                        marginBottom: spacing.sm,
                       }
                     ]}
                   >
                     Create Game
                   </Text>
-                  
-                  <View style={[styles.titleUnderline, { backgroundColor: colors.divider, marginBottom: spacing.md }]} />
-                  
-                  <Text 
+
+                  <View style={[styles.titleUnderline, { backgroundColor: colors.divider, marginBottom: spacing.sm }]} />
+
+                  <Text
                     style={[
                       styles.subtitleText,
                       {
@@ -348,11 +348,12 @@ export default function MultiplayerScreen() {
                     backgroundColor: colors.cardBackground,
                     borderColor: colors.cardBorder,
                     shadowColor: colors.cardShadow,
+                    padding: width < 400 ? 20 : 32,
                   }
                 ]}>
                   {/* HOST INFORMATION Section */}
-                  <View style={styles.section}>
-                    <Text 
+                  <View style={[styles.section, { marginBottom: width < 400 ? 24 : 32 }]}>
+                    <Text
                       style={[
                         styles.sectionTitle,
                         {
@@ -360,13 +361,13 @@ export default function MultiplayerScreen() {
                           fontSize: typography.textXs,
                           letterSpacing: typography.textXs * typography.trackingWide,
                           color: colors.textLabel,
-                          marginBottom: spacing.lg,
+                          marginBottom: spacing.md,
                         }
                       ]}
                     >
                       HOST INFORMATION
                     </Text>
-                    
+
                     <Text style={[
                       styles.label,
                       {
@@ -374,7 +375,7 @@ export default function MultiplayerScreen() {
                         fontSize: typography.textXs,
                         letterSpacing: typography.textXs * typography.trackingWide,
                         color: colors.textSecondary,
-                        marginBottom: spacing.md,
+                        marginBottom: spacing.sm,
                       }
                     ]}>
                       YOUR NAME
@@ -388,7 +389,8 @@ export default function MultiplayerScreen() {
                           color: colors.textPrimary,
                           fontFamily: typography.fontBody,
                           fontSize: typography.textBase,
-                          marginBottom: spacing.xl2,
+                          marginBottom: spacing.lg,
+                          paddingVertical: width < 400 ? 10 : 12,
                         }
                       ]}
                       value={playerName}
@@ -404,7 +406,7 @@ export default function MultiplayerScreen() {
 
                   {/* GAME CONFIGURATION Section */}
                   <View style={styles.section}>
-                    <Text 
+                    <Text
                       style={[
                         styles.sectionTitle,
                         {
@@ -412,13 +414,13 @@ export default function MultiplayerScreen() {
                           fontSize: typography.textXs,
                           letterSpacing: typography.textXs * typography.trackingWide,
                           color: colors.textLabel,
-                          marginBottom: spacing.lg,
+                          marginBottom: spacing.md,
                         }
                       ]}
                     >
                       GAME CONFIGURATION
                     </Text>
-                    
+
                     <Text style={[
                       styles.label,
                       {
@@ -426,7 +428,7 @@ export default function MultiplayerScreen() {
                         fontSize: typography.textXs,
                         letterSpacing: typography.textXs * typography.trackingWide,
                         color: colors.textSecondary,
-                        marginBottom: spacing.md,
+                        marginBottom: spacing.sm,
                       }
                     ]}>
                       DIFFICULTY LEVEL
@@ -442,10 +444,10 @@ export default function MultiplayerScreen() {
                             styles.difficultyButton,
                             width < 400 && styles.difficultyButtonMobile,
                             {
-                              backgroundColor: difficulty === diff.value 
+                              backgroundColor: difficulty === diff.value
                                 ? colors.primary
                                 : colors.cardBackground,
-                              borderColor: difficulty === diff.value 
+                              borderColor: difficulty === diff.value
                                 ? colors.primary
                                 : colors.borderThin,
                             },
@@ -459,7 +461,7 @@ export default function MultiplayerScreen() {
                               {
                                 fontFamily: typography.fontSerif,
                                 fontSize: typography.textBase,
-                                color: difficulty === diff.value 
+                                color: difficulty === diff.value
                                   ? '#FFFFFF'
                                   : colors.textPrimary,
                                 marginBottom: 2,
@@ -468,21 +470,23 @@ export default function MultiplayerScreen() {
                           >
                             {diff.label}
                           </Text>
-                          <Text
-                            style={[
-                              styles.difficultyButtonEditionText,
-                              {
-                                fontFamily: typography.fontBody,
-                                fontSize: typography.textXs,
-                                letterSpacing: typography.textXs * typography.trackingWide,
-                                color: difficulty === diff.value 
-                                  ? '#FFFFFF'
-                                  : colors.textLabel,
-                              }
-                            ]}
-                          >
-                            {diff.edition}
-                          </Text>
+                          {width >= 400 && (
+                            <Text
+                              style={[
+                                styles.difficultyButtonEditionText,
+                                {
+                                  fontFamily: typography.fontBody,
+                                  fontSize: typography.textXs,
+                                  letterSpacing: typography.textXs * typography.trackingWide,
+                                  color: difficulty === diff.value
+                                    ? '#FFFFFF'
+                                    : colors.textLabel,
+                                }
+                              ]}
+                            >
+                              {diff.edition}
+                            </Text>
+                          )}
                         </TouchableOpacity>
                       ))}
                     </View>
@@ -494,8 +498,8 @@ export default function MultiplayerScreen() {
                         fontSize: typography.textXs,
                         letterSpacing: typography.textXs * typography.trackingWide,
                         color: colors.textSecondary,
-                        marginTop: spacing.xl,
-                        marginBottom: spacing.md,
+                        marginTop: spacing.lg,
+                        marginBottom: spacing.sm,
                       }
                     ]}>
                       NUMBER OF LIVES
@@ -507,12 +511,13 @@ export default function MultiplayerScreen() {
                           style={[
                             styles.lifeButton,
                             {
-                              backgroundColor: lives === life 
+                              backgroundColor: lives === life
                                 ? colors.primary
                                 : colors.cardBackground,
-                              borderColor: lives === life 
+                              borderColor: lives === life
                                 ? colors.primary
                                 : colors.borderThin,
+                              paddingVertical: width < 400 ? 10 : 14,
                             }
                           ]}
                           onPress={() => setLives(life)}
@@ -525,7 +530,7 @@ export default function MultiplayerScreen() {
                                 fontFamily: typography.fontBody,
                                 fontSize: typography.textBase,
                                 fontWeight: '600',
-                                color: lives === life 
+                                color: lives === life
                                   ? '#FFFFFF'
                                   : colors.textPrimary,
                               }
@@ -536,15 +541,15 @@ export default function MultiplayerScreen() {
                         </TouchableOpacity>
                       ))}
                     </View>
-                    
-                    <Text 
+
+                    <Text
                       style={[
                         styles.hintText,
                         {
                           fontFamily: typography.fontBody,
                           fontSize: typography.textXs,
                           color: colors.textTertiary,
-                          marginTop: spacing.md,
+                          marginTop: spacing.sm,
                         }
                       ]}
                     >
@@ -558,7 +563,7 @@ export default function MultiplayerScreen() {
                       styles.createLobbyButton,
                       {
                         backgroundColor: colors.primary,
-                        marginTop: spacing.xl2,
+                        marginTop: spacing.lg,
                       }
                     ]}
                     onPress={handleCreateGame}
@@ -578,8 +583,8 @@ export default function MultiplayerScreen() {
                       CREATE LOBBY
                     </Text>
                   </TouchableOpacity>
-                  
-                  <Text 
+
+                  <Text
                     style={[
                       styles.hintText,
                       {
@@ -707,8 +712,8 @@ export default function MultiplayerScreen() {
           </View>
         </ScrollView>
       </LinearGradient>
-      
-      
+
+
       {/* Error Modal */}
       <Modal
         visible={errorModal !== null}
@@ -720,7 +725,7 @@ export default function MultiplayerScreen() {
         }}
         onClose={() => setErrorModal(null)}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 

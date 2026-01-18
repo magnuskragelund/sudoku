@@ -3,7 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { ActivityIndicator, Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ScreenHeader from '../components/ScreenHeader';
 import WebReturnBanner from '../components/WebReturnBanner';
 import { useGame } from '../context/GameContext';
@@ -18,36 +18,37 @@ export default function DifficultyScreen() {
   const [selectedLives, setSelectedLives] = useState(5);
   const [isStartingGame, setIsStartingGame] = useState(false);
   const { width } = useWindowDimensions();
-  
+  const insets = useSafeAreaInsets();
+
   // Responsive max width: 600px for phones, 1000px for tablets/web
   const maxContentWidth = width >= 768 ? 1000 : 600;
 
-  const difficulties: { 
-    label: string; 
-    value: Difficulty; 
+  const difficulties: {
+    label: string;
+    value: Difficulty;
     edition: string;
     description: string;
   }[] = [
-    { label: 'Master', value: 'master', edition: 'WEEKEND EDITION', description: 'Requires advanced techniques like X-Wing, Swordfish, and XY-Wing' },
-    { label: 'Hard', value: 'hard', edition: 'EVENING EDITION', description: 'May require advanced techniques like X-Wing' },
-    { label: 'Medium', value: 'medium', edition: 'AFTERNOON EDITION', description: 'Uses basic techniques like pairs and singles' },
-    { label: 'Easy', value: 'easy', edition: 'MORNING EDITION', description: 'Uses only basic techniques like singles' },
-  ];
+      { label: 'Master', value: 'master', edition: 'WEEKEND EDITION', description: 'Requires advanced techniques like X-Wing, Swordfish, and XY-Wing' },
+      { label: 'Hard', value: 'hard', edition: 'EVENING EDITION', description: 'May require advanced techniques like X-Wing' },
+      { label: 'Medium', value: 'medium', edition: 'AFTERNOON EDITION', description: 'Uses basic techniques like pairs and singles' },
+      { label: 'Easy', value: 'easy', edition: 'MORNING EDITION', description: 'Uses only basic techniques like singles' },
+    ];
 
   const livesOptions = [1, 2, 3, 4, 5];
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | null>(null);
-  
+
   const { currentMessage, messageOpacity } = useLoadingMessages(
-    selectedDifficulty, 
+    selectedDifficulty,
     isStartingGame || isLoading
   );
 
   const handleStartGame = async (difficulty: Difficulty) => {
     if (isStartingGame || isLoading) return;
-    
+
     setSelectedDifficulty(difficulty);
     setIsStartingGame(true);
-    
+
     try {
       await startGame(difficulty, selectedLives);
       router.push('/game');
@@ -58,13 +59,13 @@ export default function DifficultyScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <LinearGradient
         colors={[colors.backgroundGradientFrom, colors.backgroundGradientTo]}
         style={styles.gradient}
       >
         <WebReturnBanner />
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
@@ -95,7 +96,7 @@ export default function DifficultyScreen() {
                 >
                   <View style={styles.difficultyCardContent}>
                     <View style={styles.difficultyCardLeft}>
-                      <Text 
+                      <Text
                         style={[
                           styles.difficultyNumber,
                           {
@@ -109,7 +110,7 @@ export default function DifficultyScreen() {
                         {index + 1}
                       </Text>
                       <View style={styles.difficultyInfo}>
-                        <Text 
+                        <Text
                           style={[
                             styles.difficultyLabel,
                             {
@@ -124,7 +125,7 @@ export default function DifficultyScreen() {
                         >
                           {difficulty.label.toLowerCase()}
                         </Text>
-                        <Text 
+                        <Text
                           style={[
                             styles.editionLabel,
                             {
@@ -138,7 +139,7 @@ export default function DifficultyScreen() {
                         >
                           {difficulty.edition}
                         </Text>
-                        <Text 
+                        <Text
                           style={[
                             styles.difficultyDescription,
                             {
@@ -160,7 +161,7 @@ export default function DifficultyScreen() {
 
             {/* Lives Selector */}
             <View style={styles.livesSection}>
-              <Text 
+              <Text
                 style={[
                   styles.livesLabel,
                   {
@@ -187,13 +188,13 @@ export default function DifficultyScreen() {
                     ]}
                     onPress={() => setSelectedLives(lives)}
                   >
-                    <Text 
+                    <Text
                       style={[
                         styles.livesButtonText,
                         {
                           fontFamily: typography.fontSerif,
                           fontSize: typography.textLg,
-                          color: selectedLives === lives 
+                          color: selectedLives === lives
                             ? (colors.primary === '#000000' ? '#FFFFFF' : colors.cardBackground)
                             : colors.textPrimary,
                         }
@@ -215,7 +216,7 @@ export default function DifficultyScreen() {
           <BlurView intensity={40} tint={colors.overlayTint} style={styles.blurBackground}>
             <View style={[styles.loadingCard, { backgroundColor: colors.modalBackground, borderColor: colors.cardBorder }]}>
               <ActivityIndicator size="large" color={colors.primary} />
-              <Animated.Text 
+              <Animated.Text
                 style={[
                   styles.loadingText,
                   {
@@ -233,7 +234,7 @@ export default function DifficultyScreen() {
           </BlurView>
         </View>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 

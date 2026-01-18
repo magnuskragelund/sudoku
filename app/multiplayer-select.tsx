@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { ArrowRight, Users } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ScreenHeader from '../components/ScreenHeader';
 import WebReturnBanner from '../components/WebReturnBanner';
 import { useTheme } from '../context/ThemeContext';
@@ -12,7 +12,8 @@ export default function MultiplayerSelectScreen() {
   const router = useRouter();
   const { colors, typography, spacing } = useTheme();
   const { width } = useWindowDimensions();
-  
+  const insets = useSafeAreaInsets();
+
   // Responsive max width: 600px for phones, 1000px for tablets/web
   const maxContentWidth = width >= 768 ? 1000 : 600;
 
@@ -31,13 +32,13 @@ export default function MultiplayerSelectScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <LinearGradient
         colors={[colors.backgroundGradientFrom, colors.backgroundGradientTo]}
         style={styles.gradient}
       >
         <WebReturnBanner />
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
@@ -67,8 +68,8 @@ export default function MultiplayerSelectScreen() {
                   <Users size={32} color={colors.textSecondary} strokeWidth={1.5} />
                 </View>
               </View>
-              
-              <Text 
+
+              <Text
                 style={[
                   styles.cardTitle,
                   {
@@ -82,8 +83,8 @@ export default function MultiplayerSelectScreen() {
               >
                 Create Game
               </Text>
-              
-              <Text 
+
+              <Text
                 style={[
                   styles.cardDescription,
                   {
@@ -97,8 +98,8 @@ export default function MultiplayerSelectScreen() {
               >
                 Host a new match and invite others to join your puzzle challenge
               </Text>
-              
-              <Text 
+
+              <Text
                 style={[
                   styles.editionLabel,
                   {
@@ -132,8 +133,8 @@ export default function MultiplayerSelectScreen() {
                   <ArrowRight size={32} color={colors.textSecondary} strokeWidth={1.5} />
                 </View>
               </View>
-              
-              <Text 
+
+              <Text
                 style={[
                   styles.cardTitle,
                   {
@@ -147,8 +148,8 @@ export default function MultiplayerSelectScreen() {
               >
                 Join Game
               </Text>
-              
-              <Text 
+
+              <Text
                 style={[
                   styles.cardDescription,
                   {
@@ -162,8 +163,8 @@ export default function MultiplayerSelectScreen() {
               >
                 Enter a room code to participate in an existing competition
               </Text>
-              
-              <Text 
+
+              <Text
                 style={[
                   styles.editionLabel,
                   {
@@ -180,7 +181,7 @@ export default function MultiplayerSelectScreen() {
           </View>
         </ScrollView>
       </LinearGradient>
-    </SafeAreaView>
+    </View>
   );
 }
 

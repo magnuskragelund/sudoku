@@ -2,17 +2,19 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Moon, Palette, Sun, Trophy, User, Users } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import WebReturnBanner from '../components/WebReturnBanner';
 import { useTheme } from '../context/ThemeContext';
+import { ReviewService } from '../utils/reviewService';
 
 export default function WelcomeScreen() {
   const router = useRouter();
   const { theme, setTheme, colors, typography, spacing, colorScheme } = useTheme();
   const [showThemeSelector, setShowThemeSelector] = useState(false);
   const { width } = useWindowDimensions();
-  
+  const insets = useSafeAreaInsets();
+
   // Responsive max width: 600px for phones, 1000px for tablets/web
   const maxContentWidth = width >= 768 ? 1000 : 600;
 
@@ -24,23 +26,23 @@ export default function WelcomeScreen() {
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <LinearGradient
         colors={[colors.backgroundGradientFrom, colors.backgroundGradientTo]}
         style={styles.gradient}
       >
         <WebReturnBanner />
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
           <View style={[styles.contentWrapper, { maxWidth: maxContentWidth }]}>
             {/* Masthead Section */}
             <View style={[styles.masthead, { marginBottom: spacing.xl3 }]}>
-              <Text 
+              <Text
                 style={[
-                  styles.establishedLabel, 
-                  { 
+                  styles.establishedLabel,
+                  {
                     color: colors.textLabel,
                     fontFamily: typography.fontBody,
                     fontSize: typography.textXs,
@@ -51,11 +53,11 @@ export default function WelcomeScreen() {
               >
                 EST. 2025
               </Text>
-              
-              <Text 
+
+              <Text
                 style={[
-                  styles.mainTitle, 
-                  { 
+                  styles.mainTitle,
+                  {
                     fontFamily: typography.fontSerif,
                     fontSize: typography.text8xl,
                     letterSpacing: typography.text8xl * typography.trackingTight,
@@ -67,13 +69,13 @@ export default function WelcomeScreen() {
               >
                 Sudoku
               </Text>
-              
+
               <Divider />
-              
-              <Text 
+
+              <Text
                 style={[
-                  styles.subtitle, 
-                  { 
+                  styles.subtitle,
+                  {
                     color: colors.textSubtitle,
                     fontFamily: typography.fontBody,
                     fontSize: typography.textSm,
@@ -97,7 +99,7 @@ export default function WelcomeScreen() {
                     key={themeOption}
                     style={[
                       styles.themeOption,
-                      { 
+                      {
                         borderColor: colors.cardBorder,
                         backgroundColor: theme === themeOption ? colors.primary : 'transparent',
                         marginBottom: spacing.sm,
@@ -122,6 +124,37 @@ export default function WelcomeScreen() {
                     </View>
                   </TouchableOpacity>
                 ))}
+
+                {/* Debug Tools (Dev Only) */}
+                {__DEV__ && (
+                  <TouchableOpacity
+                    style={[
+                      styles.themeOption,
+                      {
+                        borderColor: colors.cardBorder,
+                        marginTop: spacing.md,
+                      }
+                    ]}
+                    onPress={async () => {
+                      await ReviewService.resetReviewTracking();
+                      Alert.alert('Debug', 'Review tracking reset. Play 3 games to trigger prompt again.');
+                    }}
+                  >
+                    <View style={styles.themeOptionContent}>
+                      <Text style={[
+                        styles.themeOptionText,
+                        {
+                          fontFamily: typography.fontBody,
+                          fontSize: typography.textBase,
+                          color: colors.error || '#FF4444',
+                          marginLeft: spacing.sm,
+                        }
+                      ]}>
+                        Reset Review Status (Dev Only)
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                )}
                 <TouchableOpacity
                   style={[styles.cancelButton, { backgroundColor: colors.buttonBackground, marginTop: spacing.md }]}
                   onPress={() => setShowThemeSelector(false)}
@@ -141,7 +174,7 @@ export default function WelcomeScreen() {
                   <TouchableOpacity
                     style={[
                       styles.featuredCard,
-                      { 
+                      {
                         backgroundColor: colors.cardBackground,
                         borderColor: colors.cardBorder,
                         marginBottom: spacing.lg,
@@ -169,7 +202,7 @@ export default function WelcomeScreen() {
                         Challenge yourself with our curated selection of puzzles. From beginner to master difficulty.
                       </Text>
                     </View>
-                    </TouchableOpacity>
+                  </TouchableOpacity>
 
                   {/* Two Column Cards */}
                   <View style={styles.twoColumnContainer}>
@@ -177,7 +210,7 @@ export default function WelcomeScreen() {
                     <TouchableOpacity
                       style={[
                         styles.smallCard,
-                        { 
+                        {
                           backgroundColor: colors.cardBackground,
                           borderColor: colors.cardBorder,
                           shadowColor: colors.cardShadow,
@@ -204,7 +237,7 @@ export default function WelcomeScreen() {
                     <TouchableOpacity
                       style={[
                         styles.smallCard,
-                        { 
+                        {
                           backgroundColor: colors.cardBackground,
                           borderColor: colors.cardBorder,
                           shadowColor: colors.cardShadow,
@@ -216,7 +249,7 @@ export default function WelcomeScreen() {
                       <Text style={[styles.cardLabel, { fontFamily: typography.fontBody, fontSize: typography.textXs, letterSpacing: typography.textXs * typography.trackingNormal, color: colors.textLabel, marginBottom: spacing.sm }]}>
                         LEADERBOARD
                       </Text>
-                      <Text 
+                      <Text
                         numberOfLines={2}
                         adjustsFontSizeToFit={true}
                         minimumFontScale={0.85}
@@ -263,7 +296,7 @@ export default function WelcomeScreen() {
           </View>
         </ScrollView>
       </LinearGradient>
-    </SafeAreaView>
+    </View>
   );
 }
 

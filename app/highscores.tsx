@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { CheckCircle, Trophy, XCircle, XSquare } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Modal from '../components/Modal';
 import ScreenHeader from '../components/ScreenHeader';
 import WebReturnBanner from '../components/WebReturnBanner';
@@ -20,7 +20,8 @@ export default function HighScoresScreen() {
   const [expandedCombo, setExpandedCombo] = useState<string | null>(null);
   const [showClearModal, setShowClearModal] = useState(false);
   const { width } = useWindowDimensions();
-  
+  const insets = useSafeAreaInsets();
+
   // Responsive max width: 600px for phones, 1000px for tablets/web
   const maxContentWidth = width >= 768 ? 1000 : 600;
 
@@ -92,7 +93,7 @@ export default function HighScoresScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <LinearGradient
         colors={[colors.backgroundGradientFrom, colors.backgroundGradientTo]}
         style={styles.gradient}
@@ -112,7 +113,7 @@ export default function HighScoresScreen() {
                 key={difficulty.value}
                 style={[
                   styles.tab,
-                  { 
+                  {
                     backgroundColor: selectedDifficulty === difficulty.value ? colors.primary : colors.buttonBackground,
                     borderColor: colors.cardBorder,
                   },
@@ -131,11 +132,11 @@ export default function HighScoresScreen() {
                   minimumFontScale={0.85}
                   style={[
                     styles.tabText,
-                    { 
+                    {
                       fontFamily: typography.fontBody,
                       fontSize: typography.textXs,
                       letterSpacing: typography.textXs * typography.trackingNormal,
-                      color: selectedDifficulty === difficulty.value 
+                      color: selectedDifficulty === difficulty.value
                         ? (colors.primary === '#000000' ? '#FFFFFF' : colors.cardBackground)
                         : colors.textSecondary,
                     }
@@ -148,8 +149,8 @@ export default function HighScoresScreen() {
           </View>
 
           {/* Scores List */}
-          <ScrollView 
-            style={styles.scrollView} 
+          <ScrollView
+            style={styles.scrollView}
             contentContainerStyle={[
               styles.scrollContent,
               sortedGroupedScores.length === 0 && styles.scrollContentEmpty
@@ -217,7 +218,7 @@ export default function HighScoresScreen() {
                             <Text
                               style={[
                                 styles.historyTime,
-                                { 
+                                {
                                   fontFamily: typography.fontSerif,
                                   fontSize: typography.textSm,
                                   color: result.won ? colors.success : colors.error,
@@ -265,7 +266,7 @@ export default function HighScoresScreen() {
           />
         </View>
       </LinearGradient>
-    </SafeAreaView>
+    </View>
   );
 }
 
