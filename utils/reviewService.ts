@@ -27,16 +27,16 @@ const STORAGE_KEYS = {
 
 const CONFIG = {
   // Prompt after this many successful completions
-  GAMES_BEFORE_PROMPT: 3,
-  
+  GAMES_BEFORE_PROMPT: 2,
+
   // Don't prompt again if user dismissed more than this many times
   MAX_DISMISSALS: 2,
-  
+
   // Minimum days between prompts (even across versions)
   MIN_DAYS_BETWEEN_PROMPTS: 60,
-  
+
   // For testing: set to true to always show prompt
-  DEBUG_MODE: false,
+  DEBUG_MODE: __DEV__,
 };
 
 export class ReviewService {
@@ -58,17 +58,17 @@ export class ReviewService {
 
       // Increment completion count
       const completionCount = await this.incrementCompletionCount();
-      
-      logger.info('ReviewService', 'Puzzle completed', { 
-        completionCount, 
-        threshold: CONFIG.GAMES_BEFORE_PROMPT 
+
+      logger.info('ReviewService', 'Puzzle completed', {
+        completionCount,
+        threshold: CONFIG.GAMES_BEFORE_PROMPT
       });
 
       // Check if we've hit the threshold
       if (completionCount >= CONFIG.GAMES_BEFORE_PROMPT) {
         // Small delay to let victory animation complete
         setTimeout(() => {
-          this.requestReview().catch(err => 
+          this.requestReview().catch(err =>
             logger.error('ReviewService', 'Error in requestReview from setTimeout', err)
           );
         }, 2000);
@@ -201,7 +201,7 @@ export class ReviewService {
     try {
       const currentVersion = await this.getCurrentAppVersion();
       const promptedVersion = await AsyncStorage.getItem(STORAGE_KEYS.APP_VERSION);
-      
+
       return promptedVersion === currentVersion;
     } catch (error) {
       logger.error('ReviewService', 'Error checking prompted version', error);
@@ -249,7 +249,7 @@ export class ReviewService {
       const now = new Date();
       const diffTime = Math.abs(now.getTime() - lastDate.getTime());
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      
+
       return diffDays;
     } catch (error) {
       logger.error('ReviewService', 'Error getting days since last prompt', error);
@@ -288,7 +288,7 @@ export class ReviewService {
       const currentCount = await this.getDismissalCount();
       const newCount = currentCount + 1;
       await AsyncStorage.setItem(STORAGE_KEYS.REVIEW_DISMISSED_COUNT, newCount.toString());
-      
+
       logger.info('ReviewService', 'User dismissed review prompt', { dismissalCount: newCount });
     } catch (error) {
       logger.error('ReviewService', 'Error incrementing dismissal count', error);
@@ -308,7 +308,7 @@ export class ReviewService {
         STORAGE_KEYS.LAST_REVIEW_PROMPT,
         STORAGE_KEYS.APP_VERSION,
       ]);
-      
+
       logger.info('ReviewService', 'Review tracking reset');
     } catch (error) {
       logger.error('ReviewService', 'Error resetting review tracking', error);

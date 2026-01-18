@@ -5,7 +5,7 @@ import { useTheme } from '../context/ThemeContext';
 interface ConfigCardProps {
   label: string;
   value: string;
-  subtext: string;
+  subtext?: string;
   isLeft?: boolean;
   isRight?: boolean;
   isLast?: boolean;
@@ -17,20 +17,20 @@ export default function ConfigCard({ label, value, subtext, isLeft, isRight, isL
   const isMobile = width < 400;
 
   return (
-    <View 
+    <View
       style={[
         styles.card,
         isLeft && !isMobile && styles.cardLeft,
         isRight && !isMobile && styles.cardRight,
         isMobile && styles.cardMobile,
         isMobile && !isLast && styles.cardMobileWithMargin,
-        isLeft && !isMobile && { 
+        isLeft && !isMobile && {
           borderRightColor: colors.borderThin,
           borderRightWidth: 1,
         },
       ]}
     >
-      <Text 
+      <Text
         style={[
           styles.label,
           {
@@ -44,7 +44,7 @@ export default function ConfigCard({ label, value, subtext, isLeft, isRight, isL
       >
         {label}
       </Text>
-      <Text 
+      <Text
         style={[
           styles.value,
           {
@@ -57,19 +57,21 @@ export default function ConfigCard({ label, value, subtext, isLeft, isRight, isL
       >
         {value}
       </Text>
-      <Text 
-        style={[
-          styles.subtext,
-          {
-            fontFamily: typography.fontBody,
-            fontSize: typography.textXs,
-            letterSpacing: typography.textXs * typography.trackingWide,
-            color: colors.textSecondary,
-          }
-        ]}
-      >
-        {subtext}
-      </Text>
+      {subtext && (
+        <Text
+          style={[
+            styles.subtext,
+            {
+              fontFamily: typography.fontBody,
+              fontSize: typography.textXs,
+              letterSpacing: typography.textXs * typography.trackingWide,
+              color: colors.textSecondary,
+            }
+          ]}
+        >
+          {subtext}
+        </Text>
+      )}
     </View>
   );
 }
